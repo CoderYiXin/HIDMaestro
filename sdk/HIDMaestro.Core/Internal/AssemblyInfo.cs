@@ -35,3 +35,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("IdentityLab")]
 [assembly: InternalsVisibleTo("IdentityDerivationCheck")]
 [assembly: InternalsVisibleTo("IdentityBatteryCheck")]
+[assembly: InternalsVisibleTo("XusbBatteryCheck")]

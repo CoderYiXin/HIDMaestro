@@ -905,7 +905,16 @@ void CompanionIoControl(
     }
 
     case IOCTL_XUSB_GET_BATTERY_INFO: {
-        UCHAR batt[4] = { 0, 0x01, 0x03, 0 };
+        /* XUSBVersion occupies bytes 0-1 and the type and level follow it,
+         * the same header the LED reply above uses. Callers copy from
+         * &OutBuffer.BatteryType, so packing the pair at 1 and 2 read back
+         * as NIMH/EMPTY: SDL maps any type that is not WIRED, UNKNOWN or
+         * DISCONNECTED to on-battery, and EMPTY to 10 percent, so every
+         * SDL game showed a virtual pad as a flat battery. WIRED/FULL is
+         * the same answer OpenXInput fabricates for a device with no
+         * battery to report. The version word is left zero because no
+         * caller reads it back. */
+        UCHAR batt[4] = { 0, 0, 0x01, 0x03 };
         CopyToRequest(Request, batt, 4);
         break;
     }
