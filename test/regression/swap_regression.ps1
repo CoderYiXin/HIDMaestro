@@ -171,6 +171,7 @@ if ($verMatch.Success) {
         Join-Path $scriptDir '..\probes\valve_multi_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
         Join-Path $scriptDir '..\probes\identity_derivation_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
         Join-Path $scriptDir '..\probes\identity_battery_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
+        Join-Path $scriptDir '..\probes\xusb_battery_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
     )
     # Canonical SDK output for the content-hash check. Source tree only:
     # a release bundle carries no sdk/ build output, and the version
@@ -1644,6 +1645,17 @@ function Scenario-Identity-Battery {
                  -Message 'a virtual controller changed identity across its lives, or came back as an empty shell (see probe stdout)' -SkipCodes 2
 }
 
+# S60: the XUSB battery reply (issue #61). The reply carries a two-byte
+# version word before the type and level, and packing them one byte early
+# read back as NIMH at EMPTY, which SDL shows as a flat battery on every
+# virtual pad. Three cycles assert the raw four bytes position by position,
+# what XInputGetBatteryInformation hands a caller, and the SDL mapping over
+# those values.
+function Scenario-Xusb-Battery {
+    Invoke-Probe -Dir 'xusb_battery_check' -Exe 'XusbBatteryCheck.exe' `
+                 -Message 'a virtual pad no longer reports a wired, full battery to XInput (see probe stdout)' -SkipCodes 2
+}
+
 # ====================================================================
 #  Runner
 # ====================================================================
@@ -1707,7 +1719,8 @@ $scenarios = @(
     @{ Name = 'S56_Valve_Raw_Path';               Body = ${function:Scenario-Valve-Raw-Path} },
     @{ Name = 'S57_Xusb_Wgi_Single';              Body = ${function:Scenario-Xusb-Wgi-Single} },
     @{ Name = 'S58_Identity_Derivation';         Body = ${function:Scenario-Identity-Derivation} },
-    @{ Name = 'S59_Identity_Battery';            Body = ${function:Scenario-Identity-Battery} }
+    @{ Name = 'S59_Identity_Battery';            Body = ${function:Scenario-Identity-Battery} },
+    @{ Name = 'S60_Xusb_Battery';                Body = ${function:Scenario-Xusb-Battery} }
 )
 
 $totalSw = [System.Diagnostics.Stopwatch]::StartNew()
