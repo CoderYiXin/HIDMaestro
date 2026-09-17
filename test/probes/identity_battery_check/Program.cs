@@ -54,7 +54,19 @@ internal static class Program
 {
     // ── result bookkeeping ─────────────────────────────────────────────
 
+    /// <summary>Stands in for a DirectInput instance GUID that could not be
+    /// attributed to one specific pad. Compared as a value, two of these are
+    /// equal, so a check that needs to tell two pads apart must reject it
+    /// rather than treat it as a reading.</summary>
+    const string Unattributed = "(DirectInput attributed no instance to this pad)";
+
     static int s_total, s_failures;
+
+    /// <summary>Set by --overlap. Prints every device DirectInput enumerates
+    /// with the path it reports, so an attribution question is answered from
+    /// what DirectInput actually returned rather than from the one value that
+    /// survived the search.</summary>
+    static bool s_diDump;
 
     static void Check(string name, bool cond, string detail = "")
     {
@@ -175,6 +187,19 @@ internal static class Program
 
         if (args.Length >= 1 && args[0] == "--compare")
             return CompareAfterReboot(ctx);
+
+        // --overlap runs just the overlap scenarios. The full run takes two
+        // minutes, and diagnosing a DirectInput attribution question does not
+        // need the nine lives of five families.
+        if (args.Length >= 1 && args[0] == "--overlap")
+        {
+            s_diDump = true;
+            Overlap(ctx, Families[2], "dualsense");
+            Overlap(ctx, Families[4], "dualsense-composite");
+            Console.WriteLine();
+            Console.WriteLine($"=== {s_total - s_failures}/{s_total} {(s_failures == 0 ? "PASS" : "FAIL")} ===");
+            return s_failures == 0 ? 0 : 1;
+        }
 
         var baseline = new List<IdentityRecord>();
         foreach (var fam in Families)
@@ -400,6 +425,11 @@ internal static class Program
             rec.CompanionInterfaces = InterfaceList(XusbGuid, rec.Companion).ToArray();
         }
 
+        if (s_diDump)
+        {
+            Console.WriteLine($"   [{life}] looking for:");
+            foreach (var i in rec.Interfaces) Console.WriteLine($"     ours:    {i}");
+        }
         rec.DiGuid = DirectInputGuid(rec.Interfaces, vid, pid) ?? "(not enumerated)";
         // SDL reports XInput-claimed pads as XInput#<slot>, so the slot our
         // input lands in is part of the record for the Xbox families. The
@@ -543,6 +573,10 @@ internal static class Program
 
     // ── overlap and profile change ─────────────────────────────────────
 
+    /// <summary>True when DirectInput named one specific pad for this record.</summary>
+    static bool Attributed(IdentityRecord r) =>
+        r.DiGuid != Unattributed && r.DiGuid != "(not enumerated)";
+
     static void Overlap(HMContext ctx, Family fam, string profileId)
     {
         var profile = ResolveProfile(ctx, profileId);
@@ -556,9 +590,38 @@ internal static class Program
             var recB1 = Measure(b, fam, profile, "overlap B with A present");
             Check($"{profileId} overlap: the two pads have distinct paths", recA.Parent != recB1.Parent
                   && !recA.Interfaces.SequenceEqual(recB1.Interfaces, StringComparer.OrdinalIgnoreCase));
-            Check($"{profileId} overlap: B is DirectInput ordinal 1 while A is present",
-                  recB1.DiGuid != recA.DiGuid && recA.DiGuid != "(not enumerated)" && recB1.DiGuid != "(not enumerated)",
-                  $"A={recA.DiGuid} B={recB1.DiGuid}");
+            // Positive control for the ordinal check below. DirectInput can
+            // only place A and B at different ordinals if A is still on the
+            // system when B is measured, so re-read A here. Without it, a pad
+            // that quietly went away and a DirectInput that skipped it look
+            // the same.
+            var recA2 = Measure(a, fam, profile, "overlap A while B present");
+            Check($"{profileId} overlap: A is still published while B is present",
+                  recA2.Parent == recA.Parent
+                  && recA2.Interfaces.SequenceEqual(recA.Interfaces, StringComparer.OrdinalIgnoreCase),
+                  string.Join("; ", IdentityRecord.Differences(recA, recA2)));
+            // A ROOT-enumerated devnode has no container of its own, so the
+            // sentinel is the right answer there. The composite parent is a
+            // USB device and gets a real one, which must differ per pad.
+            if (fam.Usbip)
+                Check($"{profileId} overlap: the two pads have distinct container ids",
+                      recA.Container != recB1.Container, $"A={recA.Container} B={recB1.Container}");
+            // DirectInput instance GUIDs are positional. Windows keeps one
+            // GUID per slot under the VID/PID key and hands slot 0 to
+            // whichever pad it enumerates first, which follows PnP order.
+            // For the composite that is hub port order, so B can enumerate
+            // ahead of A even though A was created first. The property worth
+            // holding is that DirectInput separates the two pads, not which
+            // one lands at slot 0, so both readings are taken in the same
+            // window with both pads present. An unattributed reading is not a
+            // measurement of either pad, and two of those markers compare
+            // equal, which would answer the question for the wrong reason.
+            bool attributed = Attributed(recA2) && Attributed(recB1);
+            Check($"{profileId} overlap: DirectInput attributes an instance to each pad", attributed,
+                  $"A={recA2.DiGuid} B={recB1.DiGuid}");
+            if (attributed)
+                Check($"{profileId} overlap: DirectInput holds two distinct instances while both pads are present",
+                      recA2.DiGuid != recB1.DiGuid, $"A={recA2.DiGuid} B={recB1.DiGuid}");
             a.Dispose(); a = null;
             Thread.Sleep(500);
             var recB2 = Measure(b, fam, profile, "overlap B after A removed");
@@ -567,8 +630,12 @@ internal static class Program
                   && recB2.Interfaces.SequenceEqual(recB1.Interfaces, StringComparer.OrdinalIgnoreCase)
                   && recB2.UsbSerial == recB1.UsbSerial,
                   string.Join("; ", IdentityRecord.Differences(recB1, recB2)));
-            Check($"{profileId} overlap: B's DirectInput ordinal moved from 1 to 0 (it now carries A's GUID)",
-                  recB2.DiGuid == recA.DiGuid, $"B now {recB2.DiGuid}, A was {recA.DiGuid}");
+            // recA is A measured alone, so its GUID is DirectInput's first
+            // slot for this VID/PID. B is now the only pad left and must
+            // hold that same slot.
+            if (attributed && Attributed(recB2))
+                Check($"{profileId} overlap: B takes DirectInput's first instance once A is gone",
+                      recB2.DiGuid == recA.DiGuid, $"B now {recB2.DiGuid}, the first slot is {recA.DiGuid}");
         }
         catch (Exception ex) { Check($"{profileId} overlap ran without throwing", false, ex.Message); }
         finally { try { a?.Dispose(); } catch { } try { b?.Dispose(); } catch { } }
@@ -816,6 +883,8 @@ internal static class Program
                         GC.KeepAlive(cb);
                         var createDevice = Marshal.GetDelegateForFunctionPointer<CreateDeviceFn>(Marshal.ReadIntPtr(Marshal.ReadIntPtr(di8), 3 * IntPtr.Size));
                         string? byVidPid = null;
+                        int vidPidCount = 0;
+                        var seenPaths = new List<string>();
                         foreach (var (inst, prod) in entries)
                         {
                             Guid g = inst;
@@ -832,16 +901,38 @@ internal static class Program
                                     if (getProperty(dev, new IntPtr(12), mem) == 0)
                                     {
                                         var got = Marshal.PtrToStructure<DIPROPGUIDANDPATH>(mem);
+                                        if (s_diDump) Console.WriteLine($"     DI enum: {inst:B} {got.wszPath.TrimEnd('\0')}");
+                                        if ((prod & 0xFFFF) == vid && (prod >> 16) == pid) seenPaths.Add(got.wszPath.TrimEnd('\0'));
                                         if (interfaces.Any(i => string.Equals(NormalizePath(i), NormalizePath(got.wszPath), StringComparison.OrdinalIgnoreCase)))
                                         { found = inst.ToString("B"); break; }
                                     }
+                                    else if (s_diDump) Console.WriteLine($"     DI enum: {inst:B} (no path property)");
                                 }
                                 finally { Marshal.FreeHGlobal(mem); }
-                                if (byVidPid == null && (prod & 0xFFFF) == vid && (prod >> 16) == pid) byVidPid = inst.ToString("B");
+                                if ((prod & 0xFFFF) == vid && (prod >> 16) == pid)
+                                {
+                                    vidPidCount++;
+                                    byVidPid ??= inst.ToString("B");
+                                }
                             }
                             finally { Marshal.GetDelegateForFunctionPointer<ReleaseFn>(Marshal.ReadIntPtr(Marshal.ReadIntPtr(dev), 2 * IntPtr.Size))(dev); }
                         }
-                        found ??= byVidPid;
+                        // The VID/PID fallback names a device only when one
+                        // device carries that VID/PID. With more than one it
+                        // would return whichever DirectInput enumerated
+                        // first, which silently equates two pads the overlap
+                        // scenario exists to tell apart. Say so instead of
+                        // guessing, and print the paths DirectInput did
+                        // report so the reason is on the record.
+                        if (found == null && vidPidCount > 1)
+                        {
+                            Console.WriteLine($"     DirectInput did not attribute a device to any of our interfaces ({vidPidCount} share {vid:X4}:{pid:X4}).");
+                            foreach (var p in seenPaths) Console.WriteLine($"       DI path: {p}");
+                            foreach (var i in interfaces) Console.WriteLine($"       ours:    {i}");
+                        }
+                        found ??= vidPidCount == 1 ? byVidPid
+                                : vidPidCount > 1 ? Unattributed
+                                : null;
                     }
                     finally { Marshal.GetDelegateForFunctionPointer<ReleaseFn>(Marshal.ReadIntPtr(Marshal.ReadIntPtr(di8), 2 * IntPtr.Size))(di8); }
                 }
