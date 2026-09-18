@@ -1,4 +1,4 @@
-"""Generate HIDMaestro controller profile JSON files from scraped data."""
+﻿"""Generate HIDMaestro controller profile JSON files from scraped data."""
 import json, os
 
 PROFILES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "profiles")
@@ -118,7 +118,7 @@ NEW_PROFILES = [
         "vid": "0x045E", "pid": "0x028E", "productString": "Controller (XBOX 360 For Windows)",
         "manufacturerString": "\u00a9Microsoft Corporation", "type": "arcadestick", "connection": "usb",
         "descriptor": "05010905a10105091901290a950a7501810275069501810305010939150125083500463b10660e00750495018142750495018103750895018103c0",
-        "inputReportSize": None, "notes": "59-byte descriptor. Source: DJm00n/ControllersInfo xusb_arcadestick. XInput HID view — arcade stick subtype (10 buttons, hat, no axes)."
+        "inputReportSize": None, "notes": "59-byte descriptor. Source: DJm00n/ControllersInfo xusb_arcadestick. XInput HID view: arcade stick subtype (10 buttons, hat, no axes)."
     }},
     {"dir": "microsoft", "file": "xbox-360-dance-pad.json", "data": {
         "id": "xbox-360-dance-pad", "name": "Xbox 360 Dance Pad (XInput HID)", "vendor": "Microsoft",
@@ -236,14 +236,14 @@ NEW_PROFILES = [
         "vid": "0x28DE", "pid": "0x1102", "productString": "Steam Controller",
         "manufacturerString": "Valve Software", "type": "gamepad", "connection": "usb",
         "descriptor": "0600ff0901a101150026ff00750895400901810295400901910295400901b102c0",
-        "inputReportSize": 64, "notes": "33-byte vendor-specific descriptor. Source: cyrozap/steam-controller-re. Uses Usage Page 0xFF00 with 64-byte raw reports — all gamepad data in proprietary binary format. Wireless dongle PID: 0x1142."
+        "inputReportSize": 64, "notes": "33-byte vendor-specific descriptor. Source: cyrozap/steam-controller-re. Uses Usage Page 0xFF00 with 64-byte raw reports: all gamepad data in proprietary binary format. Wireless dongle PID: 0x1142."
     }},
     {"dir": "valve", "file": "steam-deck.json", "data": {
         "id": "steam-deck", "name": "Steam Deck Controller", "vendor": "Valve",
         "vid": "0x28DE", "pid": "0x1205", "productString": "Steam Deck",
         "manufacturerString": "Valve Software", "type": "gamepad", "connection": "usb",
         "descriptor": "06ffff0901a10109020903150026ff0075089540810209060907150026ff0075089540b102c0",
-        "inputReportSize": 64, "notes": "38-byte vendor-specific descriptor. Source: ShadowBlip/InputPlumber. Uses Usage Page 0xFFFF with 64-byte raw reports — all inputs in proprietary binary format."
+        "inputReportSize": 64, "notes": "38-byte vendor-specific descriptor. Source: ShadowBlip/InputPlumber. Uses Usage Page 0xFFFF with 64-byte raw reports: all inputs in proprietary binary format."
     }},
     # === HORI Steam ===
     {"dir": "hori", "file": "horipad-steam.json", "data": {

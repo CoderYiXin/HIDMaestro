@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using SharpDX.DirectInput;
 
 namespace FfbTest;
@@ -16,7 +16,7 @@ class Program
 
     static IntPtr CreateMessageWindow()
     {
-        // Message-only window — invisible, no taskbar entry, valid for DirectInput.
+        // Message-only window: invisible, no taskbar entry, valid for DirectInput.
         var hwnd = CreateWindowExW(0, "Static", "FfbTest", 0, 0, 0, 0, 0,
             HWND_MESSAGE, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
         return hwnd;
@@ -149,7 +149,7 @@ class Program
         }
         else
         {
-            Console.WriteLine("No dedicated FFB actuator axes found — using regular axes.");
+            Console.WriteLine("No dedicated FFB actuator axes found: using regular axes.");
             axisObjects = objects
                 .Where(o => o.ObjectId.Flags.HasFlag(DeviceObjectTypeFlags.AbsoluteAxis))
                 .ToList();
@@ -168,7 +168,7 @@ class Program
         int[] axisOffsets = axisObjects.Select(a => a.Offset).Take(2).ToArray();
         int[] directions = new int[axisOffsets.Length];
 
-        // Exhaustive effect creation probing — DsHidMini's PID driver may be
+        // Exhaustive effect creation probing: DsHidMini's PID driver may be
         // picky about specific parameter combinations.
         Effect? constantEffect = null;
         Effect? sineEffect = null;
@@ -214,7 +214,7 @@ class Program
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"  FAIL: {tag} — {ex.Message}");
+                        Console.WriteLine($"  FAIL: {tag}: {ex.Message}");
                     }
                 }
             }
@@ -255,7 +255,7 @@ class Program
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"  FAIL: {tag} — {ex.Message}");
+                    Console.WriteLine($"  FAIL: {tag}: {ex.Message}");
                 }
             }
         }
@@ -267,13 +267,13 @@ class Program
         // 9000 = from East = pushes stick left, 27000 = from West = pushes stick right.
         int currentDirection = 0; // default: pushes stick south (force from north)
 
-        // --probes-only: drive the round-trip — CreateEffect, SetParameters
+        // --probes-only: drive the round-trip: CreateEffect, SetParameters
         // with a known magnitude, Start. pid.dll writes Set Effect (0x11),
         // Set Constant Force (0x15, magnitude=5000) / Set Periodic (0x14),
         // and Effect Operation Start (0x1A) within a 1-3 ms burst. The
         // HIDMaestro probe asserts those packets all surfaced at the
         // consumer's OutputReceived handler with non-zero magnitude.
-        // CreateEffect-only is not enough — that tested the descriptor
+        // CreateEffect-only is not enough: that tested the descriptor
         // handshake but never exercised the lossy-channel path that
         // dropped magnitude packets pre-1.1.40.
         if (probesOnly)
@@ -298,7 +298,7 @@ class Program
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"  Constant Force Start: FAIL — {ex.Message}");
+                    Console.WriteLine($"  Constant Force Start: FAIL: {ex.Message}");
                 }
             }
             if (sineEffect != null)

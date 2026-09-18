@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -9,7 +9,7 @@ namespace HIDMaestro.Internal;
 
 /// <summary>
 /// Event-driven PnP device management using CM_Register_Notification.
-/// No sleeps, no polling — waits on OS callbacks for actual system state changes.
+/// No sleeps, no polling: waits on OS callbacks for actual system state changes.
 /// </summary>
 public static class DeviceManager
 {
@@ -85,7 +85,7 @@ public static class DeviceManager
 
     /// <summary>
     /// Waits for a specific device interface GUID to appear on the given device.
-    /// Uses CM_Register_Notification — no polling, no sleeping.
+    /// Uses CM_Register_Notification: no polling, no sleeping.
     /// </summary>
     public static bool WaitForDeviceInterface(string instanceId, Guid interfaceGuid, int timeoutMs = 10000)
     {
@@ -317,7 +317,7 @@ public static class DeviceManager
     /// 28/28 phantoms removed in 492ms, zero failures, PRESENT
     /// devnodes correctly skipped).
     ///
-    /// Skips PRESENT devnodes — only touches PHANTOM/non-loaded ones.
+    /// Skips PRESENT devnodes: only touches PHANTOM/non-loaded ones.
     /// Safe to call while a HIDMaestro session is live; will not disturb
     /// any current controller. Returns the number of phantoms removed.
     /// </summary>
@@ -326,7 +326,7 @@ public static class DeviceManager
         // Issue #28 (v1.3.16): the prior VID_045E&PID_028E /
         // VID_BEEF&PID_F000 substring checks matched real Xbox 360 wired
         // controllers and PadForge Custom devices regardless of enumerator
-        // — so a real unplugged Xbox 360's phantom record qualified. The
+        //: so a real unplugged Xbox 360's phantom record qualified. The
         // new test scopes pure-name matches to the HIDMAESTRO* /
         // HMCOMPANION* enumerator forms (which are HM-exclusive by
         // construction), and otherwise routes through IsHidMaestroOwned to
@@ -395,7 +395,7 @@ public static class DeviceManager
 
     /// <summary>
     /// Returns true when the PnP devnode at <paramref name="instanceId"/> carries
-    /// a HIDMaestro-signature HardwareID — i.e. one of `root\HIDMaestro`,
+    /// a HIDMaestro-signature HardwareID: i.e. one of `root\HIDMaestro`,
     /// `root\HIDMaestroGamepad`, `root\HIDMaestroXUSB` (or any future
     /// `*HIDMaestro*` literal). Every HM-created devnode writes one of those
     /// strings into its HardwareID multi-sz at SetupDi-create time (plain HID
@@ -409,7 +409,7 @@ public static class DeviceManager
     /// <c>CleanupGhostDevices</c> / <c>SetBusTypeGuidUsb</c> /
     /// <c>RemoveAllVirtualControllers</c> / <c>DisableGhostXusbInterfaces</c>
     /// sweeps selected by instance-path pattern alone and ran their
-    /// destructive operations against whatever matched — disabling a
+    /// destructive operations against whatever matched: disabling a
     /// coexisting vJoy root HIDClass device, mutating ViGEmBus / HidHide
     /// SYSTEM nodes, or removing third-party root-enumerated VID_ devices
     /// the user never intended HIDMaestro to touch.</para>
@@ -473,12 +473,12 @@ public static class DeviceManager
         bool goneAfterDif = false;
 
         // For SWD parents that are PHANTOM-only (registry residue, no live
-        // devnode), skip the hmswd.exe roundtrip — there's no live device
+        // devnode), skip the hmswd.exe roundtrip: there's no live device
         // to terminate. Each helper spawn costs ~50-75 ms with no useful
         // work; over a 5-cycle Xbox 360 wired probe the sweep accumulates
         // 4 phantoms by cycle 5, adding ~250 ms to that teardown for
         // nothing. Detect via CM_Locate_DevNodeW NORMAL (mode 0) returning
-        // failure while PHANTOM (mode 1) succeeds — the early-bail at the
+        // failure while PHANTOM (mode 1) succeeds: the early-bail at the
         // top of this function only fires when BOTH fail, so we still got
         // here for phantom-only entries.
         bool isLive = CM_Locate_DevNodeW(out _, instanceId, 0) == CR_SUCCESS;
@@ -514,7 +514,7 @@ public static class DeviceManager
         {
             // SwDevice teardown via the documented lifetime-downgrade path.
             // DIF_REMOVE on a SwDeviceLifetimeParentPresent device is
-            // transient on Win11 26200 — the kernel re-enumerates the
+            // transient on Win11 26200: the kernel re-enumerates the
             // devnode within 5-30s because HTREE\ROOT\0 (the parent) is
             // always present. SwDeviceCreate-reconnect + lifetime=Handle
             // + SwDeviceClose is the only way to actually terminate the
@@ -524,7 +524,7 @@ public static class DeviceManager
             // /force which let it resurrect within 10s).
             //
             // SwdDeviceFactory.Remove returns when the HSWDEVICE handle
-            // closes — NOT when the kernel has finished propagating the
+            // closes: NOT when the kernel has finished propagating the
             // devnode removal through the PnP tree. We must block on a
             // CM_NOTIFY_ACTION_DEVICEINSTANCEREMOVED event for the
             // instance to guarantee the device is fully offline before
@@ -535,7 +535,7 @@ public static class DeviceManager
             var swSw = System.Diagnostics.Stopwatch.StartNew();
             int hr = SwdDeviceFactory.Remove(instanceId);
             // Block until the kernel actually fires the device-removed
-            // notification — or the timeout expires. Use the caller's
+            // notification: or the timeout expires. Use the caller's
             // timeoutMs budget so callers explicitly choose how long to
             // wait. Live-swap callers pass 120_000 ms (the full BT
             // xinputhid cascade budget); cleanup paths may pass less.
@@ -598,8 +598,8 @@ public static class DeviceManager
 
         // Step 3: pnputil + devcon fallbacks. Normally gated on !fast (skipped
         // during bulk teardown to avoid 14× pnputil process spawn). But when
-        // caller passes forceFallbacks=true — e.g. the pre-install sweep in
-        // HMContext.InstallDriver — we MUST unstick any device still bound
+        // caller passes forceFallbacks=true: e.g. the pre-install sweep in
+        // HMContext.InstallDriver: we MUST unstick any device still bound
         // to our old INF, because pnputil /delete-driver refuses to remove a
         // package while any device holds it (error "One or more devices are
         // presently installed using the specified INF"). The failure mode
@@ -609,7 +609,7 @@ public static class DeviceManager
         // restores the OLD bytes from internal cache, so the fresh v1.1.5
         // self-heal binary literally never loads and input keeps hanging.
         // pnputil and devcon both silently no-op on SWD\HIDMAESTRO\* phantoms
-        // left behind by SwDeviceLifetimeParentPresent — verified empirically
+        // left behind by SwDeviceLifetimeParentPresent: verified empirically
         // 2026-04-25 (24s wall time for 11 phantoms, 10 still present after).
         // Skipping the fallback for SWD\ entries cuts startup cleanup from
         // tens of seconds to milliseconds when prior-session phantoms exist.
@@ -634,7 +634,7 @@ public static class DeviceManager
                     using var proc = System.Diagnostics.Process.Start(psi);
                     if (proc != null)
                     {
-                        // Async read + Kill-on-timeout — matches the pattern in
+                        // Async read + Kill-on-timeout: matches the pattern in
                         // DeviceOrchestrator.RunProcess. Sync ReadToEnd blocks
                         // when pnputil hangs (observed during 5+ minute startup
                         // freeze on a force-killed prior session's SWD orphan
@@ -656,12 +656,12 @@ public static class DeviceManager
                 catch { }
             }
 
-            // Step 3.5: devcon fallback — per feedback-devcon-for-cleanup, the
+            // Step 3.5: devcon fallback: per feedback-devcon-for-cleanup, the
             // CM/SetupDi APIs sometimes leave a phantom that pnputil also can't
             // shift (observed during this session on ROOT\HIDMAESTRO\0000 and
             // ROOT\VID_045E...). `devcon remove @<id>` bypasses both paths and
             // tears the node out cleanly in most of those cases. Only run if
-            // devcon is locatable — it ships with the WDK, not the OS, so
+            // devcon is locatable: it ships with the WDK, not the OS, so
             // users without the WDK silently skip this step.
             bool stillPhantom2 = CM_Locate_DevNodeW(out _, instanceId, 1) == CR_SUCCESS;
             if (stillPhantom2)
@@ -686,9 +686,9 @@ public static class DeviceManager
                             // Same async-read + Kill-on-timeout shape as the
                             // pnputil block above. devcon hangs on phantom
                             // SWD orphans that the kernel won't release until
-                            // reboot — without Kill the entire cleanup loop
+                            // reboot: without Kill the entire cleanup loop
                             // hung indefinitely waiting on ReadToEnd.
-                            // T38-2 — scaled budget so Atom-class hardware
+                            // T38-2: scaled budget so Atom-class hardware
                             // doesn't get a 5 s timeout while everything else
                             // is 50 s. Was the only un-scaled WaitForExit
                             // budget in DeviceManager.
@@ -717,7 +717,7 @@ public static class DeviceManager
     /// <summary>Locate devcon.exe under the installed WDK. Returns the first
     /// match under C:\Program Files (x86)\Windows Kits\10\Tools\*\x64\, or
     /// null if no WDK Tools directory is found. Result is cached for the
-    /// lifetime of the process — a missing devcon won't re-probe on every
+    /// lifetime of the process: a missing devcon won't re-probe on every
     /// fallback invocation.</summary>
     private static string? s_devconPath;
     private static bool s_devconProbed;
@@ -764,7 +764,7 @@ public static class DeviceManager
     }
 
     /// <summary>
-    /// Gets the device instance ID string for a given devnode. T33-2 — uses
+    /// Gets the device instance ID string for a given devnode. T33-2: uses
     /// the same thread-local reusable buffer as GetHidChildId so per-call
     /// char[] allocations on enumeration paths (GetAllChildDeviceIds,
     /// RemoveOrphanHidChildren) don't generate GC pressure on slow hardware.
@@ -783,7 +783,7 @@ public static class DeviceManager
 
     /// <summary>
     /// Removes a single device via SetupDiRemoveDevice (same as devcon remove).
-    /// This is more thorough than DIF_REMOVE — it bypasses class installers and
+    /// This is more thorough than DIF_REMOVE: it bypasses class installers and
     /// directly removes the device node, preventing ghost entries on UMDF devices.
     /// Falls back to CM_Disable + CM_Uninstall if SetupAPI fails.
     /// </summary>
@@ -794,7 +794,7 @@ public static class DeviceManager
                     || CM_Locate_DevNodeW(out devInst, instanceId, 1) == CR_SUCCESS;
 
         // Use Guid.Empty + DIGCF_ALLCLASSES to enumerate ALL devices including phantoms.
-        // This is critical — a device-class-specific DevInfoSet won't find phantoms.
+        // This is critical: a device-class-specific DevInfoSet won't find phantoms.
         Guid nullGuid = Guid.Empty;
         IntPtr dis = SetupDiGetClassDevsByRef(ref nullGuid, 0, IntPtr.Zero, DIGCF_ALLCLASSES);
         if (dis == new IntPtr(-1))
@@ -826,7 +826,7 @@ public static class DeviceManager
                     return;
                 }
 
-                // SetupDiRemoveDevice — direct removal like devcon.exe.
+                // SetupDiRemoveDevice: direct removal like devcon.exe.
                 // Unlike DIF_REMOVE (class installer), this fully removes the device
                 // node and registry entries, preventing ghosts on UMDF devices.
                 if (!SetupDiRemoveDevice(dis, devInfoHandle.AddrOfPinnedObject()))
@@ -861,7 +861,7 @@ public static class DeviceManager
             return false;
         CM_Disable_DevNode(devInst, 0);
         // Wait for driver to unload before re-enabling. The 5 s base is
-        // a backstop — WaitForDeviceRemoval is signal-driven internally
+        // a backstop: WaitForDeviceRemoval is signal-driven internally
         // via CM_Register_Notification, this just caps the wait.
         // WaitForDeviceRemoval applies TimeoutScale internally.
         WaitForDeviceRemoval(instanceId, 5000);
@@ -885,7 +885,7 @@ public static class DeviceManager
             && (status & DN_STARTED) != 0)
             return true;
 
-        // Also check the HID child (if any) — for virtual controllers the parent
+        // Also check the HID child (if any): for virtual controllers the parent
         // may be started but the HID child (where xinputhid binds) is what matters.
         string? hidChild = GetHidChildId(instanceId);
         if (hidChild == null) return false;
@@ -899,7 +899,7 @@ public static class DeviceManager
     /// Finds the HID child device instance ID for a given parent.
     /// Returns null if no child found.
     /// </summary>
-    // T29-2 — thread-local reusable char buffer. WaitForHidChild polls this
+    // T29-2: thread-local reusable char buffer. WaitForHidChild polls this
     // at 25 ms cadence until the HID child appears; on a cold-start setup
     // that's 4-8 calls per controller, each allocating a fresh char[]. Per-
     // thread reuse eliminates the GC pressure (esp. relevant on Atom-class
@@ -932,7 +932,7 @@ public static class DeviceManager
     /// <summary>
     /// Returns all HID child device instance IDs of the given parent (one per
     /// top-level HID collection the parent advertises). The enumeration must
-    /// run BEFORE the parent is torn down — once the parent goes to phantom
+    /// run BEFORE the parent is torn down: once the parent goes to phantom
     /// state, CM_Get_Child / CM_Get_Sibling on it stop working. Callers that
     /// need to explicitly remove HID children alongside their parent (to
     /// avoid the "half-dead PDO" state where the child survives an async
@@ -952,12 +952,12 @@ public static class DeviceManager
     /// children whose parent (ROOT\ or SWD\) no longer exists. Removes each
     /// via DIF_REMOVE. Returns the number of orphans removed.
     ///
-    /// HM ownership is identified by the HardwareIDs of the HID instance —
+    /// HM ownership is identified by the HardwareIDs of the HID instance
     /// every HM HID child carries "HID\HIDMaestro" + "HID\HIDMaestroGamepad"
     /// entries from the INF. That's contractual and stable across:
     ///   - the v1.1.20 ROOT\ -> SWD\ enumerator migration
     ///   - VID-spoofing Xbox profiles vs HIDMAESTRO-prefix non-Xbox profiles
-    /// — so it correctly catches every flavor of HM child without name-
+    ///: so it correctly catches every flavor of HM child without name-
     /// pattern brittleness.
     /// </summary>
     public static int RemoveOrphanHidChildren()
@@ -1001,7 +1001,7 @@ public static class DeviceManager
 
                     // Accept ROOT\ (legacy pre-v1.1.20) and SWD\ (current).
                     // The pre-fix code only accepted ROOT\, so post-SWD-
-                    // migration orphans were never cleaned up — every live
+                    // migration orphans were never cleaned up: every live
                     // profile swap leaked an HID child until reboot.
                     bool parentIsHmEnum =
                         parentId.StartsWith(@"ROOT\", StringComparison.OrdinalIgnoreCase) ||
@@ -1016,7 +1016,7 @@ public static class DeviceManager
                     if (CM_Locate_DevNodeW(out uint _, parentId, 1) == CR_SUCCESS)
                         continue;
 
-                    // Parent is gone — remove the orphan silently. Caller
+                    // Parent is gone: remove the orphan silently. Caller
                     // gets the count for whatever observability it wants.
                     DifRemoveDevice(hidInstanceId);
                     removed++;

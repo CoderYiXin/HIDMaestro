@@ -1,10 +1,10 @@
-<#
+﻿<#
 .SYNOPSIS
 HIDMaestro Sandbox bootstrap. Runs at logon as WDAGUtilityAccount (admin).
 
 .DESCRIPTION
 Sandbox state doesn't survive reboot, so testsigning mode (which requires a
-reboot) is not viable here — we let HIDMaestro's DriverBuilder pipeline do its
+reboot) is not viable here: we let HIDMaestro's DriverBuilder pipeline do its
 normal cert-generate-and-trust dance on first run. The bootstrap's job is just:
   1. Optionally switch the Sandbox display language to validate locale fixes.
   2. Make sure the .NET 10 Desktop Runtime is present.
@@ -98,7 +98,7 @@ $banner = @"
   Subset of regression battery (full battery is 33+ min on fast hw):
     powershell -File C:\HIDMaestro\regression\swap_regression.ps1 -Filter 'S0[1-3]*'
 
-  When done — close the Sandbox window. State is discarded automatically.
+  When done: close the Sandbox window. State is discarded automatically.
 
   Locale active: $Locale
 

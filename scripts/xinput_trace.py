@@ -1,4 +1,4 @@
-"""Capture a dense trace of XInput left-stick (LX, LY) samples for a
+﻿"""Capture a dense trace of XInput left-stick (LX, LY) samples for a
 specified slot and write ASCII-art + CSV. Used to investigate whether the
 shape Cemu draws is a consumer-side problem or something visible at the
 XInput API layer itself (which is the same place Cemu reads from).
@@ -69,7 +69,7 @@ def main() -> int:
         time.sleep(interval)
 
     if not samples:
-        print("no samples — is the controller connected on that slot?")
+        print("no samples: is the controller connected on that slot?")
         return 1
 
     # Summary
@@ -82,7 +82,7 @@ def main() -> int:
     print(f"  packet number range: {samples[0][1]}..{samples[-1][1]} (span={samples[-1][1]-samples[0][1]})")
     print()
 
-    # ASCII plot — 60x30 grid, axis range [-32768, +32767].
+    # ASCII plot: 60x30 grid, axis range [-32768, +32767].
     W, H = 60, 30
     grid = [[' '] * W for _ in range(H)]
     # draw axes

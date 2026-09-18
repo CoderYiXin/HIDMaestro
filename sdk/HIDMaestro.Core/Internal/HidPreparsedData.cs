@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace HIDMaestro.Internal;
@@ -87,7 +87,7 @@ internal struct HidPpCap
     public byte Reserved1b;
     public byte Reserved1c;
 
-    // UnknownTokens[4] — each 8 bytes: Token(1) + Reserved[3] + BitField(4).
+    // UnknownTokens[4]: each 8 bytes: Token(1) + Reserved[3] + BitField(4).
     public ulong UnknownToken0;
     public ulong UnknownToken1;
     public ulong UnknownToken2;

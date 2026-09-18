@@ -1,11 +1,11 @@
-// v1.3.5 — Sony data-driven coverage probe.
+﻿// v1.3.5: Sony data-driven coverage probe.
 //
 // Validates the v1.3.5 vendor-blob extendedReport / extendedOutputReport
 // blocks across the full Sony profile set:
 //
-//   - DS5 USB (Report 0x01) input round-trip — sticks/triggers/buttons/hat
+//   - DS5 USB (Report 0x01) input round-trip: sticks/triggers/buttons/hat
 //     plus LT_DIGITAL/RT_DIGITAL auto-engagement when triggers > 0
-//   - DS4 USB (Report 0x01) input round-trip — sticks/buttons/hat in byte 5
+//   - DS4 USB (Report 0x01) input round-trip: sticks/buttons/hat in byte 5
 //     (different layout from DS5)
 //   - DS4 BT (Report 0x11) input + output round-trip with CRC32 prefix
 //     [0xA1, 0x11] / [0xA2, 0x11]
@@ -43,7 +43,7 @@ internal sealed class Program
         var ds5UsbInSpec = ds5Usb.ExtendedReport!;
         Console.WriteLine($"  reportId=0x{ds5UsbInSpec.ReportIdByte:X2} (expected 0x01)  size={ds5UsbInSpec.Size} fields={ds5UsbInSpec.Fields.Count}");
 
-        // v1.3.9 — uniform [0..1] convention. State only carries non-axis
+        // v1.3.9: uniform [0..1] convention. State only carries non-axis
         // fields (buttons, hat); the 6 simple-slot values are passed
         // explicitly to VendorBlobCodec.EncodeInput.
         var ds5UsbState = new HMGamepadState

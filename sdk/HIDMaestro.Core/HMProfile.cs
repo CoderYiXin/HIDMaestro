@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using HIDMaestro.Internal;
 
 namespace HIDMaestro;
 
 /// <summary>
-/// A controller profile — the description of a real-world controller that a
+/// A controller profile: the description of a real-world controller that a
 /// virtual device can masquerade as. Profiles are immutable, identified by a
 /// stable string ID slug like "xbox-360-wired" or "dualsense".
 ///
@@ -13,8 +13,8 @@ namespace HIDMaestro;
 /// or <see cref="HMContext.AllProfiles"/>. Create custom profiles from scratch
 /// via <see cref="HMProfileBuilder"/>.</para>
 ///
-/// <para>All profile characteristics — VID/PID, descriptor bytes, axis layout,
-/// button count, connection type — are publicly accessible for inspection and
+/// <para>All profile characteristics: VID/PID, descriptor bytes, axis layout,
+/// button count, connection type: are publicly accessible for inspection and
 /// for building modified variants.</para>
 /// </summary>
 public sealed class HMProfile
@@ -49,7 +49,7 @@ public sealed class HMProfile
     /// <summary>Device Manager display name. Falls back to <see cref="ProductString"/>.</summary>
     public string DisplayName => Inner.DisplayName;
 
-    /// <summary>Controller category — "gamepad", "wheel", "joystick", "arcade", etc.</summary>
+    /// <summary>Controller category: "gamepad", "wheel", "joystick", "arcade", etc.</summary>
     public string Type => Inner.Type;
 
     // ── Connection + driver characteristics ───────────────────────────────
@@ -92,7 +92,7 @@ public sealed class HMProfile
     /// Returns 0 if not specified in the profile.</summary>
     public int InputReportSize => Inner.InputReportSize ?? 0;
 
-    /// <summary>The raw HID report descriptor bytes. Returns a copy — modifying
+    /// <summary>The raw HID report descriptor bytes. Returns a copy: modifying
     /// the returned array does not affect the profile. Returns null if the
     /// profile has no descriptor (not deployable).</summary>
     public byte[]? GetDescriptorBytes()
@@ -113,7 +113,7 @@ public sealed class HMProfile
     /// <summary>Number of buttons declared in the HID descriptor.</summary>
     public int ButtonCount => GetLayout()?.Buttons.Count ?? 0;
 
-    /// <summary>Number of analog axes declared in the descriptor — counts
+    /// <summary>Number of analog axes declared in the descriptor: counts
     /// every Generic Desktop / Simulation Controls input axis the parser
     /// recognizes (sticks, triggers, sliders, throttles, rudders, pedals,
     /// etc.). Use <see cref="AvailableAxes"/> to enumerate them by HID
@@ -124,7 +124,7 @@ public sealed class HMProfile
     /// <summary>Every analog axis the descriptor declares, addressable by
     /// HID usage via <see cref="HMGamepadState.ExtraAxes"/>. Empty list
     /// when the profile has no descriptor or no recognized axes. Stable
-    /// across repeated calls — the underlying layout is parsed once and
+    /// across repeated calls: the underlying layout is parsed once and
     /// cached.</summary>
     public IReadOnlyList<HMAxis> AvailableAxes
     {
@@ -201,14 +201,14 @@ public sealed class HMProfile
     /// never touch SDL can ignore this property.</para></summary>
     public string? SdlMapping => Inner.SdlMapping;
 
-    /// <summary>v1.3.5 — vendor-blob input-report spec, or null. When set,
+    /// <summary>v1.3.5: vendor-blob input-report spec, or null. When set,
     /// HMController.SubmitState emits this report ID via the data-driven
     /// codec instead of the descriptor-based encoder. Profile-level metadata
     /// exposed for inspection by consumers and regression probes; field-level
     /// access goes through <c>Fields</c> on the spec.</summary>
     public ExtendedReportSpec? ExtendedReport => Inner.ExtendedReport;
 
-    /// <summary>v1.3.5 — vendor-blob output-report spec, or null. When set,
+    /// <summary>v1.3.5: vendor-blob output-report spec, or null. When set,
     /// <see cref="HMController.OutputDecoded"/> surfaces parsed-field events
     /// for matching inbound report IDs and <see cref="HMOutputEncoder.Encode"/>
     /// can produce wire-format bytes from parsed-field dictionaries.</summary>
@@ -224,14 +224,14 @@ public sealed class HMProfile
 
     // ── Structured physical-design layout (v1.3.9) ──────────────────────
 
-    /// <summary>v1.3.9 — structured physical-design declaration. When the
+    /// <summary>v1.3.9: structured physical-design declaration. When the
     /// profile JSON authors a <c>layout</c> block, this returns the typed
     /// record (<see cref="HMGamepadLayout"/>, <see cref="HMWheelLayout"/>,
     /// <see cref="HMHotasLayout"/>, etc., one per
     /// <see cref="HMLayoutKind"/>). When the JSON has no <c>layout</c>
     /// block, returns null and consumers fall back to classifier-derived
     /// views (<see cref="StickCount"/>, <see cref="TriggerCount"/>,
-    /// <see cref="AvailableAxes"/>) — backward compatible with v1.3.8 and
+    /// <see cref="AvailableAxes"/>): backward compatible with v1.3.8 and
     /// earlier.
     ///
     /// <para>Use the <c>As*</c> accessors below for typed access:
@@ -353,7 +353,7 @@ public sealed class HMProfile
 
     public override string ToString() => $"{Id} ({Name})";
 
-    // Simple-slot resolver. v1.3.13 (#23) — previously this did a bare
+    // Simple-slot resolver. v1.3.13 (#23): previously this did a bare
     // HidReportBuilder.Parse(bytes) with no axisMap and no layout
     // semantics, so GetSimpleSticks/GetSimpleTriggers saw only the raw
     // HID-usage-code heuristic. For Sony-convention controllers (Z/Rz =
@@ -363,7 +363,7 @@ public sealed class HMProfile
     // DualShock 4 Bluetooth profiles emitted right-stick and trigger
     // axes swapped as a result.
     //
-    // Fix: resolve through Inner.GetOrBuildReportBuilder() — the exact
+    // Fix: resolve through Inner.GetOrBuildReportBuilder(): the exact
     // builder the encoder consumes. It runs the heuristic, then applies
     // the profile's axisMap overrides, then ApplyLayoutSemantics. The
     // discovery surface (Profile.Sticks/Triggers) and the encode path

@@ -1,4 +1,4 @@
-// Unified input-source counter — listens on every common Windows input API
+﻿// Unified input-source counter: listens on every common Windows input API
 // simultaneously and logs every button transition. Answers the question:
 // "which N surfaces fire per one discrete keypress?"
 //
@@ -119,7 +119,7 @@ internal static class Probe
 
         var window = new Window
         {
-            Title = "Unified Input Source Counter — keep focused, press UP once",
+            Title = "Unified Input Source Counter: keep focused, press UP once",
             Width = 1000, Height = 640, Topmost = true,
             Content = panel,
             WindowStartupLocation = WindowStartupLocation.CenterScreen,

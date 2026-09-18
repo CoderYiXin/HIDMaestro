@@ -316,7 +316,7 @@ function Start-HMTestProcess {
     # so the 4 KB pipe buffer fills within seconds across Sleep-Scaled
     # windows. The next Console.WriteLine in the test app then blocks
     # indefinitely on the full pipe, manifesting as a 3-minute gap between
-    # quit and cleanup — long enough to trigger Stop-HMTestProcess KILL
+    # quit and cleanup: long enough to trigger Stop-HMTestProcess KILL
     # before kernel teardown can run, leaving SwD-companion devnodes that
     # the kernel re-enumerates from the surviving registry hive (the
     # S07/S19/S20 leftover pattern, 2026-05-01).
@@ -427,7 +427,7 @@ function Stop-HMTestProcess {
         [System.Diagnostics.Process]$Proc,
         # Retained for ABI compatibility with callers that still pass it;
         # ignored. We wait indefinitely for the test process to exit on
-        # its own — no KILL budget, no scaled timeout. If the test process
+        # its own: no KILL budget, no scaled timeout. If the test process
         # genuinely hangs, that's a real bug to surface in the diag log,
         # not paper over with a deadline.
         [int]$GracefulMs = 0
@@ -1285,36 +1285,36 @@ function Scenario-Sony-Data-Driven-Coverage {
 
 # S32: v1.3.5 features + regression check. Combined probe covering every
 # fix from the issue #21 PadForge spot-check rounds:
-#   Round 3 — USB Sony profiles can't trigger the codec hot path
+#   Round 3: USB Sony profiles can't trigger the codec hot path
 #             (regression: per-frame VendorBlobCodec.EncodeInput at 250 Hz
 #             on USB DS5 caused stick-jerkiness on ds.daidr.me)
-#   Round 5 — DS5 sensor byte positions (gyro/accel/sensorTimestamp shift +1
+#   Round 5: DS5 sensor byte positions (gyro/accel/sensorTimestamp shift +1
 #             because Linux dualsense_input_report struct excludes report_id)
-#   Round 6 — DS4 BT armOn IDs are DS4-canonical (0x02/0xA3, not DS5's
+#   Round 6: DS4 BT armOn IDs are DS4-canonical (0x02/0xA3, not DS5's
 #             0x05/0x09/0x20)
-#   Round 7 — DS4 BT versionNumber=0 so Chromium's
+#   Round 7: DS4 BT versionNumber=0 so Chromium's
 #             Dualshock4Controller::BusTypeFromVersionNumber routes vibration
 #             through Report 0x11 BT instead of Report 0x05 USB
-#   Round 8 — DS5 Edge USB activeProfile=0x80 via inputDefaults overlay,
+#   Round 8: DS5 Edge USB activeProfile=0x80 via inputDefaults overlay,
 #             BT Edge same constant declared as a uint8 codec field with
 #             initial=128 ordered before the CRC32 entry so it participates
 #             in the checksum
-#   Round 8b — SDK plumbing: ControllerProfile.InputDefaults +
+#   Round 8b: SDK plumbing: ControllerProfile.InputDefaults +
 #              InputBytePatch list, applied in BOTH SubmitState's legacy
 #              branch AND SubmitRawReport (PadForge's USB path calls both
 #              and the raw bytes would otherwise clobber the overlay)
-#   Round 8c — Edge USB inputDefaults extended to bytes 50/51/52 = 0 to
+#   Round 8c: Edge USB inputDefaults extended to bytes 50/51/52 = 0 to
 #              override PadForge's SonyReportPackers Timer 2 counter at
 #              data[48..51] (was leaking the counter's middle bytes into
 #              triggerLevel and triggering isStickModuleLost ~94% of frames)
-#   Feature 1 — touchpad-finger / int16-le / uint32-le / bitfield /
+#   Feature 1: touchpad-finger / int16-le / uint32-le / bitfield /
 #               uint8-battery codec types + sensor/touchpad/battery byte
 #               positions in DS5 USB+BT
-#   Feature 2 — audio block declared in all 9 Sony extendedOutputReport
+#   Feature 2: audio block declared in all 9 Sony extendedOutputReport
 #               specs (DS5: headphoneVolume/speakerVolume/micVolume/
 #               audioControlFlags; DS4: stereo headphoneVolumeLeft/Right
 #               + micVolume/speakerVolume)
-#   Feature 3 — DS5 BT btTag uint8-rolling stride 16 (cycles 0x00..0xF0
+#   Feature 3: DS5 BT btTag uint8-rolling stride 16 (cycles 0x00..0xF0
 #               then wraps; per-controller HMController.EncodeOutput
 #               threads the auto-advancing counter)
 function Scenario-V135-Features-Check {
@@ -1373,7 +1373,7 @@ function Scenario-Sidewinder-Ffb-Check {
                  -Message 'SideWinder PID FFB end-to-end regressed (see probe stdout)'
 }
 
-# S36: arbitrary-axis addressing — HMAxis enum / ExtraAxes / AvailableAxes /
+# S36: arbitrary-axis addressing: HMAxis enum / ExtraAxes / AvailableAxes /
 # AddAxis (v1.3.8). Pre-v1.3.8 HMGamepadState exposed only 4 sticks + 2 triggers,
 # so flight-stick throttle sliders, separate brake/throttle/clutch pedals, HOTAS
 # rudder pedals were unreachable from consumers even when the descriptor declared

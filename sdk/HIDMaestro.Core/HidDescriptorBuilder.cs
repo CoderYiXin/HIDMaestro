@@ -1,15 +1,15 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace HIDMaestro;
 
 /// <summary>
 /// Fluent builder for constructing valid HID report descriptors from semantic
-/// building blocks. The user never touches hex — they describe what they want
+/// building blocks. The user never touches hex: they describe what they want
 /// (sticks, buttons, hat, triggers) and the builder emits the correct HID
 /// descriptor bytes.
 ///
-/// <para>Example — a 5-button gamepad with two sticks and a hat:</para>
+/// <para>Example: a 5-button gamepad with two sticks and a hat:</para>
 /// <code>
 /// byte[] desc = new HidDescriptorBuilder()
 ///     .Gamepad()
@@ -29,7 +29,7 @@ public sealed class HidDescriptorBuilder
     private bool _collectionOpen;
     private int _totalInputBits;
     // The application TLC Usage byte (0x04 = Joystick, 0x05 = Gamepad).
-    // 0 means no TLC opened yet via Joystick()/Gamepad() — caller assembled
+    // 0 means no TLC opened yet via Joystick()/Gamepad(): caller assembled
     // the descriptor entirely with AddRaw and we can't introspect intent.
     private byte _tlcUsage;
     // Position immediately after the `A1 01` Collection (Application) bytes.
@@ -50,7 +50,7 @@ public sealed class HidDescriptorBuilder
     // 0x36 (Slider), 0x37 (Dial). Wine's enum_objects packs Slider AND Dial
     // both into rglSlider[0..1] via a shared counter, so they cleanly serve
     // as the 4th paired-stick fallback. joy.cpl labels them "Slider"/"Dial"
-    // rather than "X Rotation 2"/etc — cosmetic mismatch with PadForge's
+    // rather than "X Rotation 2"/etc: cosmetic mismatch with PadForge's
     // "Stick 4 X/Y" UI labels; the bytes flow regardless.
     private bool _xUsed, _yUsed, _zUsed, _rxUsed, _ryUsed, _rzUsed,
                  _sliderUsed, _dialUsed;
@@ -74,7 +74,7 @@ public sealed class HidDescriptorBuilder
 
     // Allocate the next available trigger-slot Usage. "Left" name biases the
     // first call to Rx (0x33); "Right" or any other name biases to Ry (0x34)
-    // — preserves v1.3.14's (LT=Rx, RT=Ry) layout for the 2-stick + 2-trigger
+    //: preserves v1.3.14's (LT=Rx, RT=Ry) layout for the 2-stick + 2-trigger
     // common case. When sticks 3+ consume Rx/Ry as a paired stick, triggers
     // cascade onto Slider then Dial in encounter order. Returns null when all
     // four single-axis trigger slots are exhausted.
@@ -121,15 +121,15 @@ public sealed class HidDescriptorBuilder
     /// priority order; each call claims the next free pair so repeated
     /// AddStick calls never emit duplicate Usage codes.</summary>
     /// <param name="name">"Left" biases the first call to X/Y (0x30/0x31).
-    /// "Right" or any other name biases the first call to Z/Rz (0x32/0x35) —
+    /// "Right" or any other name biases the first call to Z/Rz (0x32/0x35)
     /// the Logitech RumblePad / vJoy stick-2 convention preserved from v1.3.14
     /// (issue #27): pre-Xbox-360-era DirectInput games bind the right stick
     /// from DIJOYSTATE.lZ/lRz. Subsequent calls fall through the pool: stick 3
     /// → Rx/Ry, stick 4 → Slider/Dial. joy.cpl labels stick 4 as
     /// "Slider"/"Dial" (HUT 1.5 Section 4.3 Miscellaneous Controls), not
-    /// "X Rotation 2"/etc — cosmetic mismatch with consumer-side "Stick 4 X/Y"
+    /// "X Rotation 2"/etc: cosmetic mismatch with consumer-side "Stick 4 X/Y"
     /// UI labels; the wire bytes are addressable by HMAxis.Slider/Dial. After
-    /// 4 sticks the pool throws — DirectInput's DIJOYSTATE2 has exactly 8
+    /// 4 sticks the pool throws: DirectInput's DIJOYSTATE2 has exactly 8
     /// position-aspect slots (lX..lRz + rglSlider[2]) and no axis Usage
     /// remains. Real Xbox 360 / DualSense profiles override the pool via
     /// their JSON layout + axisMap fields.</param>
@@ -178,9 +178,9 @@ public sealed class HidDescriptorBuilder
     /// 2-trigger gamepad layout this still yields the v1.3.14 Rx/Ry trigger
     /// pair; when 3 sticks already consumed Rx/Ry as a paired stick, triggers
     /// fall to Slider/Dial. After 4 sticks the trigger pool is empty and this
-    /// throws — consumers should reduce stick count or combine triggers.</summary>
+    /// throws: consumers should reduce stick count or combine triggers.</summary>
     /// <param name="name">"Left" biases the first call to Rx (0x33),
-    /// "Right" to Ry (0x34) — preserves v1.3.14's (LT=Rx, RT=Ry) layout for
+    /// "Right" to Ry (0x34): preserves v1.3.14's (LT=Rx, RT=Ry) layout for
     /// the 2-stick + 2-trigger common case. Beyond the Rx/Ry slots (when
     /// sticks 3+ consume them, or when both Rx/Ry are already trigger-
     /// claimed) the allocator cascades onto Slider then Dial regardless of
@@ -236,7 +236,7 @@ public sealed class HidDescriptorBuilder
     /// <para><c>bits</c> must be a multiple of 8 to keep the report byte-aligned
     /// (see <see cref="AddTrigger"/> for the same Chromium phantom-axis
     /// constraint). <c>logicalMin</c>/<c>logicalMax</c> default to
-    /// [0..(2^bits)-1] — the typical convention for unidirectional axes.
+    /// [0..(2^bits)-1]: the typical convention for unidirectional axes.
     /// Pass an explicit signed range for centered axes (e.g. wheels:
     /// [-32768..32767] at 16 bits).</para></summary>
     public HidDescriptorBuilder AddAxis(HMAxis axis, int bits = 8,
@@ -259,7 +259,7 @@ public sealed class HidDescriptorBuilder
         _bytes.AddRange(new byte[] { 0x05, page });        // Usage Page
         _bytes.AddRange(new byte[] { 0x09, usage });       // Usage
 
-        // Logical Minimum — pick the smallest item form that fits.
+        // Logical Minimum: pick the smallest item form that fits.
         if (min >= sbyte.MinValue && min <= sbyte.MaxValue)
             _bytes.AddRange(new byte[] { 0x15, (byte)min });
         else if (min >= short.MinValue && min <= short.MaxValue)
@@ -268,7 +268,7 @@ public sealed class HidDescriptorBuilder
             _bytes.AddRange(new byte[] { 0x17, (byte)min, (byte)(min >> 8),
                                                  (byte)(min >> 16), (byte)(min >> 24) });
 
-        // Logical Maximum — same item-size selection rule.
+        // Logical Maximum: same item-size selection rule.
         if (max >= 0 && max <= sbyte.MaxValue)
             _bytes.AddRange(new byte[] { 0x25, (byte)max });
         else if (max >= 0 && max <= ushort.MaxValue)
@@ -288,11 +288,11 @@ public sealed class HidDescriptorBuilder
     /// <summary>Add N buttons (Button Page, Usage 1..N, 1 bit each). The
     /// declared Report Count is rounded UP to the next multiple of 8 (with
     /// extra Usage Max bump so the round-up bits are "dummy" buttons the
-    /// caller never sets). No Const pad item follows — Chromium's RawInput
+    /// caller never sets). No Const pad item follows: Chromium's RawInput
     /// parser surfaces any trailing Const Input item as a phantom axis,
     /// even on the Vendor-Defined Usage Page. Absorbing the pad as
     /// additional buttons keeps the report byte-aligned without introducing
-    /// a Const item. See issue #6 — the round-up approach eliminates the
+    /// a Const item. See issue #6: the round-up approach eliminates the
     /// "AXIS 9 = 1227133568" phantom seen in Chrome's Gamepad API.</summary>
     public HidDescriptorBuilder AddButtons(int count)
     {
@@ -328,11 +328,11 @@ public sealed class HidDescriptorBuilder
     /// LogicalMax=positions-1 (the HID standard convention), so values
     /// 0..positions-1 encode the positions and any value outside that
     /// range (via the Null-state flag) is null. No following Const pad
-    /// item — see AddButtons docs for rationale.
+    /// item: see AddButtons docs for rationale.
     ///
-    /// <para>v1.3.4 — added <paramref name="positions"/> parameter.
+    /// <para>v1.3.4: added <paramref name="positions"/> parameter.
     /// Pre-v1.3.4 this declared LogicalMax=8 for an 8-position hat
-    /// (one too many — wasted one wire value); v1.3.4 corrects to
+    /// (one too many: wasted one wire value); v1.3.4 corrects to
     /// LogicalMax=7 to match Xbox 360 / standard HID convention. The
     /// on-wire byte values for the eight HMHat directions are
     /// unchanged (encoder writes 0..7 either way), but consumers that
@@ -382,7 +382,7 @@ public sealed class HidDescriptorBuilder
         return this;
     }
 
-    /// <summary>Add raw descriptor bytes. For advanced use — appends arbitrary
+    /// <summary>Add raw descriptor bytes. For advanced use: appends arbitrary
     /// HID descriptor items without validation.</summary>
     public HidDescriptorBuilder AddRaw(byte[] bytes)
     {
@@ -392,12 +392,12 @@ public sealed class HidDescriptorBuilder
 
     /// <summary>Append the HID PID 1.0 force-feedback report block to the
     /// descriptor. Emits the full Output-report set the DirectInput PID
-    /// mapper (<c>pid.dll</c>) drives — Set Effect (0x11), Set Envelope
+    /// mapper (<c>pid.dll</c>) drives: Set Effect (0x11), Set Envelope
     /// (0x12), Set Condition (0x13), Set Periodic (0x14), Set Constant
     /// Force (0x15), Set Ramp Force (0x16), Custom Force Data (0x17),
     /// Download Force Sample (0x18), Effect Operation (0x1A), Block Free
     /// (0x1B), Device Control (0x1C), Device Gain (0x1D), Set Custom
-    /// Force (0x1E) — plus the single Feature report Create New Effect
+    /// Force (0x1E): plus the single Feature report Create New Effect
     /// (0x11) used for effect allocation.
     ///
     /// <para><b>Joystick TLC required.</b> Call <see cref="Joystick"/>
@@ -407,7 +407,7 @@ public sealed class HidDescriptorBuilder
     /// wheels, Thrustmaster wheels) and AVs inside
     /// <c>pid!PID_EffectOperation+0x52</c> when CreateEffect is called
     /// against a Gamepad TLC. The behavior is pid.dll-architectural
-    /// (DirectX 8-era FFB enumeration code, not OS-build-gated) —
+    /// (DirectX 8-era FFB enumeration code, not OS-build-gated)
     /// verified empirically on Windows 11 26100 but has been baked
     /// into pid.dll since FFB enumeration shipped. This method throws
     /// <see cref="InvalidOperationException"/> if called from a
@@ -434,7 +434,7 @@ public sealed class HidDescriptorBuilder
     /// (issue #16). The crash reproduces with the exact bytes vJoy
     /// ships. The block emitted here drops 0x12, 0x13, 0x14 from the
     /// Feature side and serves them via shared-section
-    /// <c>HidD_GetFeature</c> handling in the driver instead — the
+    /// <c>HidD_GetFeature</c> handling in the driver instead: the
     /// only configuration that does not AV.</para>
     ///
     /// <para><b>Don't add additional Feature reports inside the same
@@ -442,7 +442,7 @@ public sealed class HidDescriptorBuilder
     /// reachable via <c>HidD_GetFeature</c>, expose it through
     /// <see cref="HMController.PublishPidPool"/>,
     /// <see cref="HMController.PublishPidBlockLoad"/>, or
-    /// <see cref="HMController.PublishPidState"/> — those are served
+    /// <see cref="HMController.PublishPidState"/>: those are served
     /// by the driver from a separate shared-section path that doesn't
     /// touch pid.dll's preparsed-data parser.</para>
     /// </summary>
@@ -702,7 +702,7 @@ public sealed class HidDescriptorBuilder
         d.AddRange(new byte[] { 0x55, 0x00, 0x66, 0x00, 0x00 });
         d.Add(0xC0);
 
-        // Create New Effect (Feature, ID 0x11) — the ONLY Feature report
+        // Create New Effect (Feature, ID 0x11): the ONLY Feature report
         // declared inside the TLC. See AddPidFfbBlock summary for why
         // adding 0x12 / 0x13 / 0x14 Feature reports here AVs pid.dll.
         d.AddRange(new byte[] { 0x09, 0xAB, 0xA1, 0x02, 0x85, 0x11 });

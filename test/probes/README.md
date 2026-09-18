@@ -1,4 +1,4 @@
-# HIDMaestro Probes
+﻿# HIDMaestro Probes
 
 Diagnostic tools built during the [WGI Silent Sink investigation (2026-04)](../../docs/investigations/wgi-silent-sink-2026-04/finding.md). Each probe answers a specific "does API X reach device Y with value Z" question for gamepad input/haptic dispatch on Windows. Preserved here as a reusable toolkit for future HIDMaestro profile work or Windows build regressions.
 
@@ -8,20 +8,20 @@ All probes target HIDMaestro virtuals by default but work against physical Xbox-
 
 | Question | Canonical probe |
 |---|---|
-| "What is the XUSB wire format on this driver path?" | [xinput_byte_probe](xinput_byte_probe/) — deterministic `XInputSetState` with known wLeft/wRight pairs |
+| "What is the XUSB wire format on this driver path?" | [xinput_byte_probe](xinput_byte_probe/): deterministic `XInputSetState` with known wLeft/wRight pairs |
 | "Does WGI `put_Vibration` reach this device?" | [wgi_rgc_ffb_probe](wgi_rgc_ffb_probe/) (C#, easier output) |
-| "Does this API require a focused-foreground caller?" | [focus_test](focus_test/) — Win32 window + `GetForegroundWindow == own_hwnd` gating |
-| "Which of WGI `put_Vibration` vs `XInputSetState` reaches this device?" | [wgi_vs_xinput_ab](wgi_vs_xinput_ab/) — user-paced A/B test with two time windows |
-| "What does GameInput enumerate for this device's rumble support?" | [gi_enumall](gi_enumall/) — `IGameInput::RegisterDeviceCallback` with motor bitmap printed |
-| "Can I override cross-process gamepad dispatch via a user-mode custom factory?" | [wgi_custom_factory](wgi_custom_factory/) — `GameControllerFactoryManager::RegisterCustomFactoryForHardwareId`/`ForXusbType` |
+| "Does this API require a focused-foreground caller?" | [focus_test](focus_test/): Win32 window + `GetForegroundWindow == own_hwnd` gating |
+| "Which of WGI `put_Vibration` vs `XInputSetState` reaches this device?" | [wgi_vs_xinput_ab](wgi_vs_xinput_ab/): user-paced A/B test with two time windows |
+| "What does GameInput enumerate for this device's rumble support?" | [gi_enumall](gi_enumall/): `IGameInput::RegisterDeviceCallback` with motor bitmap printed |
+| "Can I override cross-process gamepad dispatch via a user-mode custom factory?" | [wgi_custom_factory](wgi_custom_factory/): `GameControllerFactoryManager::RegisterCustomFactoryForHardwareId`/`ForXusbType` |
 | "Do our HID output report handlers (IOCTL_HID_WRITE_REPORT etc.) fire for this profile?" | [hid_output_report_probe](hid_output_report_probe/) |
 | "What source-file strings are embedded in a Windows runtime DLL?" | [wgi_dll_string_scan.ps1](wgi_dll_string_scan.ps1) |
-| "Does this profile's VID/PID surface in DirectInput's enumeration?" | [dinput_enum](dinput_enum/) — `IDirectInput8::EnumDevices(DI8DEVCLASS_GAMECTRL)` with WPF host (DInput needs window focus) |
-| "Does WGI see this device at all (presence-only, no vibration fired)?" | [wgi_read_probe](wgi_read_probe/) — native C++ `Windows.Gaming.Input.Gamepad` enumeration sampler |
+| "Does this profile's VID/PID surface in DirectInput's enumeration?" | [dinput_enum](dinput_enum/): `IDirectInput8::EnumDevices(DI8DEVCLASS_GAMECTRL)` with WPF host (DInput needs window focus) |
+| "Does WGI see this device at all (presence-only, no vibration fired)?" | [wgi_read_probe](wgi_read_probe/): native C++ `Windows.Gaming.Input.Gamepad` enumeration sampler |
 
 ## Near-duplicates and when to use which
 
-- **[native_wgi_vibration](native_wgi_vibration/)** (C++ WRL) and **[wgi_rgc_ffb_probe](wgi_rgc_ffb_probe/)** (C# WinRT projection) both call `Gamepad.Vibration = ...` on every enumerated gamepad. **Use the C# one by default** — easier output, faster to iterate. The C++ one exists specifically to rule out CLR/WinRT-projection as a variable in the dispatch path; keep for methodology-debt reasons.
+- **[native_wgi_vibration](native_wgi_vibration/)** (C++ WRL) and **[wgi_rgc_ffb_probe](wgi_rgc_ffb_probe/)** (C# WinRT projection) both call `Gamepad.Vibration = ...` on every enumerated gamepad. **Use the C# one by default**: easier output, faster to iterate. The C++ one exists specifically to rule out CLR/WinRT-projection as a variable in the dispatch path; keep for methodology-debt reasons.
 - **[focus_test](focus_test/)** answers "is the API focus-gated?" **[wgi_vs_xinput_ab](wgi_vs_xinput_ab/)** answers "which API reaches this device?" Different questions, both canonical, both kept.
 
 ## Build prerequisites
@@ -38,6 +38,6 @@ All probes target HIDMaestro virtuals by default but work against physical Xbox-
 
 ## See also
 
-- [finding.md](../../docs/investigations/wgi-silent-sink-2026-04/finding.md) — the formal WGI-silent-sink finding these probes produced
-- [investigation-history.md](../../docs/investigations/wgi-silent-sink-2026-04/investigation-history.md) — brief-by-brief history including which probe answered which hypothesis
-- [evidence/](../../docs/investigations/wgi-silent-sink-2026-04/evidence/) — sample probe outputs preserved as investigation receipts
+- [finding.md](../../docs/investigations/wgi-silent-sink-2026-04/finding.md): the formal WGI-silent-sink finding these probes produced
+- [investigation-history.md](../../docs/investigations/wgi-silent-sink-2026-04/investigation-history.md): brief-by-brief history including which probe answered which hypothesis
+- [evidence/](../../docs/investigations/wgi-silent-sink-2026-04/evidence/): sample probe outputs preserved as investigation receipts

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Collections.Concurrent;
@@ -39,7 +39,7 @@ internal static class P
         Console.WriteLine();
         Console.WriteLine("Press ENTER when physical controllers are connected and ready, then I'll");
         Console.WriteLine("unplug and replug the physical 360 to trigger fresh GamepadAdded events.");
-        Console.WriteLine("(Actually — user will replug manually while this waits.)");
+        Console.WriteLine("(Actually: user will replug manually while this waits.)");
         Console.Write("Press ENTER when ready to test replug-to-event flow...");
         Console.ReadLine();
 
@@ -92,7 +92,7 @@ internal static class P
 
     static void OnGamepadAdded(object? sender, Gamepad e)
     {
-        Console.WriteLine($"[event] GamepadAdded fired — captured instance.");
+        Console.WriteLine($"[event] GamepadAdded fired: captured instance.");
         g_eventPads.Add(e);
     }
     static void OnGamepadRemoved(object? sender, Gamepad e)

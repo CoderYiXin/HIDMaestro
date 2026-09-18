@@ -1,4 +1,4 @@
-{
+﻿{
   "id": "gamecube-adapter",
   "name": "GameCube Controller Adapter (Wii U / Switch)",
   "vendor": "Nintendo",
@@ -10,5 +10,5 @@
   "connection": "usb",
   "descriptor": null,
   "inputReportSize": null,
-  "notes": "Does NOT use HID — uses raw USB bulk endpoints. Most software (Dolphin, etc.) accesses it via libusb. Supports 4 GC controllers. Would need a different approach to impersonate."
+  "notes": "Does NOT use HID: uses raw USB bulk endpoints. Most software (Dolphin, etc.) accesses it via libusb. Supports 4 GC controllers. Would need a different approach to impersonate."
 }

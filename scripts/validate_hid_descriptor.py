@@ -1,4 +1,4 @@
-"""HID Report Descriptor validator.
+﻿"""HID Report Descriptor validator.
 
 Parses a descriptor hex string per USB HID 1.11 section 6.2.2 and verifies:
   - Even length; all hex chars valid
@@ -244,7 +244,7 @@ def main():
         print()
         for pid, r in sorted(results.items()):
             if r.get('status') == 'no_source':
-                print(f'  [SKIP] {pid:50s} — {r["reason"][:80]}')
+                print(f'  [SKIP] {pid:50s}: {r["reason"][:80]}')
                 continue
             tag = '[PASS]' if r['ok'] else '[FAIL]'
             print(f'  {tag} {pid:50s} {r["summary"]}  conf={r.get("confidence","?"):6s}')
@@ -255,7 +255,7 @@ def main():
         sys.exit(0 if fail_count == 0 else 1)
     elif args.json:
         r = validate_profile_file(args.json)
-        print(f'{"PASS" if r.ok else "FAIL"}: {args.json} — {r.summary}')
+        print(f'{"PASS" if r.ok else "FAIL"}: {args.json}: {r.summary}')
         for e in r.errors:
             print(f'  ERROR: {e}')
         for w in r.warnings:

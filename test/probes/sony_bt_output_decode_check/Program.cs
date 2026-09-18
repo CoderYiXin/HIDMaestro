@@ -1,4 +1,4 @@
-// v1.3.5 — Sony BT extended-output round-trip regression probe.
+﻿// v1.3.5: Sony BT extended-output round-trip regression probe.
 //
 // Validates the bidirectional vendor-blob output codec on a Sony BT
 // profile. Pure unit-test: no driver install, no virtual device.
@@ -32,7 +32,7 @@ internal sealed class Program
 
         if (!profile.HasExtendedOutput)
         {
-            Console.WriteLine("  FAIL: profile.HasExtendedOutput is false — extendedOutputReport not loaded from JSON");
+            Console.WriteLine("  FAIL: profile.HasExtendedOutput is false: extendedOutputReport not loaded from JSON");
             return 1;
         }
 
@@ -71,7 +71,7 @@ internal sealed class Program
         {
             (0,  0x31, "Report ID"),
             (1,  0x02, "btTag"),
-            (2,  0x10, "btFlag (constant 0x10 — Sony BT framing)"),
+            (2,  0x10, "btFlag (constant 0x10: Sony BT framing)"),
             (3,  0xFF, "validFlag0"),
             (4,  0xF7, "validFlag1"),
             (5,  200,  "rightMotor"),

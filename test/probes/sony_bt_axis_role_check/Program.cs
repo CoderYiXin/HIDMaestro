@@ -1,4 +1,4 @@
-// v1.3.13 — Sony Bluetooth axis-role regression probe (#23).
+﻿// v1.3.13: Sony Bluetooth axis-role regression probe (#23).
 //
 // Guards the bug where DualSense / DualShock 4 Bluetooth profiles emitted
 // right-stick and trigger axes swapped. Root cause: HMProfile's simple-slot
@@ -10,23 +10,23 @@
 //
 // Two-part check, pure in-process (no driver, no virtual device):
 //
-//   Part A — contract assertion. For every Sony BT profile, assert
+//   Part A: contract assertion. For every Sony BT profile, assert
 //     Profile.Sticks / Profile.Triggers resolve to the Sony-convention
 //     axis keys: right stick = Z/Rz, triggers = Rx/Ry. This is the exact
 //     contract that regressed; pre-fix it returned Rx/Ry for the right
 //     stick and Z/Rz for the triggers.
 //
-//   Part B — encode round-trip. Fill state.Axes by the INDEPENDENT Sony
+//   Part B: encode round-trip. Fill state.Axes by the INDEPENDENT Sony
 //     convention (Axes[Z] = right-stick-X, Axes[Rx] = left-trigger, ...)
 //     the way a consumer that read the profile's axisMap from JSON does.
 //     Resolve the six simple-slot floats exactly as HMController.SubmitState
 //     does (GetAxis(Profile.Sticks[i]...)), run VendorBlobCodec.EncodeInput,
 //     and assert the right-stick and trigger bytes of the emitted Report
-//     0x31 carry the right-stick and trigger values — not each other's.
+//     0x31 carry the right-stick and trigger values: not each other's.
 //     Distinct per-axis test values make any swap visible.
 //
 //     IMPORTANT: Part B must NOT fill state.Axes via
-//     HMGamepadStateHelpers.StandardAxes — that resolves through the same
+//     HMGamepadStateHelpers.StandardAxes: that resolves through the same
 //     Profile.Sticks the probe is testing, so a swap would cancel out and
 //     hide pre-fix. The Sony-convention fill is hard-coded here.
 //
@@ -78,7 +78,7 @@ internal sealed class Program
         return s_failures == 0 ? 0 : 1;
     }
 
-    // Part A — Profile.Sticks / Profile.Triggers must report the Sony
+    // Part A: Profile.Sticks / Profile.Triggers must report the Sony
     // convention: left stick X/Y, right stick Z/Rz, triggers Rx/Ry.
     static void CheckContract(HMProfile p)
     {
@@ -101,7 +101,7 @@ internal sealed class Program
               triggers[1].Axis == HMAxis.Ry, $"got {triggers[1].Axis}");
     }
 
-    // Part B — full encode round trip. Distinct per-axis test values.
+    // Part B: full encode round trip. Distinct per-axis test values.
     const float kLeftStickX  = 0.60f;   // -> byte 153
     const float kLeftStickY  = 0.35f;   // -> byte 89
     const float kRightStickX = 0.75f;   // -> byte 191
@@ -113,7 +113,7 @@ internal sealed class Program
     {
         if (!p.HasExtendedInput || p.ExtendedReport == null)
         {
-            Console.WriteLine($"  [skip] {p.Id}: no extendedReport — encode round-trip not applicable");
+            Console.WriteLine($"  [skip] {p.Id}: no extendedReport: encode round-trip not applicable");
             return;
         }
 
@@ -154,7 +154,7 @@ internal sealed class Program
             mlx, mly, mrx, mry, mlt, mrt, buffer, encState);
 
         // Resolve each axis field's byte offset from the profile's
-        // extendedReport spec — DualSense Report 0x31 and DS4 Report 0x11
+        // extendedReport spec: DualSense Report 0x31 and DS4 Report 0x11
         // put the six axes at different offsets, so don't hardcode.
         int OffsetOf(string semantic)
         {

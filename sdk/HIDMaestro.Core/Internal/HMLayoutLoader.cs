@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -97,7 +97,7 @@ public static class HMLayoutJsonOptions
 }
 
 /// <summary>Reads <see cref="HMAxis"/> from JSON as the canonical
-/// short string ("X", "Y", "Slider", "Throttle", etc. — matches the enum
+/// short string ("X", "Y", "Slider", "Throttle", etc. Matches the enum
 /// PascalCase names). The HMAxis enum is page-and-usage encoded under the
 /// hood, but in JSON we want human-readable names.</summary>
 internal sealed class HMAxisJsonConverter : JsonConverter<HMAxis>

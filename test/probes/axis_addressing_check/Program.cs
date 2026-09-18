@@ -1,17 +1,17 @@
-// Arbitrary-axis addressing — HMAxis / ExtraAxes / AvailableAxes / AddAxis (v1.3.8).
+﻿// Arbitrary-axis addressing: HMAxis / ExtraAxes / AvailableAxes / AddAxis (v1.3.8).
 //
 // Pre-v1.3.8 the SDK exposed exactly 4 sticks + 2 triggers via HMGamepadState.
-// Anything beyond that — flight-stick throttle slider, separate brake/throttle/
-// clutch pedals on a wheel, HOTAS rudder pedal — couldn't be addressed by the
+// Anything beyond that: flight-stick throttle slider, separate brake/throttle/
+// clutch pedals on a wheel, HOTAS rudder pedal: couldn't be addressed by the
 // consumer, even when the descriptor declared the field. v1.3.8 adds:
 //
-//   • HMAxis enum               — every recognized HID Generic Desktop / Simulation
+//   • HMAxis enum: every recognized HID Generic Desktop / Simulation
 //                                 Controls analog usage as a stable (page<<8|usage)
 //                                 value
-//   • HMGamepadState.ExtraAxes  — opt-in Dictionary<HMAxis,float> drive-by-usage
-//   • HMProfile.AvailableAxes   — discovery: list every HMAxis the descriptor
+//   • HMGamepadState.ExtraAxes: opt-in Dictionary<HMAxis,float> drive-by-usage
+//   • HMProfile.AvailableAxes: discovery: list every HMAxis the descriptor
 //                                 declares
-//   • HidDescriptorBuilder.AddAxis — emit any HMAxis-keyed analog input field
+//   • HidDescriptorBuilder.AddAxis: emit any HMAxis-keyed analog input field
 //
 // This probe asserts:
 //
@@ -26,7 +26,7 @@
 //      values reach the right wire bytes.
 //
 //   4. Override semantics: when an axis is reachable via BOTH a semantic slot
-//      (state.LeftTrigger) AND ExtraAxes, the explicit ExtraAxes write wins —
+//      (state.LeftTrigger) AND ExtraAxes, the explicit ExtraAxes write wins
 //      "explicit beats implicit" is the documented contract.
 //
 // No driver install, no virtual device. Exit 0 on PASS, 1 on FAIL.

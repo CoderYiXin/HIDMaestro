@@ -1,4 +1,4 @@
-// PadForge discussion #130 (HIDMaestro GIP-side regression). Post-v1.3.17
+﻿// PadForge discussion #130 (HIDMaestro GIP-side regression). Post-v1.3.17
 // initial ship the HID descriptor synthesis for combined Z + Vx/Vy was
 // fixed, but the SubmitState path that packs the 14-byte GIP buffer
 // (the XInput/WGI/RawInput input source via the XUSB companion) still
@@ -11,7 +11,7 @@
 // tabs; Chrome gamepad tester) saw both triggers frozen at 0.50.
 //
 // HIDMaestroTest didn't surface the bug because StandardAxes writes
-// axes[triggers[0].Axis] = leftTrigger directly — i.e. axes[Vx] = LT
+// axes[triggers[0].Axis] = leftTrigger directly: i.e. axes[Vx] = LT
 // when layout.triggers[0].Axis == Vx. PadForge writes canonical Z/Rz.
 //
 // Probe drives HMController.ResolveTrigger across both consumer patterns
@@ -70,7 +70,7 @@ internal sealed class Program
 
             // PadForge pattern: canonical Z/Rz writes, possibly with Vx/Vy
             // filled to centered 0.5 from PadForge's "every axis defaults
-            // to 0.5" initialiser (the original symptom — non-DirectInput
+            // to 0.5" initialiser (the original symptom: non-DirectInput
             // APIs showed 0.5 stuck because the resolver picked up Vx=0.5).
             {
                 var axes = new Dictionary<HMAxis, float>
@@ -89,7 +89,7 @@ internal sealed class Program
             }
 
             // HIDMaestroTest pattern: StandardAxes writes axes[triggers[N].Axis]
-            // only — canonical Z/Rz not set. Resolver must fall back to the
+            // only: canonical Z/Rz not set. Resolver must fall back to the
             // layout field's HMAxis key (Vx/Vy for the unified profiles).
             {
                 var axes = new Dictionary<HMAxis, float>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 
 namespace HIDMaestro.Internal;
@@ -11,10 +11,10 @@ namespace HIDMaestro.Internal;
 /// <para>Set <c>HIDMAESTRO_TIMEOUT_SCALE</c> in the process environment to
 /// scale every (a)-class deadlock backstop and (b)-class progress-bounded
 /// wait. Pacing ticks (the 8 ms output poll, the 100 ms registry-poll
-/// inside Wait* loops) are NOT scaled — they're cadence, not deadlines.</para>
+/// inside Wait* loops) are NOT scaled: they're cadence, not deadlines.</para>
 ///
 /// <para><b>Defaults:</b> <c>1.0</c> (every existing fast-machine deployment
-/// behaves identically). Range is clamped to <c>[0.1, 100.0]</c> — values
+/// behaves identically). Range is clamped to <c>[0.1, 100.0]</c>: values
 /// outside that range fall back to <c>1.0</c> with a single
 /// <c>OutputDebugString</c> warning. <c>HIDMAESTRO_TIMEOUT_SCALE</c> is read
 /// once at type init and cached; changing the env var mid-process does not
@@ -22,14 +22,14 @@ namespace HIDMaestro.Internal;
 ///
 /// <para><b>Recommendations by hardware tier:</b></para>
 /// <list type="bullet">
-/// <item><description><c>1.0</c> — modern desktop / laptop (Skylake+, NVMe). Default.</description></item>
-/// <item><description><c>2.0</c>–<c>3.0</c> — older desktops, mechanical-disk laptops, hosts under heavy concurrent load.</description></item>
-/// <item><description><c>5.0</c>–<c>10.0</c> — Atom-class CPUs, eMMC storage, 4 GB RAM tablets/embedded boxes.</description></item>
+/// <item><description><c>1.0</c>: modern desktop / laptop (Skylake+, NVMe). Default.</description></item>
+/// <item><description><c>2.0</c>–<c>3.0</c>: older desktops, mechanical-disk laptops, hosts under heavy concurrent load.</description></item>
+/// <item><description><c>5.0</c>–<c>10.0</c>: Atom-class CPUs, eMMC storage, 4 GB RAM tablets/embedded boxes.</description></item>
 /// </list>
 ///
 /// <para>Tradeoff: bumping the scale makes real failures take longer to
 /// surface (5 minutes of "stuck" instead of 30 seconds before the throw).
-/// That's the right trade — when timeouts fire today, the cause is rarely
+/// That's the right trade: when timeouts fire today, the cause is rarely
 /// "the OS is genuinely hosed and we should fail fast"; it's usually
 /// "this got slower than expected on this machine." Slow diagnostics are
 /// fine; spurious crashes on user hardware aren't.</para>

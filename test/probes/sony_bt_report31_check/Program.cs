@@ -1,13 +1,13 @@
-// v1.3.5 — Sony BT Report 0x31 emit + CRC32 regression probe (#20).
+﻿// v1.3.5: Sony BT Report 0x31 emit + CRC32 regression probe (#20).
 //
 // Verifies the data-driven vendor-blob input encoder produces a correct
 // 78-byte Report 0x31 with valid layout and CRC32 footer. Pure encoder
-// unit test: no driver install, no virtual device — instantiates the
+// unit test: no driver install, no virtual device: instantiates the
 // VendorBlobCodec directly against the dualsense-bt-full profile's
 // extendedReport spec.
 //
 // Coverage:
-//   - Report ID byte == 0x31 (NOT 0x01 — the bug fix for #20)
+//   - Report ID byte == 0x31 (NOT 0x01: the bug fix for #20)
 //   - Stick X/Y/RX/RY at bytes 2..5 with center 128
 //   - Triggers at bytes 6..7
 //   - Hat octant in low nibble of byte 9 (NorthEast = 1)
@@ -35,7 +35,7 @@ internal sealed class Program
 
         if (!profile.HasExtendedInput)
         {
-            Console.WriteLine("  FAIL: profile.HasExtendedInput is false — extendedReport not loaded from JSON");
+            Console.WriteLine("  FAIL: profile.HasExtendedInput is false: extendedReport not loaded from JSON");
             return 1;
         }
 
@@ -61,7 +61,7 @@ internal sealed class Program
         }
 
         // Test 2: encoder produces correct stick / trigger / button bytes.
-        // v1.3.9 — sticks/triggers passed explicitly to EncodeInput in
+        // v1.3.9: sticks/triggers passed explicitly to EncodeInput in
         // uniform [0..1] convention.
         var state = new HMGamepadState
         {
@@ -193,7 +193,7 @@ internal sealed class Program
     }
 
     // Stand-alone CRC32 reference. Same algorithm as VendorBlobCodec uses
-    // internally — duplicated here so the probe is independent of the SDK's
+    // internally: duplicated here so the probe is independent of the SDK's
     // implementation choice (avoids tautological "encoder validates itself"
     // testing).
     private static readonly uint[] s_crc32Table = BuildCrc32Table();

@@ -1,4 +1,4 @@
-"""Browser-order diagnostic for HIDMaestro virtual controllers.
+﻿"""Browser-order diagnostic for HIDMaestro virtual controllers.
 
 Assumes the test app is running 'emulate <profile> ... <profile>' with the
 console set to 'mark' mode (each controller holds button N where N is its
@@ -19,7 +19,7 @@ or
 
 The mapping detection is unambiguous because button indices in the Chromium
 Standard Gamepad mapping are integers (buttons[0]=A, [1]=B, [2]=X, [3]=Y, [4]=LB,
-[5]=RB) — no float tolerance needed.
+[5]=RB): no float tolerance needed.
 
 Run via:  sudo --inline python scripts/check_browser_order.py [--browser-cap 4]
 """
@@ -71,7 +71,7 @@ def hid_order() -> list[int]:
 def main() -> int:
     # First: HID enumeration order. If THIS is scrambled, it's our bug
     # (PnP / ContainerID / driver-load order). If HID is in creation order
-    # but the browser is scrambled, it's Chromium reordering — not us.
+    # but the browser is scrambled, it's Chromium reordering: not us.
     hid_idx = hid_order()
     if hid_idx:
         print(f"HID enumeration order: {hid_idx}")
@@ -90,7 +90,7 @@ def main() -> int:
 
     snap = result.get("snapshot", [])
     if not snap:
-        print("ERROR: no gamepads in browser snapshot — is the test app running with 'mark'?")
+        print("ERROR: no gamepads in browser snapshot: is the test app running with 'mark'?")
         return 2
 
     print(f"Browser: {result.get('browser', '?')}, {len(snap)} pad(s) visible")

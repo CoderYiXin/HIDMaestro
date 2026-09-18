@@ -1,8 +1,8 @@
-@echo off
+﻿@echo off
 setlocal enabledelayedexpansion
 
 :: ================================================================
-:: HIDMaestro Build Script (UMDF2 — compiles as DLL)
+:: HIDMaestro Build Script (UMDF2: compiles as DLL)
 :: ================================================================
 
 set "DRIVER_NAME=HIDMaestro"
@@ -103,9 +103,9 @@ if errorlevel 1 (
 )
 
 :: ----------------------------------------------------------------------
-:: hmswd.exe — SWD-enumerated device creation helper. Invoked by the SDK
+:: hmswd.exe: SWD-enumerated device creation helper. Invoked by the SDK
 :: to create devices with real ContainerIds (bypasses a .NET P/Invoke
-:: incompatibility with cfgmgr32!SwDeviceCreate on Win11 26200 — see
+:: incompatibility with cfgmgr32!SwDeviceCreate on Win11 26200: see
 :: driver\hmswd\hmswd.c header for context).
 :: ----------------------------------------------------------------------
 if exist "%DRIVER_DIR%\hmswd\hmswd.c" (
@@ -140,7 +140,7 @@ if exist "%DRIVER_DIR%\hmswd\hmswd.c" (
 
 :: Stamp each INF's DriverVer with today's date + HHmm build number.
 :: The committed source INF keeps a stable 1.x.y.0 for review; the build/
-:: INF gets a fresh stamp so every package is uniquely versioned — pnputil
+:: INF gets a fresh stamp so every package is uniquely versioned: pnputil
 :: will never see "same version, skip install" against a prior DriverStore
 :: directory (which was the failure mode that hid every driver bugfix in
 :: this session behind a stale already-installed binary).

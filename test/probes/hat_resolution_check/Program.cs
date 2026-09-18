@@ -1,4 +1,4 @@
-// v1.3.4 — fine-grained hat encoder regression probe.
+﻿// v1.3.4: fine-grained hat encoder regression probe.
 //
 // Verifies the four HMGamepadState hat-input shapes encode the expected
 // descriptor bits across hat resolutions (8 octant, 16 HOTAS, 360 pro):
@@ -10,7 +10,7 @@
 // The encoder priority chain is HatDegrees > HatHundredths > HatRaw > Hat.
 // First non-null wins; remaining inputs ignored for that frame.
 //
-// Pure encoder unit-test: no driver install, no virtual device — builds
+// Pure encoder unit-test: no driver install, no virtual device: builds
 // profiles via HidDescriptorBuilder + HMProfileBuilder, parses descriptor
 // via HidReportBuilder, calls BuildReport directly, asserts the hat byte.
 //
@@ -63,7 +63,7 @@ internal sealed class Program
             // evenly distributed across the descriptor range:
             //   idx = (octant - 1) * range / 8
             // For range=8 this is the legacy 0..7 mapping. For range=16:
-            // NE → idx 2, E → idx 4, SE → idx 6, etc. — the eight
+            // NE → idx 2, E → idx 4, SE → idx 6, etc. The eight
             // octants land at the matching 45° positions.
             for (int octant = 1; octant <= 8; octant++)
             {
@@ -76,7 +76,7 @@ internal sealed class Program
                 total++;
             }
 
-            // ── HMHat.None — null state ─────────────────────────────
+            // ── HMHat.None: null state ─────────────────────────────
             int noneExpected = (logMin == 0) ? logMax + 1 : 0;
             // Special case: 16-bit hats (positions > 255) the wrap target may
             // exceed the descriptor's bit field. The encoder writes the value
@@ -93,7 +93,7 @@ internal sealed class Program
             if (!nonePass) failures++;
             total++;
 
-            // ── HatRaw — bit-exact descriptor value with clamping ───
+            // ── HatRaw: bit-exact descriptor value with clamping ───
             // Pick a midrange position, the LogicalMin, the LogicalMax,
             // and one over (must clamp to LogicalMax).
             int[] rawCandidates = { logMin, logMin + range / 2, logMax, logMax + 5 };
@@ -108,7 +108,7 @@ internal sealed class Program
                 total++;
             }
 
-            // ── HatDegrees — continuous angle snapping ──────────────
+            // ── HatDegrees: continuous angle snapping ──────────────
             // For each octant boundary: 0°=N, 90°=E, 180°=S, 270°=W.
             // Encoder snaps to nearest of `range` positions equally
             // spaced around 360°.
@@ -134,7 +134,7 @@ internal sealed class Program
                 total++;
             }
 
-            // ── HatHundredths — integer hundredths-of-degree, truncating ─
+            // ── HatHundredths: integer hundredths-of-degree, truncating ─
             // Encoder uses (long)v * range / 36000 (truncation, matches vJoy).
             (int hund, int idxExpected)[] hundCases = {
                 (0,        0),

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -9,7 +9,7 @@ namespace HIDMaestro.Internal;
 
 /// <summary>
 /// Creates SWD-enumerated (software-device) PnP devices via the <c>hmswd.exe</c>
-/// helper process — which wraps <c>cfgmgr32!SwDeviceCreate</c> in native C.
+/// helper process: which wraps <c>cfgmgr32!SwDeviceCreate</c> in native C.
 ///
 /// <para><b>Why an out-of-process helper:</b> on .NET 10 / Win11 26200,
 /// direct P/Invoke to <c>SwDeviceCreate</c> returns
@@ -33,7 +33,7 @@ namespace HIDMaestro.Internal;
 ///
 /// <para><b>Device identity:</b> none of the properties consumers care about
 /// are affected by the ROOT→SWD switch. HardwareIds, CompatibleIds, VID/PID,
-/// HID descriptor, interface GUIDs all pass through unchanged — only the
+/// HID descriptor, interface GUIDs all pass through unchanged: only the
 /// InstanceId path prefix becomes <c>SWD\HIDMAESTRO\&lt;instance&gt;</c>.</para>
 ///
 /// <para><b>Lifetime:</b> <c>hmswd.exe</c> sets
@@ -46,7 +46,7 @@ internal static class SwdDeviceFactory
     /// <summary>Default enumerator name. Callers can override per device
     /// kind. For Xbox Series BT gamepad companions we pass
     /// <c>"VID_xxxx&amp;PID_yyyy&amp;IG_00"</c> so the HID child PDO also
-    /// inherits that name in its instance ID — matching the pattern that
+    /// inherits that name in its instance ID: matching the pattern that
     /// xinputhid's INF selects against.</summary>
     public const string DefaultEnumeratorName = "HIDMAESTRO";
 
@@ -88,7 +88,7 @@ internal static class SwdDeviceFactory
     /// <summary>Create an SWD-enumerated device with the given properties
     /// via <c>hmswd.exe</c>. Blocks until the helper returns (device fully
     /// enumerated) and returns its InstanceId.</summary>
-    /// <param name="instanceIdSuffix">Appended after the enumerator —
+    /// <param name="instanceIdSuffix">Appended after the enumerator
     /// becomes the full instance-id's last segment. Must be unique
     /// across live devices under this enumerator.</param>
     /// <param name="hardwareIds">List of hardware IDs. INFs match by
@@ -138,7 +138,7 @@ internal static class SwdDeviceFactory
         // driver bind. Under heavy PnP load (e.g., directly after
         // pnputil /add-driver /install from DriverBuilder.FullDeploy), the
         // bind callback can serialize and time out. Retry up to 3 times with
-        // a short backoff if the first attempt times out — most retries
+        // a short backoff if the first attempt times out: most retries
         // succeed because the parent process's PnP activity has quiesced.
         Result RunOnce(int perAttemptTimeoutMs)
         {
@@ -207,13 +207,13 @@ internal static class SwdDeviceFactory
         {
             if (backoffMs[attempt] > 0)
             {
-                // Let PnP quiesce — a prior pnputil /add-driver /install can
+                // Let PnP quiesce: a prior pnputil /add-driver /install can
                 // still be draining bind notifications when we get here.
                 Thread.Sleep(TimeoutScale.Apply(backoffMs[attempt]));
             }
             last = RunOnce(perAttempt);
             if (last.Success) return last;
-            // Retry ONLY for WAIT_TIMEOUT (0x80070102) — other failures are
+            // Retry ONLY for WAIT_TIMEOUT (0x80070102): other failures are
             // structural (bad args, ACL, no matching INF) and won't fix with a retry.
             if (unchecked((uint)last.HResult) != 0x80070102u) break;
         }
@@ -226,7 +226,7 @@ internal static class SwdDeviceFactory
     /// existing device, returns a fresh handle), then
     /// <c>SwDeviceSetLifetime(Handle)</c> + <c>SwDeviceClose</c>. This is
     /// the only way to defeat <c>SwDeviceLifetimeParentPresent</c>'s
-    /// auto-resurrect — DIF_REMOVE and pnputil /force both succeed
+    /// auto-resurrect: DIF_REMOVE and pnputil /force both succeed
     /// cosmetically but the kernel re-enumerates the SwDevice via the
     /// lifetime contract because parent (HTREE\ROOT\0) is always present.
     ///
@@ -260,19 +260,19 @@ internal static class SwdDeviceFactory
 
         using (var regKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regPath))
         {
-            if (regKey == null) return 0; // already gone — nothing to remove
+            if (regKey == null) return 0; // already gone: nothing to remove
             hwIds       = regKey.GetValue("HardwareID") as string[]    ?? Array.Empty<string>();
             compatIds   = regKey.GetValue("CompatibleIDs") as string[] ?? Array.Empty<string>();
             string?  cidStr      = regKey.GetValue("ContainerID") as string;
             string?  rawDesc     = regKey.GetValue("DeviceDesc")  as string;
-            // DeviceDesc format may be "@path,%key%;default" — strip to default.
+            // DeviceDesc format may be "@path,%key%;default": strip to default.
             description = rawDesc ?? "HIDMaestro Device";
             int semicolon = description.LastIndexOf(';');
             if (semicolon >= 0) description = description.Substring(semicolon + 1);
             if (string.IsNullOrWhiteSpace(description)) description = "HIDMaestro Device";
 
             if (cidStr == null || !Guid.TryParse(cidStr, out containerId))
-                return unchecked((int)0x80004005); // E_FAIL — no container, can't reconnect
+                return unchecked((int)0x80004005); // E_FAIL: no container, can't reconnect
         }
 
         string? helperPath = EnsureHelperExtracted();
@@ -300,12 +300,12 @@ internal static class SwdDeviceFactory
         {
             using var proc = Process.Start(psi);
             if (proc == null) return unchecked((int)0x80070005);
-            // T36 — 8 s base (was 30 s). Per github.com/hifihedgehog/HIDMaestro
+            // T36: 8 s base (was 30 s). Per github.com/hifihedgehog/HIDMaestro
             // issue #18 (d3xMachina) consumers can hit the full 30 s timeout
             // here when hmswd.exe gets stuck on SwDeviceClose because a stale
             // WUDFHost still holds the device open. The OUTER DeviceManager.
             // RemoveDevice path falls back to pnputil/devcon when this returns
-            // WAIT_TIMEOUT — those fallbacks do the actual cleanup work, so
+            // WAIT_TIMEOUT: those fallbacks do the actual cleanup work, so
             // hanging here is wasted time. 8 s is generous for a healthy
             // SwDeviceClose (typically completes in <100 ms) and still gives
             // the kernel time to release on slow hardware (TimeoutScale.Apply
@@ -341,7 +341,7 @@ internal static class SwdDeviceFactory
                 return s_extractedPath;
 
             // Prefer a sibling to the SDK assembly if it's already there
-            // (source builds don't embed + extract — the file is next to
+            // (source builds don't embed + extract: the file is next to
             // HIDMaestro.Core.dll).
             try
             {

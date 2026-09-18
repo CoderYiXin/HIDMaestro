@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -56,7 +56,7 @@ public sealed class ControllerProfile
     [JsonPropertyName("inputReportSize")]
     public int? InputReportSize { get; set; }
 
-    /// <summary>v1.3.5 — HID device version (the <c>bcdDevice</c> field returned
+    /// <summary>v1.3.5: HID device version (the <c>bcdDevice</c> field returned
     /// by <c>HidD_GetAttributes</c>). Defaults to 0x0100 when omitted, which is
     /// what most generic gamepad consumers expect for USB devices. Real Sony
     /// firmware reports 0 over Bluetooth and 0x0100 over USB; Chromium's
@@ -69,13 +69,13 @@ public sealed class ControllerProfile
     [JsonPropertyName("versionNumber")]
     public ushort? VersionNumber { get; set; }
 
-    /// <summary>v1.3.5 — fixed bytes the SDK overlays into the legacy input
+    /// <summary>v1.3.5: fixed bytes the SDK overlays into the legacy input
     /// report after the descriptor-driven encoder fills it. Each entry is
     /// <c>{ "byte": N, "value": V }</c> and writes byte V at on-wire offset N.
     /// Used by Edge profiles to satisfy real-firmware status bytes that
     /// dualsense-tester (and any other parser that knows the Edge layout)
     /// reads to decide whether the device is in normal mode vs profile-edit
-    /// mode — e.g. the activeProfile byte at struct offset 48 must be
+    /// mode: e.g. the activeProfile byte at struct offset 48 must be
     /// non-zero with bits 0-1 clear (real Sony firmware reports 0x80) or
     /// the page treats every frame as "controller in configuration mode."
     /// Applied AFTER <c>BuildReportInto</c> on the legacy path; the codec
@@ -156,31 +156,31 @@ public sealed class ControllerProfile
     [JsonPropertyName("sdlMapping")]
     public string? SdlMapping { get; set; }
 
-    /// <summary>v1.3.9 — structured per-profile physical-design declaration.
+    /// <summary>v1.3.9: structured per-profile physical-design declaration.
     /// Discriminated by <c>kind</c>; concrete shape depends on the kind
     /// (gamepad / joystick / flight_stick / hotas / wheel / pedals / etc.).
     /// When present, <see cref="HIDMaestro.HMProfile.Layout"/> exposes the
     /// typed record and the simple <c>StickCount</c> / <c>TriggerCount</c>
     /// derived views read from this rather than the descriptor heuristic.
-    /// When absent, classic classifier-derived behavior applies — backward
+    /// When absent, classic classifier-derived behavior applies: backward
     /// compatible with v1.3.8 and earlier.</summary>
     [JsonPropertyName("layout")]
     public HMLayout? Layout { get; set; }
 
-    /// <summary>If true, skip main HID device — use XUSB companion only.
+    /// <summary>If true, skip main HID device: use XUSB companion only.
     /// DI reads from XInput (5 axes), browser reads from XInput (separate triggers).
     /// Used for Xbox 360 where real hardware uses xusb22.sys (no HID).</summary>
     [JsonPropertyName("companionOnly")]
     public bool CompanionOnly { get; set; }
 
-    /// <summary>v1.3.5 — optional vendor-blob input report layout. When present,
+    /// <summary>v1.3.5: optional vendor-blob input report layout. When present,
     /// the SDK emits this report ID via VendorBlobCodec instead of the
     /// descriptor's first declared input. Used for protocols where the
     /// descriptor declares an opaque vendor blob (Sony BT 0x31 / 0x11, etc.).</summary>
     [JsonPropertyName("extendedReport")]
     public ExtendedReportSpec? ExtendedReport { get; set; }
 
-    /// <summary>v1.3.5 — optional vendor-blob output report layout. When
+    /// <summary>v1.3.5: optional vendor-blob output report layout. When
     /// present, the SDK decodes incoming output reports of the declared
     /// report ID and surfaces parsed-field events via HMController.OutputDecoded.</summary>
     [JsonPropertyName("extendedOutputReport")]
@@ -295,7 +295,7 @@ public sealed class ControllerProfile
     [JsonIgnore]
     public bool HasDescriptor => !string.IsNullOrEmpty(Descriptor);
 
-    // Lazy-cached parsed descriptor. v1.3.0 — GetDescriptorBytes is called
+    // Lazy-cached parsed descriptor. v1.3.0: GetDescriptorBytes is called
     // multiple times per CreateController (HMController ctor +
     // WriteInstanceConfig + DriverBuilder validation), each time re-running
     // the Replace + Substring + Convert.ToByte parse loop over the hex
@@ -326,14 +326,14 @@ public sealed class ControllerProfile
         return bytes;
     }
 
-    // v1.3.0 T10 — lazy-cached parsed HidReportBuilder. HMController.ctor
+    // v1.3.0 T10: lazy-cached parsed HidReportBuilder. HMController.ctor
     // calls HidReportBuilder.Parse(descriptor, axisMap) on every
     // CreateController, which walks the descriptor byte-by-byte building
     // InputFields + ResolveSemantics + ApplyAxisMap. Same descriptor +
     // same axisMap = identical output, so a per-profile cache eliminates
     // the per-controller parse cost. The builder is configured once
     // (ButtonMap + TriggerButtons set immediately after Parse) and then
-    // only read by SubmitState — safe to share across HMController
+    // only read by SubmitState: safe to share across HMController
     // instances using the same profile.
     [JsonIgnore]
     private HidReportBuilder? _cachedReportBuilder;
@@ -356,7 +356,7 @@ public sealed class ControllerProfile
         var b = HidReportBuilder.Parse(GetDescriptorBytes()!, AxisMap, preferredRid);
         b.ButtonMap = ButtonMap;
         b.TriggerButtons = TriggerButtons;
-        // v1.3.9 — when the profile authors a layout block, its role-tagged
+        // v1.3.9: when the profile authors a layout block, its role-tagged
         // axes deterministically override the classifier's semantic-slot
         // resolution. Validates against the descriptor first; throws
         // HMLayoutValidationException with a structured path on mismatch.
@@ -512,7 +512,7 @@ public sealed class FeatureStubReport
     public string? Comment { get; set; }
 }
 
-/// <summary>v1.3.5 — fixed-byte overlay applied to the legacy input report
+/// <summary>v1.3.5: fixed-byte overlay applied to the legacy input report
 /// after BuildReportInto. See <see cref="ControllerProfile.InputDefaults"/>.</summary>
 public sealed class InputBytePatch
 {
@@ -523,7 +523,7 @@ public sealed class InputBytePatch
     public int Value { get; set; }
 }
 
-/// <summary>v1.3.5 — host-side write trigger that arms extended-report emission.
+/// <summary>v1.3.5: host-side write trigger that arms extended-report emission.
 /// Type "featureWrite" matches an outgoing HID feature SetFeature; "outputWrite"
 /// matches an outgoing HID output report. ReportId is hex.</summary>
 public sealed class ArmTrigger
@@ -539,7 +539,7 @@ public sealed class ArmTrigger
         : Convert.ToByte(ReportId.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? ReportId.Substring(2) : ReportId, 16);
 }
 
-/// <summary>v1.3.5 — single-field descriptor inside an ExtendedReportSpec.
+/// <summary>v1.3.5: single-field descriptor inside an ExtendedReportSpec.
 /// Either <see cref="Byte"/> (single byte position) or <see cref="Bytes"/>
 /// (range like "15-22") locates the field; <see cref="Bits"/> further narrows
 /// to a sub-byte bit range. <see cref="Type"/> selects the codec from the
@@ -576,15 +576,15 @@ public sealed class FieldSpec
     [JsonPropertyName("initial")]
     public int? Initial { get; set; }
 
-    /// <summary>v1.3.5 — increment step for <c>uint8-rolling</c>. Default 1.
+    /// <summary>v1.3.5: increment step for <c>uint8-rolling</c>. Default 1.
     /// Sony BT effect output's <c>btTag</c> uses stride 16 so the byte cycles
-    /// 0x10, 0x20, … 0xF0, 0x00 — real firmware drops packets whose tag
+    /// 0x10, 0x20, … 0xF0, 0x00: real firmware drops packets whose tag
     /// doesn't match that pattern, hence the explicit setting.</summary>
     [JsonPropertyName("stride")]
     public int? Stride { get; set; }
 }
 
-/// <summary>v1.3.5 — CRC32 scope spec for a crc32-le field. The CRC is
+/// <summary>v1.3.5: CRC32 scope spec for a crc32-le field. The CRC is
 /// computed over <see cref="Prefix"/> bytes followed by the report bytes
 /// from offset <see cref="From"/> through <see cref="To"/> inclusive.</summary>
 public sealed class CrcScope
@@ -621,7 +621,7 @@ public sealed class ProfileDatabase
 
         var options = HMLayoutJsonOptions.Default;
 
-        // v1.3.0 — parallel parse mirroring LoadEmbedded. Disk reads are
+        // v1.3.0: parallel parse mirroring LoadEmbedded. Disk reads are
         // serialized at the kernel level on most filesystems, but JSON
         // parse is CPU-bound and benefits from cores. For a directory
         // with hundreds of profiles, this matters more than the embedded
@@ -653,10 +653,10 @@ public sealed class ProfileDatabase
 
     /// <summary>Loads every profile JSON embedded in the HIDMaestro.Core
     /// assembly under the logical-name prefix "HIDMaestro.Profiles.". This
-    /// is the no-disk path used by HMContext.LoadDefaultProfiles() — the
+    /// is the no-disk path used by HMContext.LoadDefaultProfiles(): the
     /// SDK ships with the entire profile catalog baked in so consumers
     /// don't need to ship a sibling profiles/ directory.</summary>
-    // v1.3.0 — process-wide cache. Embedded JSONs are static for the
+    // v1.3.0: process-wide cache. Embedded JSONs are static for the
     // lifetime of the process; reparsing on every HMContext.LoadDefaultProfiles
     // is wasted work. First call populates the cache (parallel parse);
     // subsequent calls return the same instance. Multiple HMContexts share.
@@ -683,7 +683,7 @@ public sealed class ProfileDatabase
 
         // Collect resource names first so we can parse in parallel. The
         // serial JSON parse over 224 profiles is the dominant fresh-launch
-        // cost in HMContext init — Parallel.ForEach across 4–16 cores
+        // cost in HMContext init: Parallel.ForEach across 4–16 cores
         // drops it from 200–500 ms cold to 50–150 ms.
         var names = asm.GetManifestResourceNames()
             .Where(n => n.StartsWith(prefix, StringComparison.Ordinal)
@@ -705,7 +705,7 @@ public sealed class ProfileDatabase
             }
             catch
             {
-                // Silent — embedded resources should always parse, but if a
+                // Silent: embedded resources should always parse, but if a
                 // future profile has bad JSON we don't want to take down
                 // every consumer.
             }

@@ -1,12 +1,12 @@
-# Microsoft-Facing Questions (Drafted, Ready to Send)
+﻿# Microsoft-Facing Questions (Drafted, Ready to Send)
 
-Two open technical questions derived from the WGI Silent Sink investigation (2026-04-18). Each file is a standalone, sendable form of the question — copy-paste into the named channel.
+Two open technical questions derived from the WGI Silent Sink investigation (2026-04-18). Each file is a standalone, sendable form of the question: copy-paste into the named channel.
 
 ## Target channels
 
 | File | Channel | When to send |
 |---|---|---|
-| [driver-dev-feedback.md](driver-dev-feedback.md) | Windows Driver Developer feedback (Feedback Hub → "Developer Platform" category, or via MSDN forums → Windows Hardware Dev Center) | Send after confirming the finding via one round of user testing on a clean Win11 build (not immediately — wait ~1 week to ensure finding survives a Windows Update cycle and isn't fixed incidentally) |
+| [driver-dev-feedback.md](driver-dev-feedback.md) | Windows Driver Developer feedback (Feedback Hub → "Developer Platform" category, or via MSDN forums → Windows Hardware Dev Center) | Send after confirming the finding via one round of user testing on a clean Win11 build (not immediately: wait ~1 week to ensure finding survives a Windows Update cycle and isn't fixed incidentally) |
 | [gdk-team-question.md](gdk-team-question.md) | GDK Discord server (`#developer-support` channel) or Microsoft GDK developer forums | Send same time as driver-dev question; GDK team may route it differently but context is identical |
 
 **Who sends:** HIDMaestro project maintainer. Not automated.

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using Windows.Gaming.Input;
@@ -79,7 +79,7 @@ internal static class P
             }
         }
 
-        // Also probe Gamepad.Vibration — the other WGI haptic API that Chromium
+        // Also probe Gamepad.Vibration: the other WGI haptic API that Chromium
         // could plausibly use instead of RGC-FFB. Cross-check via
         // Gamepad.FromGameController(rgc) so we can explicitly attribute the
         // Gamepad instance back to the RGC we already identified as our virtual

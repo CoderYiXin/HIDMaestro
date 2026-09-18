@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -21,9 +21,9 @@ namespace HIDMaestro.Internal;
 /// layouts, logical ranges, usage pages, sizes) but not byte-for-byte
 /// identical. Filter drivers can mutate the descriptor before it reaches
 /// user mode anyway, and some ordering/padding information is lost
-/// during the HID parser's initial pass. For HIDMaestro's purpose —
+/// during the HID parser's initial pass. For HIDMaestro's purpose
 /// creating a virtual controller that behaves identically to a physical
-/// one — logical equivalence is the correct fidelity bar.</para>
+/// one: logical equivalence is the correct fidelity bar.</para>
 /// </summary>
 internal static class HidDescriptorReconstructor
 {

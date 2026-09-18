@@ -1,4 +1,4 @@
-# Issue #3 Report (draft) — Dual xinputhid virtuals: CPU saturation + state-propagation hang
+﻿# Issue #3 Report (draft): Dual xinputhid virtuals: CPU saturation + state-propagation hang
 
 **Branch:** `v1-dev-investigate-dual-xinputhid-saturation`
 **Date:** 2026-04-19
@@ -14,10 +14,10 @@ Per the issue's own decision rule: *"If none of the tests reproduce, the cause i
 
 Three probes + a runner + a schema change landed on the investigation branch:
 
-- `test/probes/wudfhost_cpu_sampler/sample.ps1` — polls `\Process(WUDFHost*)\% Processor Time` at 1 Hz, normalizes to 1-core = 100%, writes CSV.
-- `test/probes/xinput_latency_meter/` — C# tool that polls `XInputGetState` on specified slots at ~1 kHz for a fixed duration and logs `(elapsed_us, slot, rc, packet, wButtons, sticks, triggers)` to CSV.
-- `c:\tmp\issue3\runner.ps1` (orchestrator, kept out of repo) — launches `HIDMaestroTest emulate` with specified profiles + rate, spawns the CPU sampler and XInput meter in parallel, collects CSV, prints summary.
-- `test/HIDMaestroTest.csproj` — added `--rate-hz N` flag to `emulate` command (default 250 Hz from `Thread.Sleep(4)`). When rate ≥ 500 Hz, the emulator process also calls `winmm.dll!timeBeginPeriod(1)` to raise Windows timer resolution so `Thread.Sleep(1)` actually yields ~1 ms instead of the default 15.6 ms coarsening. Without `timeBeginPeriod`, a nominal `--rate-hz 1000` ran at ~200 Hz, so results had to be verified at a TRUE 1 kHz before the "no repro" verdict was supportable.
+- `test/probes/wudfhost_cpu_sampler/sample.ps1`: polls `\Process(WUDFHost*)\% Processor Time` at 1 Hz, normalizes to 1-core = 100%, writes CSV.
+- `test/probes/xinput_latency_meter/`: C# tool that polls `XInputGetState` on specified slots at ~1 kHz for a fixed duration and logs `(elapsed_us, slot, rc, packet, wButtons, sticks, triggers)` to CSV.
+- `c:\tmp\issue3\runner.ps1` (orchestrator, kept out of repo): launches `HIDMaestroTest emulate` with specified profiles + rate, spawns the CPU sampler and XInput meter in parallel, collects CSV, prints summary.
+- `test/HIDMaestroTest.csproj`: added `--rate-hz N` flag to `emulate` command (default 250 Hz from `Thread.Sleep(4)`). When rate ≥ 500 Hz, the emulator process also calls `winmm.dll!timeBeginPeriod(1)` to raise Windows timer resolution so `Thread.Sleep(1)` actually yields ~1 ms instead of the default 15.6 ms coarsening. Without `timeBeginPeriod`, a nominal `--rate-hz 1000` ran at ~200 Hz, so results had to be verified at a TRUE 1 kHz before the "no repro" verdict was supportable.
 
 ## Evidence matrix
 
@@ -42,13 +42,13 @@ All tests: 60 s duration, CPU normalized to 1-core = 100%. Nominal rate = flag p
 **Interpretation:**
 - Each additional xinputhid virtual adds ~0.25% of one core to WUDFHost at true 1 kHz; each XUSB-companion virtual adds roughly the same.
 - No test reached saturation (100% of one core) or anywhere close. Maximum observed across all tests was 2.50% (T2b).
-- XInput slot 0 `dwPacketNumber` advanced monotonically in every test — no freeze, no state-propagation hang.
+- XInput slot 0 `dwPacketNumber` advanced monotonically in every test: no freeze, no state-propagation hang.
 
 ## Slot allocation note (retraction + correction)
 
 An earlier draft of this report claimed slot 1 was never allocated when two xinputhid virtuals were present. That was a test-harness error. `xinput_latency_meter` was polling slots 0 and 1 only; xinputhid does not guarantee consecutive slot numbers across sibling virtuals and commonly lands 2× xinputhid on slots 0 + 2. `scripts/verify.py --controllers 2` run independently against a live 2× `xbox-series-xs-bt` config shows both slots live with independent packet numbers (slot 0 pkt=15934 at snapshot, slot 2 pkt=17201 at snapshot).
 
-Multi-virtual xinputhid slot allocation works as expected and is a routinely-verified HIDMaestro feature (the 6-mix test battery — 2× Series BT + 2× Xbox 360 Wired + 2× DualSense — passes on master, showing 3 or 4 Xbox-family slots populated depending on timing). The meter has been updated to poll all four slots by default so future investigations don't inherit this error.
+Multi-virtual xinputhid slot allocation works as expected and is a routinely-verified HIDMaestro feature (the 6-mix test battery of 2× Series BT, 2× Xbox 360 Wired and 2× DualSense passes on master, showing 3 or 4 Xbox-family slots populated depending on timing). The meter has been updated to poll all four slots by default so future investigations don't inherit this error.
 
 **What remains potentially relevant for PadForge**: if PadForge's pipeline assumes contiguous slot numbers and targets slot 1 specifically for what it thinks is the second virtual, it will see `DEVICE_NOT_CONNECTED (0x48F)` there while slot 2 has the actual device. Worth checking PadForge's slot-index selection logic against per-slot `XInputGetState` return codes.
 

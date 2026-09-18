@@ -1,15 +1,15 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace HIDMaestro;
 
 /// <summary>
 /// Abstract gamepad state pushed to a virtual controller. The SDK translates
-/// this into the profile's native HID report format using the descriptor —
+/// this into the profile's native HID report format using the descriptor
 /// the consumer doesn't need to know whether the target is a DualSense, an
 /// Xbox 360, an arcade stick, a wheel, or a flight stick.
 ///
-/// <para>v1.3.9 — single unified <see cref="Axes"/> dictionary keyed by
+/// <para>v1.3.9: single unified <see cref="Axes"/> dictionary keyed by
 /// <see cref="HMAxis"/> drives every analog input the descriptor declares.
 /// Discovery: <see cref="HMProfile.Sticks"/> and
 /// <see cref="HMProfile.Triggers"/> enumerate which axes the profile
@@ -34,7 +34,7 @@ public struct HMGamepadState
     /// exposes and what role each serves. Consumers iterate those lists
     /// and write <c>state.Axes[entry.Axis] = value</c>.</para>
     ///
-    /// <para>Null on the hot path is free — the encoder skips the dict
+    /// <para>Null on the hot path is free: the encoder skips the dict
     /// walk entirely when no axis has been written. Allocate once and
     /// reuse.</para></summary>
     public Dictionary<HMAxis, float>? Axes;
@@ -58,7 +58,7 @@ public struct HMGamepadState
     public float? HatDegrees;
 
     /// <summary>Angle in hundredths of a degree, 0..35999. Same effect as
-    /// <see cref="HatDegrees"/> but integer-only — use for vJoy migration paths
+    /// <see cref="HatDegrees"/> but integer-only: use for vJoy migration paths
     /// or to keep float off the hot path. Used when <see cref="HatDegrees"/>
     /// is null; takes priority over <see cref="HatRaw"/> and <see cref="Hat"/>.</summary>
     public int? HatHundredths;
@@ -82,7 +82,7 @@ public struct HMGamepadState
     public ushort TouchpadFinger0Y;
 
     /// <summary>Finger 0 tracking ID (7 bits, 0..127). Increments per new
-    /// touch. Bit 7 (0x80) is the firmware "lifted" flag — encoder OR's
+    /// touch. Bit 7 (0x80) is the firmware "lifted" flag: encoder OR's
     /// it with the active flag automatically when <see cref="TouchpadFinger0Active"/>
     /// is false.</summary>
     public byte TouchpadFinger0Id;

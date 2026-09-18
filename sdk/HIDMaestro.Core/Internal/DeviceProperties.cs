@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32;
@@ -16,7 +16,7 @@ namespace HIDMaestro.Internal;
 /// (which goes through the kernel and beats the INF defaults) rather than
 /// writing the registry directly. The Enum subkeys are also owned by
 /// TrustedInstaller, so direct registry writes from elevated admin shells
-/// fail with PermissionDenied — the kernel-mode property API is the only
+/// fail with PermissionDenied: the kernel-mode property API is the only
 /// reliable path.</para>
 ///
 /// <para><b>Multi-controller filtering:</b> the per-controller variants
@@ -96,11 +96,11 @@ internal static class DeviceProperties
         return true;
     }
 
-    /// <summary>v1.3.0 — coalesced setter that does what
+    /// <summary>v1.3.0: coalesced setter that does what
     /// <see cref="SetBusReportedDeviceDesc"/> + <see cref="SetDeviceFriendlyName"/>
     /// do back-to-back, but resolves the devnode + HID child once instead of
     /// twice. Saves 2 CM_Locate_DevNodeW + 2 CM_Get_Child kernel transitions
-    /// per controller — small but called per-CreateController on the
+    /// per controller: small but called per-CreateController on the
     /// critical path. Returns false if the root devnode wasn't located.</summary>
     public static bool SetAllNamingProperties(string rootInstanceId, string name)
     {
@@ -136,7 +136,7 @@ internal static class DeviceProperties
     /// matches <paramref name="controllerIndex"/>, plus the device's first HID
     /// child. With <paramref name="controllerIndex"/> = -1 (legacy single-
     /// controller behavior) updates ALL HIDMaestro VID_ devices regardless
-    /// of index — used only by paths that don't need filtering.
+    /// of index: used only by paths that don't need filtering.
     ///
     /// <para>Multi-controller setups MUST pass an explicit index, otherwise
     /// naming controller N will clobber controller N-1's name.</para>
@@ -146,7 +146,7 @@ internal static class DeviceProperties
         byte[] strBytes = Encoding.Unicode.GetBytes(name + "\0");
 
         // Sweep BOTH SWD\ (post-slot-1-skip-fix) and ROOT\ (legacy) enumerator
-        // roots — multi-controller setups after the migration have HIDMAESTRO
+        // roots: multi-controller setups after the migration have HIDMAESTRO
         // and gamepad companions under SWD\ while older paths may still sit
         // under ROOT\.
         foreach (var enumRoot in new[] { "SWD", "ROOT" })

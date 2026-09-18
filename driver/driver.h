@@ -1,5 +1,5 @@
-/*
- * HIDMaestro — UMDF2 Virtual HID Minidriver (driver-internal header)
+﻿/*
+ * HIDMaestro: UMDF2 Virtual HID Minidriver (driver-internal header)
  *
  * This is a lower filter driver under MsHidUmdf.sys. The pass-through
  * driver handles HID class registration; we just respond to IOCTLs.
@@ -34,7 +34,7 @@
  * These must match what MsHidUmdf.sys expects.
  */
 /*
- * v1.1.39 — IOCTL_UMDF_HID_* corrected values per WDK
+ * v1.1.39: IOCTL_UMDF_HID_* corrected values per WDK
  * <hidport.h> (10.0.26100/km/hidport.h:196-200):
  *
  *   #define IOCTL_UMDF_HID_SET_FEATURE        HID_CTL_CODE(20)  = 0x000B0053
@@ -45,7 +45,7 @@
  * Pre-1.1.39, this header defined fabricated values (0x210003, 0x210007,
  * 0x21000B, 0x21000F) that DO NOT match what mshidumdf delivers. Every
  * SetFeature/GetFeature/SetOutputReport/GetInputReport handler we
- * shipped since v1.1.35 has compiled but never fired — the case
+ * shipped since v1.1.35 has compiled but never fired: the case
  * statement constants didn't match the framework's IoControlCode, so
  * dispatch fell through to default and returned STATUS_NOT_IMPLEMENTED.
  *
@@ -113,8 +113,8 @@ typedef struct _DEVICE_CONTEXT {
     ULONG   SerialStringBytes;
 
     /* Queues */
-    WDFQUEUE    DefaultQueue;        /* Parallel — HID IOCTLs + our custom IOCTLs */
-    WDFQUEUE    ManualQueue;         /* Manual — pending IOCTL_HID_READ_REPORT */
+    WDFQUEUE    DefaultQueue;        /* Parallel: HID IOCTLs + our custom IOCTLs */
+    WDFQUEUE    ManualQueue;         /* Manual: pending IOCTL_HID_READ_REPORT */
 
     /* Synchronization */
     WDFWAITLOCK InputLock;
@@ -131,7 +131,7 @@ typedef struct _DEVICE_CONTEXT {
      * Otherwise the request is parked in ManualQueue and the worker thread
      * completes it on the next ProcessSharedInput tick. Without this gate,
      * HIDClass hammers READ_REPORT in a tight loop because every call
-     * returns instantly with stale data — the original CPU saturation
+     * returns instantly with stale data: the original CPU saturation
      * culprit. */
     ULONG   LastDeliveredInputSeqNo;
 
@@ -170,7 +170,7 @@ typedef struct _DEVICE_CONTEXT {
     WCHAR   SharedMappingName[64];  /* e.g. L"Global\\HIDMaestroInput0" */
     WCHAR   OutputMappingName[64];  /* e.g. L"Global\\HIDMaestroOutput0" */
 
-    /* Output channel — host→device pass-through (rumble, haptics, FFB, LED).
+    /* Output channel: host→device pass-through (rumble, haptics, FFB, LED).
      * Driver/companion are dumb pass-throughs; the consumer (PadForge or test
      * app) opens this section read-only and decodes by (Source, ReportId). */
     HANDLE  OutputMemHandle;
@@ -261,7 +261,7 @@ typedef struct _HIDMAESTRO_SHARED_INPUT {
     ULONG           DataSize;        /* HID input report data size (excluding Report ID) */
     UCHAR           Data[256];       /* HID input report data (native descriptor format) */
     UCHAR           GipData[14];     /* GIP-format data for XUSB GET_STATE (always 14 bytes) */
-    /* v1.3.5 — vendor-blob mode-switch path. Driver passes
+    /* v1.3.5: vendor-blob mode-switch path. Driver passes
      * ExtendedReportData verbatim when ExtendedReportSize > 0. */
     ULONG           ExtendedReportSize;
     UCHAR           ExtendedReportData[80];
@@ -276,29 +276,29 @@ typedef struct _HIDMAESTRO_SHARED_INPUT {
  * Source enum tells the consumer which API the game used:
  *   0 = HID output report  (HidD_SetOutputReport, dinput8 PID, HIDAPI write)
  *   1 = HID feature report (HidD_SetFeature)
- *   2 = XInput rumble      (XInputSetState — companion-side)
+ *   2 = XInput rumble      (XInputSetState: companion-side)
  *
  * For Source=HID*, ReportId is the HID Report ID byte (0 if none).
  * For Source=XInputRumble, ReportId is reserved (0); Data is the 5-byte
  *   XINPUT_VIBRATION-style payload from the IOCTL_XUSB_SET_STATE input buffer.
  *
  * Consumer is expected to interpret bytes per (profile, Source, ReportId).
- * The driver does NOT classify rumble vs haptic vs adaptive trigger — that
+ * The driver does NOT classify rumble vs haptic vs adaptive trigger: that
  * distinction is semantic and lives in the consumer. */
 #define HIDMAESTRO_OUTPUT_SOURCE_HID_OUTPUT       0
 #define HIDMAESTRO_OUTPUT_SOURCE_HID_FEATURE      1
 #define HIDMAESTRO_OUTPUT_SOURCE_XINPUT           2
-/* v1.3.5 — feature READ (Get_Feature). Notifies the SDK that the host
+/* v1.3.5: feature READ (Get_Feature). Notifies the SDK that the host
  * issued IOCTL_HID_GET_FEATURE for this report ID. Used by the
  * extendedReport.armOn watcher to flip vendor-blob emission on Sony BT. */
 #define HIDMAESTRO_OUTPUT_SOURCE_HID_FEATURE_READ 3
 
-/* Output channel — RING BUFFER as of v1.1.40.
+/* Output channel: RING BUFFER as of v1.1.40.
  *
  * Pre-1.1.40 was a single slot, latest-write-wins. That coalesced
  * pid.dll's tight three-packet PID FFB write bursts (Set Effect,
  * Set Constant Force / Set Periodic, Effect Operation Start) within
- * 1-3 ms vs the SDK's 8 ms poll interval — middle packets dropped,
+ * 1-3 ms vs the SDK's 8 ms poll interval: middle packets dropped,
  * magnitude never reached the consumer. See issue #16.
  *
  * Now: 64-slot ring with monotonic seqlock per slot. Writer (this
@@ -313,7 +313,7 @@ typedef struct _HIDMAESTRO_SHARED_INPUT {
  * (SDK poll thread) ring; OutputLock serializes producer races.
  * Reader uses per-slot SeqNo for torn-write detection within a slot.
  * If reader falls behind by more than N writes, the oldest packets
- * get overwritten — that's a real lossy edge case, but with N=64
+ * get overwritten: that's a real lossy edge case, but with N=64
  * and a 1-3 ms burst pattern it would take a 512 ms reader stall
  * to start losing packets. */
 #define HIDMAESTRO_OUTPUT_RING_SLOTS     64u
@@ -331,7 +331,7 @@ typedef struct _HIDMAESTRO_OUTPUT_SLOT {
 typedef struct _HIDMAESTRO_SHARED_OUTPUT {
     /* Monotonically-increasing total writes by the driver. The slot at
      * index ((Head - 1) % HIDMAESTRO_OUTPUT_RING_SLOTS) holds the most
-     * recent write. SeqNo=0 is reserved for "never written" — first
+     * recent write. SeqNo=0 is reserved for "never written": first
      * write is SeqNo=1. */
     volatile ULONG  Head;
 
@@ -353,7 +353,7 @@ typedef struct _HIDMAESTRO_SHARED_OUTPUT {
  * PidEnabled gate: zero-initialized when the SDK creates the section.
  * First call to HMController.PublishPidPool flips it to 1, atomic with
  * the Pool fields write under the same seqlock cycle. Driver checks
- * PidEnabled before reading any other field — when 0, returns
+ * PidEnabled before reading any other field: when 0, returns
  * STATUS_NO_SUCH_DEVICE for Pool (matches vJoy's "FFB not enabled"
  * convention) and STATUS_NOT_SUPPORTED for Block Load / State.
  *
@@ -361,7 +361,7 @@ typedef struct _HIDMAESTRO_SHARED_OUTPUT {
  * fields straight into the IOCTL output buffer with minimal packing. */
 #pragma pack(push, 1)
 typedef struct _HIDMAESTRO_SHARED_PID_STATE {
-    volatile ULONG  SeqNo;           /* Incremented each write — seqlock */
+    volatile ULONG  SeqNo;           /* Incremented each write: seqlock */
     UCHAR           PidEnabled;      /* 0 until first PublishPidPool */
     UCHAR           _pad0[3];
 
@@ -380,7 +380,7 @@ typedef struct _HIDMAESTRO_SHARED_PID_STATE {
     UCHAR           State_Flags;
     UCHAR           _pad1[2];
 
-    /* v1.1.37 — driver-side EBI free-list. Bit N (0..31) set ⇒ EBI N+1
+    /* v1.1.37: driver-side EBI free-list. Bit N (0..31) set ⇒ EBI N+1
      * is allocated. Driver atomically allocates next free EBI on
      * SetFeature(0x11 Create New Effect) inside the IOCTL handler so
      * dinput8's follow-up GetFeature(0x12) reads consistent state.
@@ -395,11 +395,11 @@ typedef struct _HIDMAESTRO_SHARED_PID_STATE {
      * atomically with SeqNo increment after a successful allocation. */
     volatile ULONG  EbiAllocBitmap;
 
-    /* v1.1.37 — driver tracks EBI count for fast pool-exhaustion check.
+    /* v1.1.37: driver tracks EBI count for fast pool-exhaustion check.
      * Updated atomically alongside EbiAllocBitmap. */
     volatile ULONG  EbiAllocatedCount;
 
-    /* v1.3.7 — descriptor-driven PID Report ID overrides. SDK populates
+    /* v1.3.7: descriptor-driven PID Report ID overrides. SDK populates
      * these by walking the profile's HID descriptor at controller-create
      * time (see PidReportIdExtractor) so the driver can serve PID
      * Pool/State/BlockLoad and dispatch SetFeature handlers for vendor
@@ -413,7 +413,7 @@ typedef struct _HIDMAESTRO_SHARED_PID_STATE {
      * non-canonical RID hit STATUS_NOT_SUPPORTED, breaking FFB
      * enumeration on the SideWinder virtual.
      *
-     * Zero means "use canonical default" — every existing profile built
+     * Zero means "use canonical default": every existing profile built
      * via HidDescriptorBuilder.AddPidFfbBlock keeps the original 0x11/
      * 0x12/0x13/0x14/0x1B/0x1C IDs and unchanged behavior. */
     UCHAR PoolReportId;
@@ -430,14 +430,14 @@ typedef struct _HIDMAESTRO_SHARED_PID_STATE {
  * Profiles may use different IDs; the driver falls back to STATUS_NOT_SUPPORTED
  * for unknown IDs, preserving today's behavior. */
 #define HIDMAESTRO_PID_CREATE_NEW_EFFECT_REPORT_ID  0x11
-/* PID Block Free Report — 0x1B (NOT 0x1F as v1.1.37 had).
+/* PID Block Free Report: 0x1B (NOT 0x1F as v1.1.37 had).
  * vJoy emits BLKFRREP+0x10*TLID = 0x0B+0x10 = 0x1B for TLID=1
  * (vJoy-Brunner/driver/sys/hidReportDescSingle.h:558). PadForge's
  * transcribed descriptor uses the same ID at HMaestroFfbDescriptor.cs:220.
  * The v1.1.37 0x1F constant was a guess and FreeEbi was dead code on
  * the hot path. */
 #define HIDMAESTRO_PID_BLOCK_FREE_REPORT_ID         0x1B
-/* PID Device Control Report — 0x1C. vJoy handles CTRL_DEVRST=4 by
+/* PID Device Control Report: 0x1C. vJoy handles CTRL_DEVRST=4 by
  * resetting the entire PID state (vJoy-Brunner/driver/sys/hid.c:2849).
  * dinput8's IDirectInputDevice8::SendForceFeedbackCommand(DISFFC_RESET)
  * lands here. */

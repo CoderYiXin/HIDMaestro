@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,13 +14,13 @@ namespace HIDMaestro.Internal;
 /// of pnputil output that was vulnerable to two failure modes:
 ///
 /// <list type="bullet">
-/// <item>Loose substring matching — any line containing "hidmaestro" was
+/// <item>Loose substring matching: any line containing "hidmaestro" was
 /// treated as part of one of our packages. A stale or partial entry from a
 /// half-failed cleanup would cause <c>IsHidMaestroDriverInstalled</c> to
 /// return true even when the real package was gone, which made
 /// <c>FullDeploy</c> skip its install and the next test run silently use
 /// the OLD binary.</item>
-/// <item>Silent delete failures — <c>/delete-driver</c> can fail with
+/// <item>Silent delete failures: <c>/delete-driver</c> can fail with
 /// "in use" if any device is still bound. The previous code didn't check
 /// the exit code, so a stale entry would persist forever.</item>
 /// </list>
@@ -37,7 +37,7 @@ internal static class PnputilHelper
     /// INFs we EXPECT to be installed. IsHidMaestroDriverInstalled
     /// requires all of these to be present.
     /// Must match the set actually installed by DriverBuilder.InstallDrivers()
-    /// — keep in sync or FullDeploy will refire per-controller and fail when
+    ///: keep in sync or FullDeploy will refire per-controller and fail when
     /// the first controller holds the package.</summary>
     public static readonly string[] HidMaestroInfNames = new[]
     {
@@ -76,7 +76,7 @@ internal static class PnputilHelper
         };
         using var p = Process.Start(psi)!;
         // Drain streams concurrently: ReadToEnd blocks until EOF, which only
-        // happens at process exit — so a synchronous read here would hang past
+        // happens at process exit: so a synchronous read here would hang past
         // timeoutMs when pnputil itself hangs. Async read + WaitForExit gives
         // us a real timeout we can act on.
         var stdoutTask = p.StandardOutput.ReadToEndAsync();
@@ -99,7 +99,7 @@ internal static class PnputilHelper
     /// (The previous plain-text parser matched English-literal field labels
     /// like "Published Name" and silently returned empty on non-English
     /// Windows installs, which broke <see cref="IsHidMaestroDriverInstalled"/>
-    /// — see issue #17.)</summary>
+    ///: see issue #17.)</summary>
     public static List<DriverRecord> EnumerateDrivers()
     {
         var (_, output) = Run("/enum-drivers /format xml");
@@ -139,12 +139,12 @@ internal static class PnputilHelper
             .ToList();
     }
 
-    // v1.3.0 — per-process positive cache. Once we've confirmed the driver
+    // v1.3.0: per-process positive cache. Once we've confirmed the driver
     // is installed in this process (or successfully installed it), every
     // subsequent IsDriverInstalled / IsHidMaestroDriverInstalled call within
     // this process can skip the pnputil /enum-drivers /format xml call
     // (which, on machines with hundreds of drivers, takes 200–500 ms even
-    // on a fast box). The negative case is NOT cached — if the driver isn't
+    // on a fast box). The negative case is NOT cached: if the driver isn't
     // installed yet, we want fresh state on every check until it is.
     private static volatile bool s_installedConfirmed;
     internal static void InvalidateInstalledCache() => s_installedConfirmed = false;
@@ -157,7 +157,7 @@ internal static class PnputilHelper
     {
         if (s_installedConfirmed) return true;
 
-        // T37 — cheap filesystem-level fast path. The DriverStore\FileRepository
+        // T37: cheap filesystem-level fast path. The DriverStore\FileRepository
         // directory layout is stable across every supported Windows version;
         // checking for hidmaestro.inf_* and hidmaestro_xusb.inf_* dirs is the
         // same signal pnputil /enum-drivers would surface, but in ~5 ms vs
@@ -205,7 +205,7 @@ internal static class PnputilHelper
     ///
     /// Uses <c>/uninstall /force</c>: <c>/uninstall</c> tells pnputil to
     /// uninstall the driver from any devices still bound (including stale
-    /// PnP bindings that don't show up in <c>/enum-devices</c> — the "device
+    /// PnP bindings that don't show up in <c>/enum-devices</c>: the "device
     /// is presently installed using the specified INF" failure mode), and
     /// <c>/force</c> covers the remaining cases where a device is actively
     /// started. Plain <c>/force</c> alone was not sufficient on stale
@@ -220,7 +220,7 @@ internal static class PnputilHelper
                 return true;
 
             error = output.Trim();
-            // Driver-in-use is racy with device removal — give the PnP stack a
+            // Driver-in-use is racy with device removal: give the PnP stack a
             // moment to release before retrying. Doesn't matter if the wait is
             // wasted; this only runs during cleanup.
             if (output.Contains("in use", StringComparison.OrdinalIgnoreCase) ||
@@ -230,7 +230,7 @@ internal static class PnputilHelper
                 Thread.Sleep(TimeoutScale.Apply(500));
                 continue;
             }
-            // Some other failure (corrupt INF, missing perm, …) — don't retry.
+            // Some other failure (corrupt INF, missing perm, …): don't retry.
             return false;
         }
         return false;

@@ -1,10 +1,10 @@
-# joy.cpl / DirectInput OEM-name override
+﻿# joy.cpl / DirectInput OEM-name override
 
 `HMOemNameOverride` replaces the label that `joy.cpl` and DirectInput consumers show for a given USB VID:PID. Use it when you want a HIDMaestro virtual (or any device sharing that VID:PID) to display a specific name in joy.cpl and DirectInput, overriding any Windows-shipped pre-populated label for that VID:PID.
 
 ## Why the override exists
 
-The label is sourced from **three** registry locations, not one, and Windows pre-populates at least one of them for common clone PIDs. Writing just one path isn't enough — the preload in a higher-priority path wins.
+The label is sourced from **three** registry locations, not one, and Windows pre-populates at least one of them for common clone PIDs. Writing just one path isn't enough: the preload in a higher-priority path wins.
 
 ```
 (1) HKLM\SYSTEM\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectInput\VID_####&PID_####\OEM\"OEM Name"
@@ -46,7 +46,7 @@ public static class HMOemNameOverride
 Every `Set` is a two-phase write:
 
 1. Capture the existing values of all three target paths into `HKLM\SOFTWARE\HIDMaestroOemOverrides\VID_####&PID_####` with:
-   - `OriginalOemName` / `OriginalKeyExisted` (target 1 — DirectInput)
+   - `OriginalOemName` / `OriginalKeyExisted` (target 1: DirectInput)
    - `OriginalJoystickOemName_HKLM` / `OriginalJoystickKeyExisted_HKLM` (target 2)
    - `OriginalJoystickOemName_HKCU` / `OriginalJoystickKeyExisted_HKCU` (target 3)
    - `ClaimedAtFileTime` (REG_QWORD)
@@ -54,7 +54,7 @@ Every `Set` is a two-phase write:
 
 If a consumer crashes between step 1 and step 2, the record's targets match what's already on disk, so `RecoverOrphans` is an idempotent no-op for each field. If a crash happens after step 2, the record drives a full three-way restore on next startup. Every claim, release, and recovery sweep is serialized by the `Global\HIDMaestro-OEM-Recovery` named mutex.
 
-**Backward compatibility**: records written by a previous build that only tracked the DirectInput target are still replayed correctly — missing Joystick fields are treated as "no restore needed" for that target (which is the correct default, since that earlier build did not write those targets to begin with).
+**Backward compatibility**: records written by a previous build that only tracked the DirectInput target are still replayed correctly: missing Joystick fields are treated as "no restore needed" for that target (which is the correct default, since that earlier build did not write those targets to begin with).
 
 **Sibling-path design**: the pending hive lives at `HKLM\SOFTWARE\HIDMaestroOemOverrides`, deliberately NOT under `HKLM\SOFTWARE\HIDMaestro`. `DeviceOrchestrator.RemoveAllVirtualControllers` recursively wipes the HIDMaestro subtree as part of normal cleanup, which would otherwise silently drop pending records on every SDK restart.
 
@@ -86,7 +86,7 @@ If the process is force-killed before `Clear` runs, the next startup's `RecoverO
 
 ## Interaction with default HIDMaestro profile behavior
 
-When a virtual is created, `DeviceOrchestrator` writes **only** the HKLM Joystick\OEM path using the profile's `DeviceDescription ?? ProductString` as the label. It does NOT write HKCU, because that would destructively overwrite the Windows-shipped preload without the capture-and-restore machinery that this class provides — and there is no obvious lifecycle trigger for when to restore it (a virtual can be disposed without the consumer intending the joy.cpl label to revert).
+When a virtual is created, `DeviceOrchestrator` writes **only** the HKLM Joystick\OEM path using the profile's `DeviceDescription ?? ProductString` as the label. It does NOT write HKCU, because that would destructively overwrite the Windows-shipped preload without the capture-and-restore machinery that this class provides: and there is no obvious lifecycle trigger for when to restore it (a virtual can be disposed without the consumer intending the joy.cpl label to revert).
 
 The consequence: for any VID:PID where Windows has an HKCU preload (e.g. "PC TWIN SHOCK Gamepad" for VID_0079&PID_0006), the preload keeps winning for joy.cpl purposes unless the consumer calls `HMOemNameOverride.Set` explicitly. If the label your profile wants is different from the HKCU preload, `Set` is the mechanism.
 

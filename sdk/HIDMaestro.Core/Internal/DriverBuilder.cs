@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -119,7 +119,7 @@ public static class DriverBuilder
     /// Different SDK versions land in different dirs (auto-invalidation
     /// without explicit cleanup); identical SDK rebuilds with identical
     /// embedded payload reuse the same dir. On warm launches we just
-    /// validate file count + size and return — no rewrites. Drops
+    /// validate file count + size and return: no rewrites. Drops
     /// extraction time from 200 ms–3 s on slow eMMC to single-digit ms.</para>
     ///
     /// <para>Within a single process, idempotent via the
@@ -139,7 +139,7 @@ public static class DriverBuilder
         // file writes.
         lock (s_extractLock)
         {
-            // Re-check inside the lock — the other thread may have just
+            // Re-check inside the lock: the other thread may have just
             // populated the cache.
             if (StagingDir != null && Directory.Exists(StagingDir))
                 return StagingDir;
@@ -148,7 +148,7 @@ public static class DriverBuilder
             string dir = Path.Combine(Path.GetTempPath(), $"HIDMaestro_{hashPrefix}");
 
             // Cache hit: dir exists with the right set of files at the right
-            // sizes. Trust the contents — corruption is rare and the next
+            // sizes. Trust the contents: corruption is rare and the next
             // signtool / inf2cat / pnputil run will surface any tampering.
             if (Directory.Exists(dir) && IsStagingDirComplete(dir))
             {
@@ -216,7 +216,7 @@ public static class DriverBuilder
 
     /// <summary>Ensures HIDMaestroTestCert exists in LocalMachine\My and is
     /// trusted in Root + TrustedPublisher. Uses the managed
-    /// <see cref="CertificateRequest"/> API — no external tool needed.</summary>
+    /// <see cref="CertificateRequest"/> API: no external tool needed.</summary>
     public static void EnsureTestCertificate()
     {
         // Check LocalMachine\My first.
@@ -332,7 +332,7 @@ public static class DriverBuilder
             // pnputil /add-driver does not support /format, so its rc and output
             // are locale- and version-keyed and unreliable for success detection
             // (see issue #17). The authoritative success signal is the post-
-            // condition check below — did the package land in the driver store?
+            // condition check below: did the package land in the driver store?
             // PnputilHelper.IsHidMaestroDriverInstalled reads /enum-drivers
             // /format xml which is locale-stable.
         }
@@ -344,7 +344,7 @@ public static class DriverBuilder
               + $"Required INFs: {string.Join(", ", PnputilHelper.HidMaestroInfNames)}.");
 
         // /scan-devices removed (Option 1). Our INFs are function INFs that bind via
-        // SwDeviceCreate's own install path — /scan-devices was a no-op for
+        // SwDeviceCreate's own install path: /scan-devices was a no-op for
         // them. On corporate workstations with many devices in the PnP tree
         // this scan was 5–20 s of pure overhead. RemoveAllVirtualControllers
         // (called before FullDeploy) DIF_REMOVEs any of our prior-session
@@ -355,7 +355,7 @@ public static class DriverBuilder
     /// <summary>Removes all HIDMaestro driver packages from the driver store.
     /// Strict: matches by <c>Provider Name == "HIDMaestro"</c> + the explicit
     /// INF allow-list, retries on "in use" failures, and verifies removal.
-    /// Throws if anything is left in the store afterward — that prevents
+    /// Throws if anything is left in the store afterward: that prevents
     /// the next install from silently using a stale binary, which was the
     /// failure mode that hid the CPU-saturation bug for hours.</summary>
     public static void RemoveOldDriverPackages()
@@ -375,7 +375,7 @@ public static class DriverBuilder
     /// true on success; throws <see cref="InvalidOperationException"/> with
     /// the failing tool's output on any pipeline-step failure. The
     /// <paramref name="rebuild"/> parameter is retained for ABI
-    /// compatibility but ignored — there is no source build step any more
+    /// compatibility but ignored: there is no source build step any more
     /// (the driver binaries ship pre-built inside the SDK DLL).
     ///
     /// <para><b>Fast-path (v1.3.0+):</b> if the SHA-256 of the embedded
@@ -398,7 +398,7 @@ public static class DriverBuilder
         // touch the DriverStore, we'd run the full pipeline (slow but
         // correct); if something cleared the DriverStore but didn't
         // touch the hash, we'd skip and the next SwDeviceCreate would
-        // surface a missing-driver error to the caller — both edge
+        // surface a missing-driver error to the caller: both edge
         // cases are recoverable via a single InstallDriver retry.
         string embeddedHash = EmbeddedManifest.Sha256Hex;
         string? installedHash = ReadInstalledManifestHash();
@@ -454,7 +454,7 @@ public static class DriverBuilder
             // hidmaestro.inf_amd64_<hash> and hidmaestro_xusb.inf_amd64_<hash>
             // are the directory names pnputil /add-driver creates. Both must
             // be present to consider the install complete.
-            // T11 — single FileRepository enumeration (~5–20 ms on a busy
+            // T11: single FileRepository enumeration (~5–20 ms on a busy
             // store) instead of two; we exit as soon as we find both.
             bool hasMain = false, hasXusb = false;
             foreach (var dir in Directory.EnumerateDirectories(fileRepo))
@@ -501,9 +501,9 @@ public static class DriverBuilder
     /// <summary>Checks if ALL required HIDMaestro drivers are in the store.
     /// Strict: requires a record per INF where <c>Provider Name == "HIDMaestro"</c>.
     /// Substring grepping was previously vulnerable to half-removed entries
-    /// matching by accident — see PnputilHelper for the failure-mode notes.
+    /// matching by accident: see PnputilHelper for the failure-mode notes.
     ///
-    /// <para>v1.3.0 — cheap-first lookup ladder: (1) per-process positive
+    /// <para>v1.3.0: cheap-first lookup ladder: (1) per-process positive
     /// cache (instant after first confirmation); (2) DriverStore filesystem
     /// check (~1 ms); (3) pnputil enum-drivers /format xml (~200–500 ms).
     /// Most calls hit (1) or (2); pnputil is only consulted when neither

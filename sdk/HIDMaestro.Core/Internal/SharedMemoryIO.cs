@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -14,7 +14,7 @@ namespace HIDMaestro.Internal;
 /// for input frames.
 ///
 /// <para>The class is currently <c>static</c> because both the SDK and the
-/// in-tree test app go through the same instance — there's only ever one
+/// in-tree test app go through the same instance: there's only ever one
 /// per process. When we want to support multiple <see cref="HMContext"/>
 /// instances per process the static state will move onto an instance,
 /// but for now this matches how the test app's IPC code worked and lets
@@ -29,7 +29,7 @@ namespace HIDMaestro.Internal;
 /// </summary>
 internal static class SharedMemoryIO
 {
-    // ── Layout constants — match driver/driver.h ──────────────────────────
+    // ── Layout constants: match driver/driver.h ──────────────────────────
     //
     // HIDMAESTRO_SHARED_INPUT (362 bytes, was 278 pre-v1.3.5):
     //   ULONG  SeqNo                offset 0
@@ -43,7 +43,7 @@ internal static class SharedMemoryIO
     // not both. SDK clears ExtendedReportSize on legacy frames so the driver
     // doesn't reuse stale extended bytes from a prior arming.
     //
-    // HIDMAESTRO_SHARED_OUTPUT — RING BUFFER as of v1.1.40.
+    // HIDMAESTRO_SHARED_OUTPUT: RING BUFFER as of v1.1.40.
     //   ULONG  Head                        offset 0   (monotonic; total writes by driver)
     //   ULONG  _Reserved                   offset 4
     //   HIDMAESTRO_OUTPUT_SLOT Slots[N]    offset 8
@@ -61,7 +61,7 @@ internal static class SharedMemoryIO
     // poll interval. Middle packet (the magnitude) dropped, which is
     // why FFB forces never reached physical devices despite CreateEffect
     // succeeding. v1.1.40 ring with N=64 slots gives ~512 ms of reader
-    // lag tolerance before oldest packets get overwritten — comfortable
+    // lag tolerance before oldest packets get overwritten: comfortable
     // headroom for a 125 Hz consumer vs ~3 ms write bursts.
     //
     // Data[] widened from 64→256 bytes 2026-04-23: DualSense BT report 0x31
@@ -71,7 +71,7 @@ internal static class SharedMemoryIO
     public const int DATA_CAPACITY              = 256;
     public const int GIP_DATA_OFFSET            = DATA_OFFSET + DATA_CAPACITY;   // 264
     public const int GIP_DATA_LENGTH            = 14;
-    // v1.3.5 — vendor-blob extended report (mode-switch path).
+    // v1.3.5: vendor-blob extended report (mode-switch path).
     public const int EXTENDED_SIZE_OFFSET       = GIP_DATA_OFFSET + GIP_DATA_LENGTH; // 278
     public const int EXTENDED_DATA_OFFSET       = EXTENDED_SIZE_OFFSET + 4;          // 282
     public const int EXTENDED_DATA_CAPACITY     = 80;
@@ -88,7 +88,7 @@ internal static class SharedMemoryIO
     public const int OUTPUT_SLOT_OFFSET_SIZE      = 6;
     public const int OUTPUT_SLOT_OFFSET_DATA      = 8;
 
-    // HIDMAESTRO_SHARED_PID_STATE — match driver/driver.h:
+    // HIDMAESTRO_SHARED_PID_STATE: match driver/driver.h:
     //   ULONG   SeqNo                       offset  0   (seqlock)
     //   UCHAR   PidEnabled                  offset  4   (gate; 0 = no FFB)
     //   UCHAR   _pad0[3]                    offset  5
@@ -103,12 +103,12 @@ internal static class SharedMemoryIO
     //   UCHAR   _pad1[2]                    offset 18
     //   ULONG   EbiAllocBitmap              offset 20  (v1.1.37)
     //   ULONG   EbiAllocatedCount           offset 24  (v1.1.37)
-    //   UCHAR   PoolReportId                offset 28  (v1.3.7 — 0=canonical 0x13)
-    //   UCHAR   StateReportId               offset 29  (v1.3.7 — 0=canonical 0x14)
-    //   UCHAR   BlockLoadReportId           offset 30  (v1.3.7 — 0=canonical 0x12)
-    //   UCHAR   CreateNewEffectReportId     offset 31  (v1.3.7 — 0=canonical 0x11)
-    //   UCHAR   BlockFreeReportId           offset 32  (v1.3.7 — 0=canonical 0x1B)
-    //   UCHAR   DeviceControlReportId       offset 33  (v1.3.7 — 0=canonical 0x1C)
+    //   UCHAR   PoolReportId                offset 28  (v1.3.7: 0=canonical 0x13)
+    //   UCHAR   StateReportId               offset 29  (v1.3.7: 0=canonical 0x14)
+    //   UCHAR   BlockLoadReportId           offset 30  (v1.3.7: 0=canonical 0x12)
+    //   UCHAR   CreateNewEffectReportId     offset 31  (v1.3.7: 0=canonical 0x11)
+    //   UCHAR   BlockFreeReportId           offset 32  (v1.3.7: 0=canonical 0x1B)
+    //   UCHAR   DeviceControlReportId       offset 33  (v1.3.7: 0=canonical 0x1C)
     //   UCHAR   _pad2[2]                    offset 34
     //   total: 36 bytes (rounded to 40 for 8-byte alignment)
     public const int PID_STATE_SIZE                  = 40;
@@ -142,7 +142,7 @@ internal static class SharedMemoryIO
     private const uint FILE_MAP_READ  = 0x02;
     private const uint FILE_MAP_WRITE = 0x04;
 
-    // CreateEventW EVENT_MODIFY_STATE | SYNCHRONIZE — open existing named
+    // CreateEventW EVENT_MODIFY_STATE | SYNCHRONIZE: open existing named
     // events for SetEvent and waiting from the SDK side.
     private const uint EVENT_MODIFY_STATE        = 0x0002;
     private const uint SYNCHRONIZE               = 0x00100000;
@@ -234,7 +234,7 @@ internal static class SharedMemoryIO
     }
 
     /// <summary>Returns the view pointer for the controller's INPUT section,
-    /// creating the section on first call. Thread-safe via per-call lock —
+    /// creating the section on first call. Thread-safe via per-call lock
     /// callers can issue concurrent EnsureInputMapping requests for distinct
     /// controllerIndex values without races. Idempotent for the same index.</summary>
     public static IntPtr EnsureInputMapping(int controllerIndex)
@@ -356,7 +356,7 @@ internal static class SharedMemoryIO
             // driver view) may retain a non-zero SeqNo and stale Data. Without
             // this, a fresh OutputPollLoop sees `SeqNo != lastSeq(0)` on its
             // first sample and replays prior-session FFB as a brand-new
-            // OutputReceived packet — on repeat if a consumer process's
+            // OutputReceived packet: on repeat if a consumer process's
             // XInput/HID handle still talks to the ghost slot.
             // Bulk Marshal.Copy from a freshly allocated zero buffer is one
             // P/Invoke; the prior per-byte loop was ~17K P/Invokes per setup
@@ -373,7 +373,7 @@ internal static class SharedMemoryIO
     /// state section, creating the section on first call. The driver
     /// attaches read-only and reads on every IOCTL_UMDF_HID_GET_FEATURE.
     /// Lazy: a non-FFB consumer that never publishes PID state never
-    /// triggers this — the section simply doesn't exist and the driver
+    /// triggers this: the section simply doesn't exist and the driver
     /// falls back to STATUS_NO_SUCH_DEVICE / STATUS_NOT_SUPPORTED for
     /// any PID GetFeature, matching pre-FFB behavior.</summary>
     public static IntPtr EnsurePidStateMapping(int controllerIndex)
@@ -386,7 +386,7 @@ internal static class SharedMemoryIO
             string name = $@"Global\HIDMaestroPidState{controllerIndex}";
             (IntPtr h, IntPtr view) = CreateSection(name, PID_STATE_SIZE);
 
-            // v1.1.38 — initialize with vJoy-compatible defaults rather
+            // v1.1.38: initialize with vJoy-compatible defaults rather
             // than zeros. vJoy's Ffb_ResetPIDData
             // (vJoy-Brunner/driver/sys/hid.c:2627) sets RAMPoolSize=200,
             // MaxSimultaneousEffects=10, MemoryManagement=0 unconditionally
@@ -395,7 +395,7 @@ internal static class SharedMemoryIO
             // RAMPoolSize / MaxSim could lead dinput into degenerate
             // branches (divide-by-zero, no-effects path).
             //
-            // PidEnabled stays 0 — the consumer still has to PublishPidPool
+            // PidEnabled stays 0: the consumer still has to PublishPidPool
             // to flip that, at which point GetFeature(0x13 Pool) starts
             // returning the consumer's values (overwriting these defaults).
             // Until then, GetFeature(0x13) returns STATUS_NO_SUCH_DEVICE
@@ -454,7 +454,7 @@ internal static class SharedMemoryIO
     }
 
     /// <summary>Publish PID Block Load Report fields. Single-slot
-    /// last-write-wins per HID PID 1.0 §5.5 — call from the
+    /// last-write-wins per HID PID 1.0 §5.5: call from the
     /// OutputReceived handler that received the Create New Effect
     /// SetFeature, before returning, so the host's matching
     /// GetFeature(BlockLoad) reads this snapshot.</summary>
@@ -478,7 +478,7 @@ internal static class SharedMemoryIO
     /// descriptor uses the canonical IDs (every builder-emitted
     /// AddPidFfbBlock descriptor) get zero overrides written here, so
     /// the driver's `if (sec-&gt;XxxReportId) ...` guards keep canonical
-    /// behavior. Outside the seqlock — written exactly once at
+    /// behavior. Outside the seqlock: written exactly once at
     /// section setup, before any consumer publishes Pool/State/BL.</summary>
     public static void WritePidReportIds(IntPtr view,
         byte poolRid, byte stateRid, byte blockLoadRid,
@@ -502,7 +502,7 @@ internal static class SharedMemoryIO
         PidStateEndWrite(view, ref seqNo);
     }
 
-    /// <summary>v1.1.37 — seqlocked read of the Block Load fields the
+    /// <summary>v1.1.37: seqlocked read of the Block Load fields the
     /// driver populates synchronously inside its
     /// IOCTL_UMDF_HID_SET_FEATURE(0x11) handler. Returns the EBI the
     /// driver just assigned, the load status (1=Success, 2=Full,
@@ -523,7 +523,7 @@ internal static class SharedMemoryIO
             uint seq2 = (uint)Marshal.ReadInt32(view, PID_OFFSET_SEQNO);
             if (seq1 == seq2) return (ebi, stat, ram);
         }
-        // Fall through after retries — return whatever the last sample was.
+        // Fall through after retries: return whatever the last sample was.
         return (
             Marshal.ReadByte(view,  PID_OFFSET_BL_EBI),
             Marshal.ReadByte(view,  PID_OFFSET_BL_LOADSTATUS),
@@ -545,7 +545,7 @@ internal static class SharedMemoryIO
 
     /// <summary>Atomic seqlock write of a new input frame. Single-writer
     /// (the SDK consumer's input loop) → many-readers (driver + companion)
-    /// pattern is safe lock-free — readers retry on SeqNo mismatch. After
+    /// pattern is safe lock-free: readers retry on SeqNo mismatch. After
     /// publishing the new sequence, signals <paramref name="eventHandle"/>
     /// so the driver's worker thread can wake immediately instead of
     /// busy-polling the section.
@@ -556,7 +556,7 @@ internal static class SharedMemoryIO
     /// <para><paramref name="eventHandle"/> may be <see cref="IntPtr.Zero"/>
     /// if no signaling event exists (e.g. older driver that still polls
     /// without opening the event). The SetEvent call is skipped in that
-    /// case — the write still completes normally.</para></summary>
+    /// case: the write still completes normally.</para></summary>
     public static void WriteInputFrame(IntPtr view, IntPtr eventHandle, ref uint seqNo,
                                        byte[] data, int dataLen, byte[]? gipData,
                                        int dataOffset = 0,
@@ -569,18 +569,18 @@ internal static class SharedMemoryIO
         Thread.MemoryBarrier();
 
         // 2. Write payload (DataSize + Data + GipData + ExtendedReport*).
-        // v1.3.0 — bulk Marshal.Copy replaces the prior per-byte
+        // v1.3.0: bulk Marshal.Copy replaces the prior per-byte
         // Marshal.WriteByte loops, which were 256 + 14 = 270 P/Invoke
         // calls per frame. At 250 Hz × 6 controllers that was ~400 000
         // P/Invokes/sec; a single bulk copy per region is two
         // P/Invokes/frame total. We don't zero the unused data tail past
-        // dataLen — driver/consumer reads DataSize and uses only
-        // data[0..DataSize-1]; the tail is irrelevant. T26-2 — gipData
+        // dataLen: driver/consumer reads DataSize and uses only
+        // data[0..DataSize-1]; the tail is irrelevant. T26-2: gipData
         // is null for non-Xbox profiles (no XUSB companion bound), so we
         // can skip the 14-byte copy entirely. Section is zero-initialized
         // at create time, so the GIP slice stays zeros.
         //
-        // v1.3.5 — when extendedData != null AND extendedLen > 0, copy
+        // v1.3.5: when extendedData != null AND extendedLen > 0, copy
         // the full RID-included extended report into ExtendedReportData
         // and set ExtendedReportSize. Driver branches on
         // ExtendedReportSize > 0 and emits ExtendedReportData verbatim
@@ -588,7 +588,7 @@ internal static class SharedMemoryIO
         // explicitly clear ExtendedReportSize so a previously-armed
         // controller's stale extended bytes don't leak through after
         // a legacy-mode frame (e.g. if armOn fires were ever rolled back
-        // — currently they aren't, but cheap insurance).
+        //: currently they aren't, but cheap insurance).
         Marshal.WriteInt32(view, 4, dataLen);
         if (dataLen > 0)
             Marshal.Copy(data, dataOffset, view + DATA_OFFSET, dataLen);
@@ -640,7 +640,7 @@ internal static class SharedMemoryIO
     /// advances by 1 and the slot's data is copied into <paramref name="dataBuf"/>.
     ///
     /// Caller pumps this in a loop on each poll iteration so all slots
-    /// between the previous LastSeen and current Head get drained — see
+    /// between the previous LastSeen and current Head get drained: see
     /// <see cref="HMController.OutputPollLoop"/>. Pre-1.1.40 single-slot
     /// channel coalesced PID FFB packet bursts; this ring drains them.</summary>
     public static bool TryReadOutputFrame(
@@ -656,7 +656,7 @@ internal static class SharedMemoryIO
 
         // Reader fell more than RING_SLOTS behind: oldest packets have
         // been overwritten. Skip ahead to the oldest still-readable slot
-        // and continue from there. This is a real lossy edge case — if
+        // and continue from there. This is a real lossy edge case: if
         // a consumer is processing significantly slower than the driver
         // is producing, the tail of the burst wins over the head.
         if (head > nextSeq + (uint)OUTPUT_RING_SLOTS - 1)
@@ -690,7 +690,7 @@ internal static class SharedMemoryIO
             ushort sz = (ushort)Marshal.ReadInt16(view, slotBase + OUTPUT_SLOT_OFFSET_SIZE);
             if (sz > dataBuf.Length) sz = (ushort)dataBuf.Length;
             dataSize = sz;
-            // v1.3.0 — bulk Marshal.Copy replaces the prior per-byte
+            // v1.3.0: bulk Marshal.Copy replaces the prior per-byte
             // Marshal.ReadByte loop. Same per-frame win as the writer side
             // (1 P/Invoke instead of N), running on the SDK's output poll
             // thread which fires every 8 ms for every controller.

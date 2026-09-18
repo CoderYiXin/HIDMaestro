@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace HIDMaestro;
 
-/// <summary>v1.3.5 — payload for the <see cref="HMController.OutputDecoded"/>
+/// <summary>v1.3.5: payload for the <see cref="HMController.OutputDecoded"/>
 /// event. Surfaces an inbound vendor-blob output report's parsed-field values
 /// (named per the profile's <c>extendedOutputReport</c> spec) plus the raw
 /// bytes and the CRC verification result.</summary>

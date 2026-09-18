@@ -1,4 +1,4 @@
-# GameInput `supportedRumbleMotors = 0` on ROOT-enumerated UMDF2 XUSB-class virtual
+﻿# GameInput `supportedRumbleMotors = 0` on ROOT-enumerated UMDF2 XUSB-class virtual
 
 **Windows build:** 11 26200.8115
 **GameInput runtime:** `C:\Windows\System32\GameInput.dll` (in-box, 2026-04-14 build)
@@ -38,12 +38,12 @@ Specifically:
 
 1. Is the value derived from a property on the device's XUSB interface registration (DEVPKEY, device interface property, INF directive) that we can set from our class-filter extension INF?
 2. Is it tied to device enumeration path (USB-bus presence vs. ROOT enumerator), with no user-mode override?
-3. If (2), is there a supported pattern for a ROOT-enumerated UMDF2 virtual to declare haptic motor support — perhaps via a specific XUSB interface property, a device capability interface, or registration through the `Windows.Gaming.Input.Custom` namespace in a way that propagates to cross-process consumers?
+3. If (2), is there a supported pattern for a ROOT-enumerated UMDF2 virtual to declare haptic motor support: perhaps via a specific XUSB interface property, a device capability interface, or registration through the `Windows.Gaming.Input.Custom` namespace in a way that propagates to cross-process consumers?
 
-We have tested `GameControllerFactoryManager::RegisterCustomFactoryForHardwareId` and `RegisterCustomFactoryForXusbType`. The factory's `CreateGameController` is invoked, but `Gamepad.Gamepads[i]` returns the built-in `Windows.Gaming.Input.Gamepad` type rather than our custom controller — so consumer processes don't see the override. Is this expected, and if so, is there a different Custom-namespace API that IS visible across process boundaries?
+We have tested `GameControllerFactoryManager::RegisterCustomFactoryForHardwareId` and `RegisterCustomFactoryForXusbType`. The factory's `CreateGameController` is invoked, but `Gamepad.Gamepads[i]` returns the built-in `Windows.Gaming.Input.Gamepad` type rather than our custom controller: so consumer processes don't see the override. Is this expected, and if so, is there a different Custom-namespace API that IS visible across process boundaries?
 
 ## Context
 
-HIDMaestro is an open-source user-mode virtual controller project. The constraint that forces a ROOT-enumerated UMDF2 design (rather than a kernel bus driver) is intentional — it's what makes HIDMaestro installable without EV cert signing. We're specifically looking for a user-mode-only path to declare haptic motor support to GameInput.
+HIDMaestro is an open-source user-mode virtual controller project. The constraint that forces a ROOT-enumerated UMDF2 design (rather than a kernel bus driver) is intentional: it's what makes HIDMaestro installable without EV cert signing. We're specifically looking for a user-mode-only path to declare haptic motor support to GameInput.
 
 Happy to share full investigation trace, a minimal reproducer, or coordinate on an empirical test case.

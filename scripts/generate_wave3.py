@@ -1,4 +1,4 @@
-"""Generate wave 3 — mass VID/PID profiles from all known sources."""
+﻿"""Generate wave 3: mass VID/PID profiles from all known sources."""
 import json, os
 
 PROFILES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "profiles")

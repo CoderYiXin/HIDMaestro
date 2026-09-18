@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace HIDMaestro;
 
 // =====================================================================
-// HMLayout — structured per-profile physical-design declaration (v1.3.9)
+// HMLayout: structured per-profile physical-design declaration (v1.3.9)
 //
 // Discriminated by HMLayoutKind. Each per-kind layout captures the
 // device's published manufacturer-described shape: which descriptor
@@ -13,8 +13,8 @@ namespace HIDMaestro;
 // module) cluster, what semantic role each axis and button serves.
 //
 // Two surfaces:
-//   • HMProfile.Layout — the full structured layout (rich, when authored)
-//   • HMProfile.StickCount / TriggerCount / Sticks / Triggers — simple
+//   • HMProfile.Layout: the full structured layout (rich, when authored)
+//   • HMProfile.StickCount / TriggerCount / Sticks / Triggers: simple
 //     derived views computed FROM Layout when authored, from the
 //     classifier heuristic when not (backward-compatible fallback)
 //
@@ -245,7 +245,7 @@ public sealed record HMTriggerButton
 // Simple-view records (the "I just want sticks and triggers" surface)
 // =====================================================================
 
-/// <summary>v1.3.9 — flat-list view of one stick a profile exposes,
+/// <summary>v1.3.9: flat-list view of one stick a profile exposes,
 /// surfaced via <see cref="HMProfile.Sticks"/>. Variable count: typical
 /// gamepad has 2 (left + right), a flight stick / wheel / HOTAS has 1,
 /// a pedals-only device has 0. PadForge-style consumers iterate this
@@ -259,7 +259,7 @@ public sealed record HMSimpleStick
     public string? Label { get; init; }
 }
 
-/// <summary>v1.3.9 — flat-list view of one trigger axis the profile
+/// <summary>v1.3.9: flat-list view of one trigger axis the profile
 /// exposes, surfaced via <see cref="HMProfile.Triggers"/>. Variable count:
 /// typical gamepad has 2 (LT/RT), a 3-pedal sim set has 3 (gas/brake/clutch),
 /// a handbrake has 1, a HOTAS may have throttle + twist rudder + slider.
@@ -275,7 +275,7 @@ public sealed record HMSimpleTrigger
 }
 
 // =====================================================================
-// HMLayout — abstract base + per-kind concrete records
+// HMLayout: abstract base + per-kind concrete records
 // =====================================================================
 
 /// <summary>Per-profile structured physical-design declaration. Each

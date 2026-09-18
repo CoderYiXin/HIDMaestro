@@ -1,4 +1,4 @@
-// v1.3.5 — feature & regression check probe.
+﻿// v1.3.5: feature & regression check probe.
 //
 // Pure encoder unit-test for the v1.3.5 codec changes that landed during the
 // PadForge spot-check rounds:
@@ -6,7 +6,7 @@
 //   Round 5: DS5 sensor byte positions (gyro/accel/sensorTimestamp shift +1
 //            because Linux dualsense_input_report struct excludes report_id)
 //   Round 7: DS4 BT VersionNumber=0 declared in profile JSON
-//   Feature 1: HMGamepadState extension — touchpad-finger, int16-le, uint32-le,
+//   Feature 1: HMGamepadState extension: touchpad-finger, int16-le, uint32-le,
 //              bitfield, uint8-battery codec types land at the right offsets
 //              and round-trip through Decode preserving values
 //   Feature 3: DS5 BT extendedOutputReport `btTag` is uint8-rolling stride 16
@@ -85,7 +85,7 @@ internal sealed class Program
             Check("sensorTimestamp[1] @ byte 29", buf[29] == 0xBE, $"got 0x{buf[29]:X2}");
             Check("sensorTimestamp[2] @ byte 30", buf[30] == 0xAD, $"got 0x{buf[30]:X2}");
             Check("sensorTimestamp[3] @ byte 31", buf[31] == 0xDE, $"got 0x{buf[31]:X2}");
-            // CONFIRM byte 15 (the OLD wrong position) is zero — reserved[3]
+            // CONFIRM byte 15 (the OLD wrong position) is zero: reserved[3]
             Check("byte 15 reserved (round-4 wrong gyroPitch position is empty)",
                   buf[15] == 0, $"got 0x{buf[15]:X2}");
         }
@@ -187,7 +187,7 @@ internal sealed class Program
         // EncodeOutput call so real Sony BT firmware accepts the packet.
         Console.WriteLine("--- Feature 3: DS5 BT btTag rolling stride 16 ---");
         {
-            // Stand up a controller (no real driver — disposed without InstallDriver)
+            // Stand up a controller (no real driver: disposed without InstallDriver)
             // to access EncodeOutput which threads per-controller rolling state.
             // Use HMController directly via reflection-free path: load profile +
             // exercise VendorBlobCodec.EncodeOutput with a fresh EncoderState
@@ -255,7 +255,7 @@ internal sealed class Program
         // recur is: every USB-connection Sony profile that DECLARES an
         // extendedReport must ALSO have armOn empty (or absent), so the
         // controller never allocates the codec buffer and BuildReportInto
-        // runs on every frame — same path v1.3.4 took.
+        // runs on every frame: same path v1.3.4 took.
         Console.WriteLine("--- Round 3: USB Sony profiles never trigger the codec ---");
         {
             string[] usbSonyProfiles = {
@@ -288,7 +288,7 @@ internal sealed class Program
                 var ids = armOn.Select(a => a.ReportIdByte).OrderBy(b => b).ToArray();
                 bool has02 = Array.IndexOf(ids, (byte)0x02) >= 0;
                 bool hasA3 = Array.IndexOf(ids, (byte)0xA3) >= 0;
-                bool has05 = Array.IndexOf(ids, (byte)0x05) >= 0; // DS5 ID — must NOT be on DS4
+                bool has05 = Array.IndexOf(ids, (byte)0x05) >= 0; // DS5 ID: must NOT be on DS4
                 Check("DS4 BT armOn includes 0x02 (calibration)", has02);
                 Check("DS4 BT armOn includes 0xA3 (firmware info)", hasA3);
                 Check("DS4 BT armOn does NOT include DS5 ID 0x05", !has05);
@@ -377,7 +377,7 @@ internal sealed class Program
         // user's bytes so the final on-wire frame has the right values
         // regardless of which submission path the consumer used.
         //
-        // No live-virtual probe needed for this — the round-8c spot-check
+        // No live-virtual probe needed for this: the round-8c spot-check
         // against ds.daidr.me empirically validated that the Timer 2 counter
         // no longer leaks into triggerLevel. Here we just assert the SDK
         // assembly contains the SubmitRawReport overlay code path by
@@ -434,7 +434,7 @@ internal sealed class Program
         // The test app's [out0 ...] log line was reading bytes 2-3 (USB DS5
         // layout) for every Sony output report, so DS4 BT vibration showed
         // "lo=241 hi=4" instead of the actual motor magnitudes at bytes 5-6.
-        // No assertion possible at the codec layer — that's a print-format
+        // No assertion possible at the codec layer: that's a print-format
         // bug in test/Program.cs:DecodeOutputPacket. Documented here as a
         // tombstone so the round-7 fix doesn't regress.
         Console.WriteLine("--- Cosmetic: test-app DecodeOutputPacket BT motor offsets ---");

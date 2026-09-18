@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace HIDMaestro.Internal;
 
 /// <summary>
 /// Parses a HID report descriptor and builds input reports with correct bit packing.
-/// This is fully data-driven — works with ANY HID descriptor, no controller-specific code.
+/// This is fully data-driven: works with ANY HID descriptor, no controller-specific code.
 /// </summary>
 public class HidReportBuilder
 {
@@ -31,7 +31,7 @@ public class HidReportBuilder
     /// <summary>Optional axis semantic override. When set, applied after
     /// ResolveSemantics to correct axis assignments for profiles where the
     /// default heuristic is wrong (e.g. Sony uses Z/Rz for right stick,
-    /// Rx/Ry for triggers — opposite of the Xbox convention).</summary>
+    /// Rx/Ry for triggers: opposite of the Xbox convention).</summary>
     // Canonical trigger positions for the combined-Z synthesis, resolved
     // lazily on first BuildReportInto (issue #34). Every repo path assigns
     // AxisMap during Parse, before any frame is built, but the setter
@@ -122,7 +122,7 @@ public class HidReportBuilder
     /// drive any descriptor-declared axis via
     /// <see cref="HMGamepadState.ExtraAxes"/> regardless of whether it
     /// also lands in a semantic slot. First field wins on duplicate
-    /// usages — matches the <c>??=</c> behavior of the semantic
+    /// usages: matches the <c>??=</c> behavior of the semantic
     /// classifier.</summary>
     public Dictionary<HMAxis, InputField> AxisFields { get; } = new();
 
@@ -146,7 +146,7 @@ public class HidReportBuilder
         return builder;
     }
 
-    /// <summary>v1.3.9 — apply role-tagged Layout overrides on top of the
+    /// <summary>v1.3.9: apply role-tagged Layout overrides on top of the
     /// classifier's resolved semantic slots. Profiles whose JSON authors a
     /// <c>layout</c> block deterministically map their axes into the
     /// classic 4-slot stick + 2-slot trigger framework based on the
@@ -156,24 +156,24 @@ public class HidReportBuilder
     ///
     /// <para>Mapping rules per kind:
     /// <list type="bullet">
-    /// <item>gamepad — leave classifier output alone (already author-aligned)</item>
-    /// <item>joystick / flight_stick — stick.x/y → LeftStick, throttle.axis → LeftTrigger,
+    /// <item>gamepad: leave classifier output alone (already author-aligned)</item>
+    /// <item>joystick / flight_stick: stick.x/y → LeftStick, throttle.axis → LeftTrigger,
     ///       rudder.axis → RightTrigger; clear right stick</item>
-    /// <item>hotas — stick.x/y → LeftStick, throttle_primary.axis → LeftTrigger,
+    /// <item>hotas: stick.x/y → LeftStick, throttle_primary.axis → LeftTrigger,
     ///       stick_rudder.axis → RightTrigger; clear right stick</item>
-    /// <item>wheel — wheel.axis → LeftStickX, pedal[role=clutch] → LeftStickY,
+    /// <item>wheel: wheel.axis → LeftStickX, pedal[role=clutch] → LeftStickY,
     ///       pedal[role=accelerator|throttle] → LeftTrigger,
     ///       pedal[role=brake] → RightTrigger; clear right stick</item>
-    /// <item>pedals — pedal[role=accelerator|throttle] → LeftTrigger,
+    /// <item>pedals: pedal[role=accelerator|throttle] → LeftTrigger,
     ///       pedal[role=brake] → RightTrigger; clear sticks</item>
-    /// <item>handbrake / single_axis_accessory — axis → LeftTrigger; clear
+    /// <item>handbrake / single_axis_accessory: axis → LeftTrigger; clear
     ///       sticks and right trigger</item>
     /// <item>arcade_stick / dance_pad / guitar / motion_wand / remote /
-    ///       controller_adapter / shifter — clear sticks and triggers
+    ///       controller_adapter / shifter: clear sticks and triggers
     ///       (these devices don't fit the simple-slot framework)</item>
     /// </list></para>
     ///
-    /// <para>Buttons are left untouched — descriptor's button array is the
+    /// <para>Buttons are left untouched: descriptor's button array is the
     /// truth and ButtonMap remaps as before. Layout's button-role
     /// information is exposed via <see cref="HMProfile.AsGamepad"/> et al.
     /// without affecting the encoder.</para></summary>
@@ -298,7 +298,7 @@ public class HidReportBuilder
         // those fields into ThirdStickX/Y / FourthStickX/Y (e.g. Sony BT Rx
         // at ReportCount==2 gets claimed as ThirdStickX before axisMap
         // overrides it to leftTrigger), and the prior clear-slot loop only
-        // covered the 6 target-named slots — the cascade ghosts survived and
+        // covered the 6 target-named slots: the cascade ghosts survived and
         // bloated Profile.Sticks.Count.
         var assignedFields = new HashSet<InputField>();
         foreach (var kvp in map)
@@ -522,10 +522,10 @@ public class HidReportBuilder
         // Pre-scan for two right-stick patterns that fall outside the default
         // "Rx/Ry = right stick, Z/Rz = triggers" Xbox 360 wire convention:
         //
-        //   (a) fourAxisDInput — no Rx/Ry at all, Z+Rz both present (WebKit/
+        //   (a) fourAxisDInput: no Rx/Ry at all, Z+Rz both present (WebKit/
         //       Chromium's "standard gamepad", Logitech F310 DInput mode).
         //       Z/Rz are the right stick.
-        //   (b) zRzAreSticksByCount — Z or Rz declared with Report Count >= 2,
+        //   (b) zRzAreSticksByCount: Z or Rz declared with Report Count >= 2,
         //       i.e. paired-axis stick shape rather than single-axis trigger
         //       shape. The Rx/Ry-as-triggers convention HidDescriptorBuilder
         //       emits since v1.3.14 (issue #27: pre-2005 DInput games like
@@ -599,7 +599,7 @@ public class HidReportBuilder
             if (f.IsConstant) continue;
 
             // Catalog every recognized ANALOG usage by HMAxis. Skip Hat
-            // Switch (0x39) — Hat is its own input shape with the
+            // Switch (0x39): Hat is its own input shape with the
             // descriptor's HatSwitch field handling, not part of the
             // analog-axis encoder pass. HMAxis.Hat exists for layout
             // references (HMHatBinding.axis) but doesn't get registered
@@ -646,13 +646,13 @@ public class HidReportBuilder
                         else
                             ClaimRightTrigger(f);
                         break;
-                    case 0x36:                               // Slider — also stick 4 X under v1.3.15 pool
+                    case 0x36:                               // Slider: also stick 4 X under v1.3.15 pool
                         if (LooksLikeTrigger(f))
                             ClaimLeftTrigger(f);
                         else
                             ClaimRightStickX(f);
                         break;
-                    case 0x37:                               // Dial — also stick 4 Y under v1.3.15 pool
+                    case 0x37:                               // Dial: also stick 4 Y under v1.3.15 pool
                         if (LooksLikeTrigger(f))
                             ClaimRightTrigger(f);
                         else
@@ -660,10 +660,10 @@ public class HidReportBuilder
                         break;
                     case 0x39: HatSwitch ??= f; break;     // Hat Switch
                     case 0x85: SystemMainMenu ??= f; break; // System Main Menu (Xbox Guide)
-                    case 0x40:                               // Vx — hidden separate LT for WGI
+                    case 0x40:                               // Vx: hidden separate LT for WGI
                         CombinedTrigger ??= LeftTrigger;     // Save Z as combined before override
                         LeftTrigger = f; break;
-                    case 0x41:                               // Vy — hidden separate RT for WGI
+                    case 0x41:                               // Vy: hidden separate RT for WGI
                         RightTrigger = f; break;
                 }
             }
@@ -706,13 +706,13 @@ public class HidReportBuilder
         }
     }
 
-    /// <summary>v1.3.9 — single-source axis-dict encoder. Caller writes
+    /// <summary>v1.3.9: single-source axis-dict encoder. Caller writes
     /// state.Axes keyed by HID usage; the encoder iterates every declared
     /// analog input field in the descriptor, reads the dict, and writes
     /// the report. Axes the consumer doesn't write default to centered
     /// (signed axes) or released (unsigned axes) automatically.
     /// All values are <c>[0.0..1.0]</c> normalized.</summary>
-    /// <summary>v1.3.9 — convenience: build an axes dict from the canonical
+    /// <summary>v1.3.9: convenience: build an axes dict from the canonical
     /// 6-slot convention (leftStickX/Y, rightStickX/Y, leftTrigger,
     /// rightTrigger) using the classifier-resolved semantic slots
     /// (<see cref="LeftStickX"/>, etc.) as keys. Mainly for tests and one-shot
@@ -747,7 +747,7 @@ public class HidReportBuilder
         return report;
     }
 
-    /// <summary>v1.3.9 — buffer-reuse encoder. Caller supplies a byte[]
+    /// <summary>v1.3.9: buffer-reuse encoder. Caller supplies a byte[]
     /// of length <see cref="InputReportByteSize"/>; we zero it and pack
     /// the report into it. Avoids the per-frame byte[] alloc on the
     /// SubmitState hot path.
@@ -758,7 +758,7 @@ public class HidReportBuilder
     /// dict; unsigned axes default to 0.0 (released). Combined-Z trigger
     /// synthesis, hat priority chain (HatDegrees &gt; HatHundredths &gt;
     /// HatRaw &gt; Hat), trigger-to-button derivation, Guide routing, and
-    /// button packing all run as before — only the axis-write path
+    /// button packing all run as before: only the axis-write path
     /// changed from named slots to dict-driven.</para></summary>
     public void BuildReportInto(byte[] report,
         IReadOnlyDictionary<HMAxis, float>? axes,
@@ -809,7 +809,7 @@ public class HidReportBuilder
         // triggers, dinput sees combined Z; XInput / WGI see the separate
         // Vx/Vy. PadForge#130 / v1.3.17: the v1.3.9 state.Axes refactor sourced
         // lt / rt from state.Axes[LeftTrigger.Usage] / state.Axes[RightTrigger.Usage]
-        // — i.e. state.Axes[Vx] / state.Axes[Vy]. Consumers (PadForge's
+        //: i.e. state.Axes[Vx] / state.Axes[Vy]. Consumers (PadForge's
         // ResolveAxisByRole, every HMGamepadStateHelpers caller) write
         // state.Axes[HMAxis.Z] = leftTrigger and state.Axes[HMAxis.Rz] =
         // rightTrigger when the profile has no axisMap, so Vx / Vy stayed at
@@ -841,7 +841,7 @@ public class HidReportBuilder
             var leftFieldKey  = (HMAxis)((LeftTrigger.UsagePage  << 8) | LeftTrigger.Usage);
             var rightFieldKey = (HMAxis)((RightTrigger.UsagePage << 8) | RightTrigger.Usage);
             // Source the trigger values from the canonical (user-facing)
-            // position first — PadForge / HMGamepadStateHelpers write here.
+            // position first: PadForge / HMGamepadStateHelpers write here.
             // Fall back to the wire field's own Usage so the test-fixture
             // path (HidReportBuilder.StandardAxes writes to LeftTrigger.Usage
             // = Vx) keeps working without a canonical entry.
@@ -909,7 +909,7 @@ public class HidReportBuilder
                 // descriptor's range so high-res hats place octants at
                 // the matching 45° positions instead of crowding into
                 // the first 8 indices. For range=8 this collapses to
-                // (hatValue-1) — backwards-compatible with the legacy
+                // (hatValue-1): backwards-compatible with the legacy
                 // 8-position behavior. For range=16: NE → idx 2,
                 // E → idx 4, SE → idx 6, etc. Truncating int division
                 // matches the descriptor's quantization.
@@ -957,7 +957,7 @@ public class HidReportBuilder
         // HMButton bit positions are translated to descriptor button indices
         // so that semantic names (A, B, LB, Start, etc.) land at the correct
         // positions for the profile's controller family.
-        // T31-2 — bit-pop instead of full 32-bit scan. With BitOperations
+        // T31-2: bit-pop instead of full 32-bit scan. With BitOperations
         // we extract the lowest set bit, process, clear it, and loop only
         // while bits remain. For a typical state with 0–4 buttons held,
         // this is 0–4 iterations vs the full 32. Saves ~28 branches per
@@ -994,13 +994,13 @@ public class HidReportBuilder
 
     static void WriteBits(byte[] buffer, int bitOffset, int bitSize, int value)
     {
-        // T27-2 — fast path for byte-aligned, byte-multiple fields. The vast
+        // T27-2: fast path for byte-aligned, byte-multiple fields. The vast
         // majority of HID descriptor fields fit this case: 8-bit triggers/
         // hat (single byte), 16-bit sticks (two bytes), 32-bit composite
         // axes (four bytes). Bit-by-bit fallback is only needed for
         // odd-sized button bitmaps, mid-byte alignment etc. Writing whole
         // bytes drops per-field cost from ~16-32 ops to ~2-4 ops on the
-        // common case — the dominant gain in SubmitState's hot path on
+        // common case: the dominant gain in SubmitState's hot path on
         // descriptor-heavy profiles like DualSense.
         if ((bitOffset & 7) == 0 && (bitSize & 7) == 0)
         {

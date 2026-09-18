@@ -1,4 +1,4 @@
-// Layout audit (v1.3.9). Walks every deployable profile in the catalog
+﻿// Layout audit (v1.3.9). Walks every deployable profile in the catalog
 // and verifies:
 //   1. The profile's layout block (when present) schema-validates and
 //      every axis/button reference resolves to a real descriptor field.
@@ -8,11 +8,11 @@
 //      declare).
 //   3. profile.Sticks / profile.Triggers report variable-length lists
 //      whose entries reference declared HMAxis values.
-//   4. profile.Layout.Kind matches profile.Type ordering — wheel-typed
+//   4. profile.Layout.Kind matches profile.Type ordering: wheel-typed
 //      profiles, when authored, declare kind=Wheel etc. (advisory; doesn't
 //      fail when the profile has no layout block).
 //
-// This probe runs against the in-process catalog only — no driver
+// This probe runs against the in-process catalog only: no driver
 // install, no virtual device. Exit 0 on PASS, 1 on FAIL.
 
 using System;
@@ -53,7 +53,7 @@ internal static class Program
             if (layout is null)
             {
                 unauthoredProfiles++;
-                // No layout authored — classifier-derived StickCount/TriggerCount apply.
+                // No layout authored: classifier-derived StickCount/TriggerCount apply.
                 // Still verify Sticks/Triggers lists are consistent with classifier.
                 int stickListCount = p.Sticks.Count;
                 int triggerListCount = p.Triggers.Count;
@@ -106,7 +106,7 @@ internal static class Program
             }
         }
 
-        // v1.3.10 — XUSB-companion gate audit. Walks every deployable profile
+        // v1.3.10: XUSB-companion gate audit. Walks every deployable profile
         // and asserts profile.Inner.RequiresXusbCompanion is true ONLY when:
         //   - VID == 0x045E (Microsoft)
         //   - DriverMode is not xinputhid / xusb22

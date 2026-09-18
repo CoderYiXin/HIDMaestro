@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 // HIDMaestro PID FFB shared-section + driver-side allocation probe.
 //
 // v1.1.37 expansion: covers issue #16's architectural fix where the driver
@@ -8,27 +8,27 @@
 //
 // Verifies, top to bottom:
 //
-//   1. Section is lazy-created — does NOT exist before any PublishPid* call.
+//   1. Section is lazy-created: does NOT exist before any PublishPid* call.
 //      vJoy "FFB not enabled" gate.
 //
 //   2. PublishPidPool flips PidEnabled=1, populates Pool fields exactly,
 //      and leaves the v1.1.37 EbiAllocBitmap=0 / EbiAllocatedCount=0.
 //
 //   3. GetCurrentPidBlockLoad() returns default (LoadStatus=0) before any
-//      Create New Effect — the driver hasn't allocated yet.
+//      Create New Effect: the driver hasn't allocated yet.
 //
-//   4. HidD_SetFeature(0x11 Create New Effect) — driver synchronously
+//   4. HidD_SetFeature(0x11 Create New Effect): driver synchronously
 //      allocates EBI=1 and writes BL_* fields. Read-back via
 //      GetCurrentPidBlockLoad() returns EffectBlockIndex=1, Status=Success.
 //      EbiAllocBitmap=0x00000001, EbiAllocatedCount=1.
 //
-//   5. Second SetFeature(0x11) — EBI=2, Bitmap=0x03, Count=2.
+//   5. Second SetFeature(0x11): EBI=2, Bitmap=0x03, Count=2.
 //
-//   6. HidD_SetFeature(0x1B Block Free) for EBI=1 — driver clears bit 0.
+//   6. HidD_SetFeature(0x1B Block Free) for EBI=1: driver clears bit 0.
 //      Bitmap=0x02, Count=1. Subsequent SetFeature(0x11) reuses EBI=1
 //      (lowest free slot policy).
 //
-//   7. PublishPidState — State fields match.
+//   7. PublishPidState: State fields match.
 //
 // Steps 4–6 fail gracefully if HidD_SetFeature is rejected by HidClass
 // (some descriptor configurations cause it to refuse before forwarding to
@@ -81,20 +81,20 @@ internal static class Program
         0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95, 0x08,
         0x81, 0x02,
 
-        // Feature reports — vendor-page usages, byte-aligned counts.
+        // Feature reports: vendor-page usages, byte-aligned counts.
         0x06, 0x00, 0xFF,   // Usage Page (Vendor 0xFF00)
         0x15, 0x00, 0x26, 0xFF, 0x00, // Logical Min/Max 0..255
         0x75, 0x08,         // Report Size 8
 
-        // 0x11 Create New Effect — 3 bytes payload (effectType + byteCount LE)
+        // 0x11 Create New Effect: 3 bytes payload (effectType + byteCount LE)
         0x85, 0x11, 0x09, 0x11, 0x95, 0x03, 0xB1, 0x02,
-        // 0x12 Block Load — 4 bytes payload (EBI + status + RAMpool LE)
+        // 0x12 Block Load: 4 bytes payload (EBI + status + RAMpool LE)
         0x85, 0x12, 0x09, 0x12, 0x95, 0x04, 0xB1, 0x02,
-        // 0x13 Pool — 4 bytes payload
+        // 0x13 Pool: 4 bytes payload
         0x85, 0x13, 0x09, 0x13, 0x95, 0x04, 0xB1, 0x02,
-        // 0x14 State — 2 bytes payload
+        // 0x14 State: 2 bytes payload
         0x85, 0x14, 0x09, 0x14, 0x95, 0x02, 0xB1, 0x02,
-        // 0x1B Block Free — 1 byte payload (EBI to free)
+        // 0x1B Block Free: 1 byte payload (EBI to free)
         0x85, 0x1B, 0x09, 0x1B, 0x95, 0x01, 0xB1, 0x02,
 
         0xC0,
@@ -130,16 +130,16 @@ internal static class Program
 
         int failures = 0;
 
-        // Step 1 — pre-publish: section MUST NOT exist yet.
+        // Step 1: pre-publish: section MUST NOT exist yet.
         Console.Write("  [pre-publish] section not yet created ... ");
         IntPtr h0 = OpenFileMappingW(FILE_MAP_READ, false, sectionName);
         if (h0 != IntPtr.Zero) { CloseHandle(h0); Console.WriteLine("FAIL: section exists"); failures++; }
         else Console.WriteLine($"OK (Win32={Marshal.GetLastWin32Error()})");
 
-        // Step 1b — v1.1.38: trigger section creation via GetCurrentPidBlockLoad
+        // Step 1b: v1.1.38: trigger section creation via GetCurrentPidBlockLoad
         // (EnsurePidStateMapping fires inside the SDK), then verify Pool fields
         // come up with vJoy-compatible defaults (RAMPoolSize=200, MaxSim=10,
-        // MemMgmt=0) rather than zeros. Audit finding #4 — zero-init was
+        // MemMgmt=0) rather than zeros. Audit finding #4: zero-init was
         // a real bug because dinput8 may read Pool during enumeration before
         // any PublishPidPool, and zero RAMPoolSize / MaxSim lead to degenerate
         // dinput branches.
@@ -160,7 +160,7 @@ internal static class Program
             else Console.WriteLine("OK (vJoy-compatible defaults applied at section creation)");
         }
 
-        // Step 2 — PublishPidPool, verify Pool + v1.1.37 EBI bitmap.
+        // Step 2: PublishPidPool, verify Pool + v1.1.37 EBI bitmap.
         const ushort kRamPoolSize = 0xFFFF;
         const byte   kSimMax       = 4;   // small so step 5 can hit Full
         const bool   kDevManaged   = true;
@@ -193,7 +193,7 @@ internal static class Program
             }
         }
 
-        // Step 3 — GetCurrentPidBlockLoad before any SetFeature.
+        // Step 3: GetCurrentPidBlockLoad before any SetFeature.
         Console.Write("  [pre-allocation] GetCurrentPidBlockLoad returns default ... ");
         var bl0 = ctrl.GetCurrentPidBlockLoad();
         if (bl0.EffectBlockIndex != 0 || bl0.LoadStatus != 0)
@@ -203,21 +203,21 @@ internal static class Program
         }
         else Console.WriteLine("OK (ebi=0, status=0)");
 
-        // Steps 4-6 — driver-side allocation via HidD_SetFeature.
+        // Steps 4-6: driver-side allocation via HidD_SetFeature.
         SafeFileHandle? hid = OpenHmHidByVidPid(ProbeVid, ProbePid);
         bool hidOpen = hid != null && !hid.IsInvalid;
         if (!hidOpen)
         {
-            Console.WriteLine("  [SetFeature path] SKIPPED — could not open HID handle");
+            Console.WriteLine("  [SetFeature path] SKIPPED: could not open HID handle");
         }
         else
         {
-            // Step 4 — first SetFeature(0x11): driver should alloc EBI=1.
+            // Step 4: first SetFeature(0x11): driver should alloc EBI=1.
             Console.Write("  [SetFeature 0x11] driver allocates EBI=1 ... ");
             if (!SendSetFeature(hid!, 0x11, new byte[] { 0x01, 0x00, 0x00 }))
             {
                 Console.WriteLine($"SKIP: HidD_SetFeature failed (Win32={Marshal.GetLastWin32Error()}) " +
-                    "— probably HidClass descriptor rejection");
+                    ": probably HidClass descriptor rejection");
             }
             else
             {
@@ -235,7 +235,7 @@ internal static class Program
                 }
                 else Console.WriteLine($"OK (ebi=1, status=Success, bitmap=0x{bitmap:X8}, count={count})");
 
-                // Step 5 — second SetFeature(0x11): EBI=2.
+                // Step 5: second SetFeature(0x11): EBI=2.
                 Console.Write("  [SetFeature 0x11 #2] driver allocates EBI=2 ... ");
                 SendSetFeature(hid!, 0x11, new byte[] { 0x01, 0x00, 0x00 });
                 ReadSectionBytes(sectionName, out section);
@@ -250,7 +250,7 @@ internal static class Program
                 }
                 else Console.WriteLine($"OK (ebi=2, bitmap=0x{bitmap:X8}, count={count})");
 
-                // Step 6 — Block Free EBI=1, then realloc reuses EBI=1.
+                // Step 6: Block Free EBI=1, then realloc reuses EBI=1.
                 Console.Write("  [SetFeature 0x1B EBI=1] driver frees ... ");
                 SendSetFeature(hid!, 0x1B, new byte[] { 0x01 });
                 ReadSectionBytes(sectionName, out section);
@@ -291,7 +291,7 @@ internal static class Program
             hid!.Dispose();
         }
 
-        // Step 7 — PublishPidState verification (regression guard, unchanged from v1.1.36).
+        // Step 7: PublishPidState verification (regression guard, unchanged from v1.1.36).
         const byte kStateEbi = 0;
         const PidStateFlags kStateFlags = PidStateFlags.ActuatorsEnabled | PidStateFlags.ActuatorPower;
         ctrl.PublishPidState(kStateEbi, kStateFlags);

@@ -1,4 +1,4 @@
-// DirectInput 8 enumeration probe — lists every gamepad/joystick visible
+﻿// DirectInput 8 enumeration probe: lists every gamepad/joystick visible
 // through IDirectInput8::EnumDevices(DI8DEVCLASS_GAMECTRL). Writes to both
 // a WPF window (focus so DI works) and to %TEMP%\dinput_enum.txt so the
 // caller can read it back without screen-scraping.

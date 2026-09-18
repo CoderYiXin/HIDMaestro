@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using HIDMaestro.Internal;
 
 namespace HIDMaestro;
 
-/// <summary>v1.3.5 — inverse of <see cref="HMController.OutputDecoded"/>.
+/// <summary>v1.3.5: inverse of <see cref="HMController.OutputDecoded"/>.
 /// Encodes a parsed-field dictionary into a vendor-blob output report's
 /// wire-format bytes per the profile's <c>extendedOutputReport</c> spec.
 ///
@@ -17,7 +17,7 @@ namespace HIDMaestro;
 /// <para>Per-controller rolling-counter state lives on
 /// <see cref="HMController"/>; reach the auto-advance path via
 /// <see cref="HMController.EncodeOutput"/>. The static <see cref="Encode"/>
-/// overload here is stateless — <c>uint8-rolling</c> fields without a dict
+/// overload here is stateless: <c>uint8-rolling</c> fields without a dict
 /// entry fall back to the spec's <c>initial</c> value, suitable for
 /// diagnostic fixtures and one-shot encode tests.</para>
 /// </summary>
@@ -38,7 +38,7 @@ public static class HMOutputEncoder
         var spec = profile.ExtendedOutputReport;
         if (spec == null)
             throw new InvalidOperationException(
-                $"Profile '{profile.Id}' has no extendedOutputReport spec — nothing to encode against.");
+                $"Profile '{profile.Id}' has no extendedOutputReport spec: nothing to encode against.");
 
         return VendorBlobCodec.EncodeOutput(spec, fields);
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace HIDMaestro;
 
@@ -33,13 +33,13 @@ public enum PidStateFlags : byte
     /// <summary>No flags set.</summary>
     None = 0,
 
-    /// <summary>Device is paused — effects are suspended but not freed.</summary>
+    /// <summary>Device is paused: effects are suspended but not freed.</summary>
     DeviceIsPaused = 1 << 0,
 
     /// <summary>Actuators are enabled; the device can render force.</summary>
     ActuatorsEnabled = 1 << 1,
 
-    /// <summary>Safety switch is engaged — the device must not render force.</summary>
+    /// <summary>Safety switch is engaged: the device must not render force.</summary>
     SafetySwitch = 1 << 2,
 
     /// <summary>Actuator override switch is engaged.</summary>
@@ -52,12 +52,12 @@ public enum PidStateFlags : byte
     EffectPlaying = 1 << 5,
 }
 
-/// <summary>v1.1.37 — snapshot of the PID Block Load Report fields the
+/// <summary>v1.1.37: snapshot of the PID Block Load Report fields the
 /// driver populates synchronously inside its SetFeature(0x11 Create New
 /// Effect) IOCTL handler. Returned by
 /// <see cref="HMController.GetCurrentPidBlockLoad"/>. The consumer reads
 /// this from its <c>OutputReceived</c> handler for Report ID 0x11 to
-/// learn which EBI the driver just assigned — the driver does the picking
+/// learn which EBI the driver just assigned: the driver does the picking
 /// now (mirroring vJoy's <c>Ffb_GetNextFreeEffect</c>); the consumer's
 /// role is to observe and wire the EBI to its own effect tracking.</summary>
 public readonly struct HMPidBlockLoad

@@ -1,4 +1,4 @@
-# WGI Silent Sink on ROOT-Enumerated UMDF2 XUSB Virtuals
+﻿# WGI Silent Sink on ROOT-Enumerated UMDF2 XUSB Virtuals
 
 **Investigation date:** 2026-04-18
 **Windows build:** 11 26200.8115 / 26100 Kits
@@ -11,15 +11,15 @@ On Windows 11 build 26200+, `Windows.Gaming.Input.Gamepad.put_Vibration` does no
 
 Chromium/Edge dispatches gamepad haptics via `put_Vibration` (upstream Chromium `device/gamepad/wgi_gamepad_device.cc:SetVibration`); no XInput haptic fallback exists in current Chromium main. The practical outcome: `vibrationActuator.playEffect` in Edge/Chrome silently no-ops for HIDMaestro virtuals while working on physical Xbox-family controllers.
 
-This finding has architectural explanation (no `xusbforcefeedback.cpp` in Windows.Gaming.Input.dll; XUSB vibration dispatch lives inline in `xusbdevice.cpp` and appears to resolve a USB-bus-enumerated target). All four fix vectors considered are either upstream of HIDMaestro or violate the hard "no kernel drivers" constraint. Option 3 — document the limitation — is the committed conclusion.
+This finding has architectural explanation (no `xusbforcefeedback.cpp` in Windows.Gaming.Input.dll; XUSB vibration dispatch lives inline in `xusbdevice.cpp` and appears to resolve a USB-bus-enumerated target). All four fix vectors considered are either upstream of HIDMaestro or violate the hard "no kernel drivers" constraint. Option 3, documenting the limitation, is the committed conclusion.
 
-## Methodology note — what went wrong, what was fixed
+## Methodology note: what went wrong, what was fixed
 
 This investigation produced multiple premature conclusions before landing on the correct finding. The process failures are listed plainly because they are load-bearing context: the "silent sink" framing was asserted and retracted twice before it was supportable on clean evidence.
 
 ### The three failures
 
-1. **Guide regression contaminated the noise floor.** A test-pattern commit reintroduced `HMButton.Guide` into `SdkDemo` and `HIDMaestroTest` continuous pulse loops. Windows Xbox UI fires a Guide-long-press haptic (`hi=0x7F` short burst) in response, which landed in the driver log and was initially misattributed to "explorer.exe ambient noise" via process A/B/A suspension. The correct reading — "our own test pattern is triggering the shell haptic ack" — was flagged by the user, who recognized the `0x7F` pattern signature. A regression guard (`scripts/check_no_guide_in_pulse.ps1`) now fails the build on any `HMButton.Guide` reference in `example/` or `test/` without an explicit `// ALLOW-GUIDE:` allowlist comment.
+1. **Guide regression contaminated the noise floor.** A test-pattern commit reintroduced `HMButton.Guide` into `SdkDemo` and `HIDMaestroTest` continuous pulse loops. Windows Xbox UI fires a Guide-long-press haptic (`hi=0x7F` short burst) in response, which landed in the driver log and was initially misattributed to "explorer.exe ambient noise" via process A/B/A suspension. The correct reading, that our own test pattern was triggering the shell haptic ack, was flagged by the user, who recognized the `0x7F` pattern signature. A regression guard (`scripts/check_no_guide_in_pulse.ps1`) now fails the build on any `HMButton.Guide` reference in `example/` or `test/` without an explicit `// ALLOW-GUIDE:` allowlist comment.
 
 2. **"Silent sink" claimed on one instrumentation layer, then committed as architectural.** The initial silent-sink finding was asserted after observing zero SDK-level `[out0]` lines during Chromium clicks. This inferred "no bytes arrived at the driver" from "no bytes decoded by the SDK's XInput parser." Under independent oversight review, the claim was retracted: absence at the parser layer is not evidence of absence at the driver reception layer. Re-run required raw-byte dumps at all three driver-side instrumentation points (`SET_STATE-in` xinputhid-filter, `[HMCOMP]` xusb22 companion, HID-WRITE/SETOUT/SETFEAT handlers) filtered by click-window timestamp, independent of parser interpretation.
 
@@ -31,7 +31,7 @@ This investigation produced multiple premature conclusions before landing on the
 
 These are transferable beyond this investigation. They are now recorded in the author's global `~/.claude/CLAUDE.md` as permanent practice.
 
-1. **Anomalies in driver-side data get a 30-second confirmation test before any narrative explanation.** The parser-bug symptom ("hi stuck at 0x02") had an obvious check — move only one slider, watch the byte — that would have ruled out the "user's slider was at 0.78%" story in under a minute. When an anomaly appears, the first move is "what test would distinguish the explanations?" not "what explanation fits?"
+1. **Anomalies in driver-side data get a 30-second confirmation test before any narrative explanation.** The parser-bug symptom ("hi stuck at 0x02") had an obvious check, moving one slider and watching the byte, that would have ruled out the "user's slider was at 0.78%" story in under a minute. When an anomaly appears, the first move is "what test would distinguish the explanations?" not "what explanation fits?"
 
 2. **Raw-byte dumps at the driver's reception layer are ground truth; parser-filtered views are not.** Every "silent sink" hypothesis inherits uncertainty from the layer through which silence is observed. Driver-side logs (SET_STATE-in, HMCOMP, HID-WRITE/SETOUT/SETFEAT) record the raw IOCTL input buffers unconditionally of parser interpretation. Use them.
 
@@ -48,7 +48,7 @@ All observations after xusbshim canonicalization fix, with raw-byte dumps at dri
 | WGI `Gamepad::put_Vibration` from focused Win32 GUI | Probe `00 0D 00 00 01` arrives; idle-clear `00 00 00 00 02` arrives; **zero motor-bearing bytes at any layer** | Physical rumbles | Physical rumbles |
 | Chromium Edge 147 `vibrationActuator.playEffect` on hardwaretester.com | Same as above: probes + idle-clears only, zero motor bytes at any of three driver layers | Physical rumbles (user tactile confirmation) | Physical rumbles (user tactile confirmation) |
 
-### Three-layer log excerpt — Chromium click window (18:46:04 → 18:48:00)
+### Three-layer log excerpt: Chromium click window (18:46:04 → 18:48:00)
 
 Chromium click targeted physical 360 first, then our virtual, within one truncated log window:
 
@@ -67,20 +67,20 @@ Chromium talks to the virtual (probes arrive at both instrumentation layers). Ph
 
 ### Parser-fix before/after (xusbshim canonicalization)
 
-Before fix — XInputTester right slider 0→max→0 (left pinned):
+Before fix: XInputTester right slider 0→max→0 (left pinned):
 ```
 raw[5B]=00 00 FD 02 00 | XInput rumble lo=253 hi=2    # hi STUCK at 2 (trailer misread)
 raw[5B]=00 00 00 02 00 | XInput rumble lo=0 hi=2
 ```
 
-After fix — deterministic `XInputSetState` probe:
+After fix: deterministic `XInputSetState` probe:
 ```
 wLeft=0xFFFF wRight=0x0000 → 00 00 FF 00 02   (byte[2]=left, byte[3]=right, byte[4]=trailer)
 wLeft=0x0000 wRight=0xFFFF → 00 00 00 FF 02
 wLeft=0x8080 wRight=0x4040 → 00 00 80 40 02
 ```
 
-After fix — XInputTester 2D sweep (both sliders independently):
+After fix: XInputTester 2D sweep (both sliders independently):
 ```
 raw[5B]=00 00 00 7D 00 | XInput rumble lo=0 hi=125    # right slider alone
 raw[5B]=00 00 FD 00 00 | XInput rumble lo=253 hi=0    # left slider alone
@@ -93,19 +93,19 @@ HID-child device stacks:
 - **Physical 360:** `HidHide → HidUsb`, with `xusb22.sys` service bound to the USB composite device parent (`USB\VID_045E&PID_028E\...`).
 - **Our virtual:** `HidHide → WUDFRd → mshidumdf`, no USB bus parent. HMCOMPANION (our UMDF2 service) registers the XUSB interface class via `hidmaestro_xusbshim_class.inf` extension INF.
 
-Source-file footprint scan of `Windows.Gaming.Input.dll` (Win11 26200, 2026-04-14 build; embedded `__FILE__` strings extracted from the binary): there are dedicated `hidforcefeedback.cpp`, `gipforcefeedback.cpp`, and `hapticfeedbackmotor.cpp` modules, but **no `xusbforcefeedback.cpp`**. XUSB vibration dispatch lives inline in `xusbdevice.cpp`. Empirically, this inline handler appears to resolve the dispatch target by querying `xusb22.sys` on a USB composite parent. Our ROOT-enumerated virtual has no USB parent, so the resolution returns nothing and the call is silently dropped — the caller observes `put_Vibration` returning success with no observable side effects.
+Source-file footprint scan of `Windows.Gaming.Input.dll` (Win11 26200, 2026-04-14 build; embedded `__FILE__` strings extracted from the binary): there are dedicated `hidforcefeedback.cpp`, `gipforcefeedback.cpp`, and `hapticfeedbackmotor.cpp` modules, but **no `xusbforcefeedback.cpp`**. XUSB vibration dispatch lives inline in `xusbdevice.cpp`. Empirically, this inline handler appears to resolve the dispatch target by querying `xusb22.sys` on a USB composite parent. Our ROOT-enumerated virtual has no USB parent, so the resolution returns nothing and the call is silently dropped: the caller observes `put_Vibration` returning success with no observable side effects.
 
 Direct `xinput1_4.XInputSetState` uses a different path: it opens the XUSB interface class symlink (which our xusbshim Extension INF registers for HID\VID_045E&PID_028E&IG_00) and sends IOCTL_XUSB_SET_STATE through it. That reaches our UMDF2 upper filter, which is why XInputSetState works while `put_Vibration` does not.
 
 ## Fix vectors considered and why each is blocked
 
-1. **Reclassify virtual as HID with PID force-feedback TLC** — add a PID (Physical Interface Device) collection to the HID descriptor so `hidforcefeedback.cpp` routes dispatch via HID output reports. Blocked because reclassifying the virtual out of XUSB class loses XInput slot visibility, breaks `XInputGetState` consumers, and we have no evidence WGI's HID-FFB backend would route to our descriptor correctly.
+1. **Reclassify virtual as HID with PID force-feedback TLC**: add a PID (Physical Interface Device) collection to the HID descriptor so `hidforcefeedback.cpp` routes dispatch via HID output reports. Blocked because reclassifying the virtual out of XUSB class loses XInput slot visibility, breaks `XInputGetState` consumers, and we have no evidence WGI's HID-FFB backend would route to our descriptor correctly.
 
-2. **Surgical fix of WGI's XUSB dispatch gate** — if the gate is a specific registry key or device interface property, satisfy it from UMDF2. Blocked because the inline dispatch in `xusbdevice.cpp` appears to call into `xusb22.sys` on a USB-bus-enumerated target; neither the USB-bus-presence check nor the xusb22 service binding is addressable from UMDF2 without a kernel bus driver.
+2. **Surgical fix of WGI's XUSB dispatch gate**: if the gate is a specific registry key or device interface property, satisfy it from UMDF2. Blocked because the inline dispatch in `xusbdevice.cpp` appears to call into `xusb22.sys` on a USB-bus-enumerated target; neither the USB-bus-presence check nor the xusb22 service binding is addressable from UMDF2 without a kernel bus driver.
 
-3. **Chromium uses XInputDataFetcher for haptics** — Chromium source review confirmed `XInputDataFetcherWin::PlayEffect` exists (`device/gamepad/xinput_data_fetcher_win.cc:237`) but is unreachable because its Factory is not registered in `gamepad_platform_data_fetcher.h:46-55`. Only `WgiDataFetcher::PlayEffect` is on the dispatch path. Changing this requires an upstream Chromium feature request, not a user-mode driver lever.
+3. **Chromium uses XInputDataFetcher for haptics**: Chromium source review confirmed `XInputDataFetcherWin::PlayEffect` exists (`device/gamepad/xinput_data_fetcher_win.cc:237`) but is unreachable because its Factory is not registered in `gamepad_platform_data_fetcher.h:46-55`. Only `WgiDataFetcher::PlayEffect` is on the dispatch path. Changing this requires an upstream Chromium feature request, not a user-mode driver lever.
 
-4. **Kernel bus driver** — provide a USB-bus-enumerated parent for our virtual. Violates the hard "no kernel drivers" constraint that defines the project.
+4. **Kernel bus driver**: provide a USB-bus-enumerated parent for our virtual. Violates the hard "no kernel drivers" constraint that defines the project.
 
 ## Open questions (Microsoft-facing, drafted)
 
@@ -121,7 +121,7 @@ WGI enumeration probes also reach us (`IOCTL_XUSB_SET_STATE 00 0D 00 00 01` arri
 [HMCOMP] IOCTL 8000A010 [00 00 00 00 02]      # idle-state clear
 ```
 
-But `Windows.Gaming.Input.Gamepad.put_Vibration` from a focused caller — including Chromium's `vibrationActuator.playEffect` — produces zero motor-bearing bytes at either instrumented path. The probe succeeds; the motor-byte dispatch never occurs. For a physical USB-enumerated Xbox 360 Wired on the same machine, the same caller path produces physical rumble.
+But `Windows.Gaming.Input.Gamepad.put_Vibration` from a focused caller, including Chromium's `vibrationActuator.playEffect`, produces zero motor-bearing bytes at either instrumented path. The probe succeeds; the motor-byte dispatch never occurs. For a physical USB-enumerated Xbox 360 Wired on the same machine, the same caller path produces physical rumble.
 
 **Question:** Is WGI's XUSB haptic dispatch hard-gated on USB-bus enumeration of the target device? If so, is there a documented mechanism for a UMDF2 virtual device registered under the ROOT enumerator to appear as a valid WGI haptic dispatch target without adding a kernel-mode bus driver? If the gate is not USB-enumeration per se, what is it, and can it be satisfied from UMDF2?
 

@@ -1,6 +1,6 @@
-# Drives the 6-controller heterogeneous test, samples CPU in BOTH the
+﻿# Drives the 6-controller heterogeneous test, samples CPU in BOTH the
 # active state (250 Hz × 6 pattern threads stress test) and the idle state
-# (pattern threads paused — measures the driver's true idle CPU cost,
+# (pattern threads paused: measures the driver's true idle CPU cost,
 # which should be ~0% with event-driven IPC vs a saturated core per
 # controller before the fix). Run via sudo --inline.
 $ErrorActionPreference = 'Stop'

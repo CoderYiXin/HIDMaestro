@@ -1,11 +1,11 @@
-# `HMButton.Guide` in test pulse loops — banned by default, allowlist for intentional use
+﻿# `HMButton.Guide` in test pulse loops: banned by default, allowlist for intentional use
 
 ## Why this is enforced
 
 When a HIDMaestro virtual reports Guide pressed, Windows Xbox UI fires a
 Guide-long-press haptic ack (`hi=0x7F` short burst) to the controller's
 XInput slot. If a continuous test-pulse loop cycles Guide, that haptic ack
-floods any haptic-trace tooling — the shell-emitted SET_STATE bytes
+floods any haptic-trace tooling: the shell-emitted SET_STATE bytes
 overlap and mask real haptic dispatch (e.g. browser vibration) under
 investigation.
 
@@ -22,9 +22,9 @@ if one appears without an explicit allowlist comment on the same line.
 
 ## Allowlist syntax
 
-If you legitimately need `HMButton.Guide` in a test — the common case is
+If you legitimately need `HMButton.Guide` in a test: the common case is
 testing Guide-long-press handling itself, or one-shot snapshot frames that
-demonstrate Guide routing — add an `ALLOW-GUIDE:` trailing comment on the
+demonstrate Guide routing: add an `ALLOW-GUIDE:` trailing comment on the
 same line with a short justification:
 
 ```cs
@@ -40,7 +40,7 @@ Thread.Sleep(2000);
 ```
 
 The allowlist comment MUST be on the same line as the `HMButton.Guide`
-reference. Comments on the line above or below do not count — the regex
+reference. Comments on the line above or below do not count: the regex
 is line-scoped to keep the check simple and auditable.
 
 ## What you should NOT do
@@ -65,6 +65,6 @@ or CI if you want continuous enforcement.
 
 ## See also
 
-- [scripts/check_no_guide_in_pulse.ps1](../../scripts/check_no_guide_in_pulse.ps1) — the guard itself (header comment documents the same rules)
-- [docs/investigations/wgi-silent-sink-2026-04/finding.md](../investigations/wgi-silent-sink-2026-04/finding.md#three-standing-rules-that-emerged) — investigation that produced this rule
-- [docs/investigations/wgi-silent-sink-2026-04/investigation-history.md](../investigations/wgi-silent-sink-2026-04/investigation-history.md#first-silent-sink-conclusion--retracted) — history of the Guide regression and why the strict form of this guard exists
+- [scripts/check_no_guide_in_pulse.ps1](../../scripts/check_no_guide_in_pulse.ps1): the guard itself (header comment documents the same rules)
+- [docs/investigations/wgi-silent-sink-2026-04/finding.md](../investigations/wgi-silent-sink-2026-04/finding.md#three-standing-rules-that-emerged): investigation that produced this rule
+- [docs/investigations/wgi-silent-sink-2026-04/investigation-history.md](../investigations/wgi-silent-sink-2026-04/investigation-history.md#first-silent-sink-conclusion--retracted): history of the Guide regression and why the strict form of this guard exists

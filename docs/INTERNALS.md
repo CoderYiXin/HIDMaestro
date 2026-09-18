@@ -1,4 +1,4 @@
-# HIDMaestro Internals
+﻿# HIDMaestro Internals
 
 Technical reference for HIDMaestro. The [README](../README.md) covers what HIDMaestro is and how to use it. This document covers how it works: the descriptor and enumeration techniques, the device topology, the user-mode rationale, the validation methodology, and the timing characteristics.
 
@@ -20,9 +20,9 @@ Result: 5 axes and 10 buttons in DirectInput (matching real xusb22.sys), separat
 
 ### Data-Driven Vendor-Blob Codec (Sony USB + BT)
 
-Sony BT controllers (DualSense, DualSense Edge, DS4 BT) declare their input as a 78-byte vendor-defined "blob" — one opaque field with no descriptor-level breakdown of which bytes carry sticks vs buttons vs gyro vs CRC32. Pre-v1.3.5 the SDK couldn't pack this and fell back to emitting basic Report 1 (9 bytes), which Steam Input misclassified as USB and `dualsense-tester` couldn't parse.
+Sony BT controllers (DualSense, DualSense Edge, DS4 BT) declare their input as a 78-byte vendor-defined "blob": one opaque field with no descriptor-level breakdown of which bytes carry sticks vs buttons vs gyro vs CRC32. Pre-v1.3.5 the SDK couldn't pack this and fell back to emitting basic Report 1 (9 bytes), which Steam Input misclassified as USB and `dualsense-tester` couldn't parse.
 
-v1.3.5 makes the byte layout data: profile JSON declares `extendedReport` (input) and `extendedOutputReport` (output) blocks describing every field's type, byte position, and bit range. The SDK becomes a generic codec that walks the field list. Future profiles with vendor blobs (Switch Pro extended, vendor-specific wheels) add the JSON only — no SDK code changes per profile.
+v1.3.5 makes the byte layout data: profile JSON declares `extendedReport` (input) and `extendedOutputReport` (output) blocks describing every field's type, byte position, and bit range. The SDK becomes a generic codec that walks the field list. Future profiles with vendor blobs (Switch Pro extended, vendor-specific wheels) add the JSON only: no SDK code changes per profile.
 
 The full Sony catalog ships with v1.3.5 data-driven blocks: DS5 BT (`dualsense-bt`, `dualsense-bt-full`, `dualsense-edge-bt`) gain both input + output (Report 0x31, 78-byte BT-format with `[0xA1,0x31]`/`[0xA2,0x31]` CRC32 prefixes); DS4 BT (`dualshock-4-v2-bt`) gets input + output (Report 0x11, `[0xA1,0x11]`/`[0xA2,0x11]` CRC32 prefixes); DS5 USB (`dualsense`, `dualsense-edge`) and DS4 USB (`dualshock-4-v1`, `dualshock-4-v1-full`, `dualshock-4-v2`) gain output blocks (Report 0x02 / Report 0x05; no CRC since USB is reliable). PadForge can drive any of them via `HMOutputEncoder.Encode(profile, fields)` without inline byte-packing.
 
@@ -44,7 +44,7 @@ Round-trip in both directions: `controller.OutputDecoded` event surfaces incomin
 
 The encoder/decoder reaches the public input-state surface too. `HMGamepadState` ships per-frame fields the Sony JSON blocks understand: `TouchpadFinger0Active/X/Y/Id` + `TouchpadFinger1Active/X/Y/Id`, `GyroPitch/Yaw/Roll` + `AccelX/Y/Z` + `SensorTimestamp` (DS4 100µs ticks, DS5 microseconds), and `BatteryLevel` (0..10) + `BatteryCharging` + `BatteryFull` + `MicMuted` + `HeadphonesConnected`. (`TouchpadPacketCounter` exists on the struct but no shipped profile declares its semantic, so it is not currently encoded.) Profiles that don't declare these regions silently ignore them, so the same caller code works across every controller. `dualsense-tester` (ds.daidr.me) renders touchpad coordinates, the IMU vector, and the battery panel for any DualSense or DualSense Edge virtual (USB or BT) once the consumer fills these fields.
 
-DS4 Bluetooth vibration through the browser Gamepad API is fixed in v1.3.5 by setting the device's `HidD_GetAttributes` `VersionNumber` to 0 — the value Chromium's `DualShock4Controller::BusTypeFromVersionNumber` checks for the BT-format report header. Pre-v1.3.5 the SDK hardcoded `0x0100` (USB), Chromium picked the wrong wire layout, and the rumble bytes never reached the device. Profiles can now override `versionNumber` in JSON; `dualshock-4-v2-bt.json` ships with `0`. Steam Input never used this gate so v1.3.5 doesn't change Steam behavior either way.
+DS4 Bluetooth vibration through the browser Gamepad API is fixed in v1.3.5 by setting the device's `HidD_GetAttributes` `VersionNumber` to 0: the value Chromium's `DualShock4Controller::BusTypeFromVersionNumber` checks for the BT-format report header. Pre-v1.3.5 the SDK hardcoded `0x0100` (USB), Chromium picked the wrong wire layout, and the rumble bytes never reached the device. Profiles can now override `versionNumber` in JSON; `dualshock-4-v2-bt.json` ships with `0`. Steam Input never used this gate so v1.3.5 doesn't change Steam behavior either way.
 
 ### Switch Pro Protocol Responder
 
@@ -80,7 +80,7 @@ Windows has a built-in GameInput mapping database for known VID/PIDs. HIDMaestro
 
 WGI (`Windows.Gaming.Input.dll`) admits devices into its provider graph through `ProviderManagerWorker::OnPnpDeviceAdded`. A Ghidra decomp of that function on Win11 26200 showed the gate: WGI accepts a device only if its ClassGuid is in a hard-coded four-entry pass-list (`HIDClass`, `XnaComposite`, one other setup class, one GameInput class) OR if `IsDeviceOrAncestorFilteredBy(path, L"xinputhid")` returns true. The fallback check is a literal `wcsncmp` against strings in the device's (or any ancestor's) `UpperFilters` MULTI_SZ.
 
-HIDMaestro's XUSB companion (`SWD\HIDMAESTRO\<token>`) runs under the System class `{4d36e97d-...}`. That class is not on the pass-list, so before this work WGI silently skipped the companion despite it publishing the XUSB device interface — Chromium's `put_Vibration` went nowhere for Xbox 360 Wired.
+HIDMaestro's XUSB companion (`SWD\HIDMAESTRO\<token>`) runs under the System class `{4d36e97d-...}`. That class is not on the pass-list, so before this work WGI silently skipped the companion despite it publishing the XUSB device interface: Chromium's `put_Vibration` went nowhere for Xbox 360 Wired.
 
 The fix writes the string `"xinputhid"` to the companion's `UpperFilters` registry value via the INF's `HKR` AddReg. `xinputhid.sys` is a HID-class filter, so it never actually attaches to the System-class companion; the string sits inert in the registry and WGI's wstring compare passes anyway. The companion enters WGI via the XUSB dispatch path, and `IOCTL_XUSB_SET_STATE` starts reaching the driver with real motor bytes on `put_Vibration`.
 
@@ -90,7 +90,7 @@ The 29-byte `IOCTL_XUSB_WAIT_FOR_INPUT` reply format was nailed down in the same
 
 ### SWD Migration: the XInput slot-1-skip fix
 
-Pre-fix, HIDMaestro created its devnodes via `SetupDiCreateDeviceInfoW` under `ROOT\` — the standard root-enumerated path. Windows assigns the null-sentinel ContainerID `{00000000-0000-0000-FFFF-FFFFFFFFFFFF}` to ROOT-enumerated devices unless overridden, and the SetupAPI path provides no way to override it.
+Pre-fix, HIDMaestro created its devnodes via `SetupDiCreateDeviceInfoW` under `ROOT\`: the standard root-enumerated path. Windows assigns the null-sentinel ContainerID `{00000000-0000-0000-FFFF-FFFFFFFFFFFF}` to ROOT-enumerated devices unless overridden, and the SetupAPI path provides no way to override it.
 
 Ghidra decomp of `xinput1_4.dll` on Win11 26200 traced the consequence. `FUN_18000de2c` returns 1 when ContainerID matches the null sentinel OR when HardwareIds contains the literal `XINPUT_EMBEDDED_DEVICE` substring. Caller `FUN_18000c728` at `0x18000C8AE` does `test al, al; jne → or dword ptr [rbx], 4`, setting bit 2 on the device struct. `FUN_18000f85c`'s fallback allocator at `0x18000F9C3-C7` skips internal slot 0 for bit-2 devices when Feature Manager flag `0x39EB83D` is on; `FUN_18000f178` then promotes the first bit-2 slot to "primary" and the query-time swap at `FUN_18000f08c` surfaces an empty slot 1 to consumers.
 
@@ -167,7 +167,7 @@ User-Mode Test App
   │     │   ParentIdPrefix on the parent, so the HID child's path is the
   │     │   same on every life. See Techniques: Stable Device Identity.
   │     ├─ USB interface (XUSB-companion profiles also get the xinputhid
-  │     │   UpperFilter written per-instance by the SDK — see Techniques)
+  │     │   UpperFilter written per-instance by the SDK: see Techniques)
   │     ├─ Legacy WinExInput interface registration retained for historical
   │     │   compatibility; Ghidra decomp of Windows.Gaming.Input.dll showed
   │     │   zero references to its GUID, so it is not WGI's actual hook
@@ -178,7 +178,7 @@ User-Mode Test App
         ├─ XUSB interface {EC87F1E3-...} → XInput discovery + WGI dispatch
         ├─ UpperFilters = "xinputhid" (pure registry-string tripwire that
         │     admits the device to WGI's XUSB path without xinputhid.sys
-        │     actually attaching — see Techniques below)
+        │     actually attaching: see Techniques below)
         ├─ Same explicit non-sentinel ContainerID as the main device
         │   (per-controller GUID derived from the controller index) so
         │   the two devnodes group as one logical controller in Settings
@@ -243,7 +243,7 @@ Cold start includes certificate creation, signing, catalog generation, driver pa
 
 **Batch teardown:** `HMContext.Dispose()` and the public `DisposeControllersInParallel(controllers, perControllerCallback)` parallelize per-controller `DIF_REMOVE` work and run the system-wide HID orphan sweep once at the end instead of per-controller. With v1.3.1's SwD-first ordering the per-controller cost is already ~135–500ms, so the batch path's wall-clock benefit is now mostly avoiding the per-controller orphan-sweep duplication; for 4-6 mixed controllers the cleanup typically completes in 1.5-4s end to end. Live profile-switch (single `HMController.Dispose()` mid-session) stays synchronous because slot-allocation determinism requires the old devnode fully gone before the new one is created.
 
-**Self-healing on init:** `HMContext.InstallDriver` calls `RemoveAllVirtualControllers` first thing, so any orphans left by a prior crashed session are cleaned up before the new install runs. The same call is exposed publicly as `HMContext.RemoveAllVirtualControllers()` for consumers who want explicit defensive cleanup (e.g. on app exit). In normal operation, individual `HMController.Dispose()` is sufficient — there is no per-process cleanup obligation on shutdown.
+**Self-healing on init:** `HMContext.InstallDriver` calls `RemoveAllVirtualControllers` first thing, so any orphans left by a prior crashed session are cleaned up before the new install runs. The same call is exposed publicly as `HMContext.RemoveAllVirtualControllers()` for consumers who want explicit defensive cleanup (e.g. on app exit). In normal operation, individual `HMController.Dispose()` is sufficient: there is no per-process cleanup obligation on shutdown.
 
 ### Profile Architecture Groups and Teardown Timing
 
@@ -320,13 +320,13 @@ SWD\HIDMAESTRO_VID_045E_PID_0B13&IG_00\HM_0000
 
 **Both sides fast post-v1.3.2.** xinputhid is a Microsoft inbox kernel filter driver. Pre-v1.3.1 *teardown* went through the full PnP query-remove → class installer → filter unload chain on every Dispose because `DeviceManager.RemoveDevice` removed HID children before the SwD parent (each child's `WaitForDeviceRemoval` then timed out at 2,000ms because the children couldn't unwind while the parent's HSWDEVICE refcount was still held). v1.3.1 closes the SwD parent first via `SwdDeviceFactory.Remove` and blocks on `CM_NOTIFY_ACTION_DEVICEINSTANCEREMOVED`; the children cascade automatically once the kernel releases the parent. Disposal ~500ms.
 
-v1.3.2 fixes the *creation* side too. `SetupController` runs three wait budgets after `CreateGamepadCompanion`: `WaitForHidChild` (10 s), `WaitForDeviceStarted` (5 s), and `WaitForXInputSlotClaim` (15 s pre-v1.3.2, **500 ms** post). The slot-claim wait was the dominant cost: distribution is bimodal (xinputhid publishes the slot in <100 ms when healthy, never publishes when xinputhid's allocator is in a stuck state — kernel state issue, prior-session residue), so the prior 15 s budget burned the full duration on every stuck case. PadForge users observed 13-14 s freezes on a single Xbox Series BT create when this hit. The 500 ms cap sits ~5x above the slowest observed healthy claim (giving slow-but-working cases full headroom) and degrades the stuck case to a near-imperceptible pause. Controller stays functional via DI/HIDAPI/Browser/WGI when XInput doesn't pick it up; XInput consumers see the slot appear lazily on their next poll cycle. Creation latency for Xbox Series BT is ~150 ms healthy / ~600 ms worst case post-fix.
+v1.3.2 fixes the *creation* side too. `SetupController` runs three wait budgets after `CreateGamepadCompanion`: `WaitForHidChild` (10 s), `WaitForDeviceStarted` (5 s), and `WaitForXInputSlotClaim` (15 s pre-v1.3.2, **500 ms** post). The slot-claim wait was the dominant cost: distribution is bimodal (xinputhid publishes the slot in <100 ms when healthy, never publishes when xinputhid's allocator is in a stuck state: kernel state issue, prior-session residue), so the prior 15 s budget burned the full duration on every stuck case. PadForge users observed 13-14 s freezes on a single Xbox Series BT create when this hit. The 500 ms cap sits ~5x above the slowest observed healthy claim (giving slow-but-working cases full headroom) and degrades the stuck case to a near-imperceptible pause. Controller stays functional via DI/HIDAPI/Browser/WGI when XInput doesn't pick it up; XInput consumers see the slot appear lazily on their next poll cycle. Creation latency for Xbox Series BT is ~150 ms healthy / ~600 ms worst case post-fix.
 
 #### SwD-first removal ordering (v1.3.1)
 
-Two of the three architecture groups (Xbox 360 Wired and Xbox Series BT) own a SwDevice-enumerated parent. SwDevice lifetimes are anchored to the HSWDEVICE handle, not the PnP devnode — children of a SwD parent cannot fully unwind their query-remove cascade until the parent's handle drops its kernel refcount. Pre-v1.3.1, `DeviceManager.RemoveDevice` issued `DIF_REMOVE` on every HID child first (each followed by a 2,000ms `WaitForDeviceRemoval` that timed out because the parent was still holding the lifetime lock), then closed the SwDevice handle. Net cost: ~5,700ms for Xbox 360 Wired, ~11,000ms for Xbox Series BT, scaling worse with more children.
+Two of the three architecture groups (Xbox 360 Wired and Xbox Series BT) own a SwDevice-enumerated parent. SwDevice lifetimes are anchored to the HSWDEVICE handle, not the PnP devnode: children of a SwD parent cannot fully unwind their query-remove cascade until the parent's handle drops its kernel refcount. Pre-v1.3.1, `DeviceManager.RemoveDevice` issued `DIF_REMOVE` on every HID child first (each followed by a 2,000ms `WaitForDeviceRemoval` that timed out because the parent was still holding the lifetime lock), then closed the SwDevice handle. Net cost: ~5,700ms for Xbox 360 Wired, ~11,000ms for Xbox Series BT, scaling worse with more children.
 
-v1.3.1 inverts the order: for any `SWD\` parent, close the SwDevice handle FIRST via `SwdDeviceFactory.Remove`, block on `CM_NOTIFY_ACTION_DEVICEINSTANCEREMOVED` for the parent (so callers know the kernel has actually propagated removal, not just that the handle closed), then mop up any HID children that survived the cascade — usually none, because the SwD parent's release fires its children's removal in one cascade.
+v1.3.1 inverts the order: for any `SWD\` parent, close the SwDevice handle FIRST via `SwdDeviceFactory.Remove`, block on `CM_NOTIFY_ACTION_DEVICEINSTANCEREMOVED` for the parent (so callers know the kernel has actually propagated removal, not just that the handle closed), then mop up any HID children that survived the cascade: usually none, because the SwD parent's release fires its children's removal in one cascade.
 
 A second optimization in the same change: when a HIDMAESTRO sweep walks registry entries that exist only as PHANTOM (registry residue from prior sessions, no live devnode), skip the `hmswd.exe` SwDeviceCreate-reconnect roundtrip entirely. Saves ~50-75ms per stale entry and prevents creep across same-process recreation cycles.
 
@@ -414,7 +414,7 @@ Main HID device:
                                        companion)
 ```
 
-Only one device interface is registered on the XUSB companion. Publishing a second interface would create a duplicate WGI provider arrival and classifier confusion — the tripwire plus the single XUSB registration is what produces exactly one Gamepad.
+Only one device interface is registered on the XUSB companion. Publishing a second interface would create a duplicate WGI provider arrival and classifier confusion: the tripwire plus the single XUSB registration is what produces exactly one Gamepad.
 </details>
 
 ## How to Reproduce the Validation
@@ -442,7 +442,7 @@ To reproduce: run `HIDMaestroTest.exe emulate <profile-id>`, then run `python sc
 |------|---------|
 | **XUSB** | Xbox USB protocol. The device interface GUID (`{EC87F1E3-...}`) that `xinput1_4.dll` discovers to find Xbox controllers, and the one WGI walks for XUSB-backed Gamepads. |
 | **WinExInput** | Windows Extended Input. A device interface GUID (`{6C53D5FD-...}`) registered on HID parents by HIDMaestro for historical reasons. Ghidra decomp of `Windows.Gaming.Input.dll` (Win11 26200) found zero references to this GUID; it is not actually WGI's `GamepadAdded` source. WGI admission comes from the HIDClass pass-list (plain HID profiles) or the xinputhid UpperFilter tripwire (Xbox XUSB-companion profiles). |
-| **xinputhid UpperFilter tripwire** | Registry string `"xinputhid"` written to a device's `DEVPKEY_Device_UpperFilters` (via INF HKR AddReg or SetupAPI) to satisfy WGI's `IsDeviceOrAncestorFilteredBy` wstring compare. Does not load `xinputhid.sys` — the filter only attaches to HID-class devices. Admits a System-class device (the XUSB companion at `SWD\HIDMAESTRO`) to WGI's XUSB dispatch path. See Techniques. |
+| **xinputhid UpperFilter tripwire** | Registry string `"xinputhid"` written to a device's `DEVPKEY_Device_UpperFilters` (via INF HKR AddReg or SetupAPI) to satisfy WGI's `IsDeviceOrAncestorFilteredBy` wstring compare. Does not load `xinputhid.sys`: the filter only attaches to HID-class devices. Admits a System-class device (the XUSB companion at `SWD\HIDMAESTRO`) to WGI's XUSB dispatch path. See Techniques. |
 | **XUSB Companion** | A separate UMDF2 device (`HMXInput.dll`) that handles XUSB IOCTLs for XInput. Lives at `SWD\HIDMAESTRO\<token>`. Needed because `mshidumdf` suppresses XUSB on HID devices. |
 | **SWD enumerator** | "Software-device" PnP enumerator. Devices created via `SwDeviceCreate` (cfgmgr32) appear under `HKLM\SYSTEM\CurrentControlSet\Enum\SWD\<enumerator>\<instance>`. The SwDevice API lets us specify an explicit non-sentinel `pContainerId`, which is the linchpin of the slot-1-skip fix. |
 | **Identity token** | The instance-name segment every devnode of one virtual controller carries: `HM_0000` for the default key of index 0, `HM_` plus sixteen hex digits for a consumer key. Fixed across lives so the HID child keeps its path. Replaced the per-process session-id prefix in v1.8.0. See Techniques: Stable Device Identity. |

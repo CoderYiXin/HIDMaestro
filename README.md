@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/logo-light.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/logo.png">
@@ -8,7 +8,7 @@
 
 <h1 align="center">HIDMaestro</h1>
 
-*"And we talk of Christ, we rejoice in Christ, we preach of Christ, we prophesy of Christ, and we write according to our prophecies, that our children may know to what source they may look for a remission of their sins."* — 2 Nephi 25:26
+*"And we talk of Christ, we rejoice in Christ, we preach of Christ, we prophesy of Christ, and we write according to our prophecies, that our children may know to what source they may look for a remission of their sins."* 2 Nephi 25:26
 
 *Glory, honor, and praise to the Lord Jesus Christ, the source of all truth and salvation, forever and ever.*
 

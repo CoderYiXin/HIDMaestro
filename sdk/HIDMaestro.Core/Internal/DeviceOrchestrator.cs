@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -41,7 +41,7 @@ internal static class DeviceOrchestrator
     // nothing here does.
 
     // ════════════════════════════════════════════════════════════════════
-    //  Diagnostic log for teardown investigations — gated by env var
+    //  Diagnostic log for teardown investigations: gated by env var
     //  HIDMAESTRO_DIAG=1. Writes to %TEMP%\HIDMaestro\teardown_diag.log.
     //  Each TeardownController / RemoveDevice / WaitForDeviceRemoval call
     //  emits one line with timestamp + elapsed-ms + outcome. Off by default
@@ -65,7 +65,7 @@ internal static class DeviceOrchestrator
                     string dir = Path.Combine(Path.GetTempPath(), "HIDMaestro");
                     Directory.CreateDirectory(dir);
                     string diagPath = Path.Combine(dir, "teardown_diag.log");
-                    // T32-2 — keep the StreamWriter open across LogDiag calls
+                    // T32-2: keep the StreamWriter open across LogDiag calls
                     // and flush per write. Was File.AppendAllText (open/write/
                     // close per call); during HIDMAESTRO_DIAG=1 battery runs
                     // that's ~3-4K file ops adding 10-40 s to the wall time.
@@ -95,7 +95,7 @@ internal static class DeviceOrchestrator
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  Timing instrumentation — gated by env var HIDMAESTRO_TIMING=1.
+    //  Timing instrumentation: gated by env var HIDMAESTRO_TIMING=1.
     //  When enabled, each SetupController step's duration is appended to
     //  %TEMP%\HIDMaestro\setup_timing.log so we can pin regressions across
     //  runs without polluting stdout. Zero-overhead when disabled.
@@ -154,7 +154,7 @@ internal static class DeviceOrchestrator
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  Per-controllerIndex teardown gate — defense-in-depth coordination
+    //  Per-controllerIndex teardown gate: defense-in-depth coordination
     //  between TeardownController and SetupController.
     //
     //  PadForge's swap path is:
@@ -175,12 +175,12 @@ internal static class DeviceOrchestrator
     //    entry. If the primary wait times out or returns early for any
     //    reason (kernel slow, xinputhid stuck, future regression), the
     //    new SetupController for the same index still blocks at the gate
-    //    until the prior teardown's exit completes — preventing the
+    //    until the prior teardown's exit completes: preventing the
     //    "duplicate controller because the new bind pre-empted the old
     //    teardown" symptom.
     //
     //  Initial state of every gate is signaled (created lazily, fresh).
-    //  Different controllerIndex values get separate gates — parallel
+    //  Different controllerIndex values get separate gates: parallel
     //  teardown of unrelated controllers isn't serialized.
     // ════════════════════════════════════════════════════════════════════
 
@@ -193,7 +193,7 @@ internal static class DeviceOrchestrator
         {
             if (!s_teardownGates.TryGetValue(controllerIndex, out var ev))
             {
-                // Created in signaled state — no teardown is in flight yet.
+                // Created in signaled state: no teardown is in flight yet.
                 ev = new ManualResetEventSlim(initialState: true);
                 s_teardownGates[controllerIndex] = ev;
             }
@@ -221,7 +221,7 @@ internal static class DeviceOrchestrator
     /// controllerIndex has fully completed. Called by SetupController at
     /// entry. Returns immediately if no teardown is in flight (gate already
     /// signaled). The caller-supplied timeout protects against a
-    /// Reset-without-Set regression — beyond which we proceed regardless
+    /// Reset-without-Set regression: beyond which we proceed regardless
     /// and trust the primary cascade-complete wait inside
     /// TeardownController.</summary>
     private static void WaitForPriorTeardown(int controllerIndex, int timeoutMs = 120_000)
@@ -296,7 +296,7 @@ internal static class DeviceOrchestrator
     private static readonly Guid XusbInterfaceGuid = new("EC87F1E3-C13B-4100-B5F7-8B84D54260CB");
 
     // ════════════════════════════════════════════════════════════════════
-    //  Process helper (silent — no Console output)
+    //  Process helper (silent: no Console output)
     // ════════════════════════════════════════════════════════════════════
 
     private static (int exitCode, string output) RunProcess(string fileName, string args, int timeoutMs = 30_000)
@@ -333,7 +333,7 @@ internal static class DeviceOrchestrator
     //   1. RemoveAllVirtualControllers (public)
     //        Trigger:  consumer calls explicitly (PadForge calls it at
     //                  startup AND from its ProcessExit handler)
-    //        Scope:    full purge — every ROOT/SWD enumerator subtree owned
+    //        Scope:    full purge: every ROOT/SWD enumerator subtree owned
     //                  by HM, every HID orphan child, EC87F1E3 and
     //                  WinExInput interface registrations, joy.cpl OEM
     //                  cache. Uses fast=true + forceFallbacks=true so
@@ -395,7 +395,7 @@ internal static class DeviceOrchestrator
     // Issue #28 (v1.3.16): resolve a HID child's parent instance ID so the
     // parent's HardwareID can prove ownership. HID children themselves
     // carry HidClass-level hwids (`HID_DEVICE_SYSTEM_GAME`, etc.) and don't
-    // record "HIDMaestro" — checking IsHidMaestroOwned on the child
+    // record "HIDMaestro": checking IsHidMaestroOwned on the child
     // directly would always miss. Returns null on lookup failure.
     private static string? TryResolveHidChildParent(RegistryKey childEnumKey, string instName)
     {
@@ -424,7 +424,7 @@ internal static class DeviceOrchestrator
         {
             // HIDMAESTRO-prefixed enumerators are exclusively HM-owned by
             // construction. The other three (HID_IG_00, HIDCLASS,
-            // XnaComposite) are shared — vJoy registers itself as a root
+            // XnaComposite) are shared: vJoy registers itself as a root
             // HIDClass device, so an unguarded sweep here disabled coexisting
             // vJoy instances. Gate the destructive call on HardwareID proof.
             bool exclusivePrefix =
@@ -672,7 +672,7 @@ internal static class DeviceOrchestrator
     //  EnsureGameInputService
     // ════════════════════════════════════════════════════════════════════
 
-    // v1.3.0 — per-process cache: GameInputSvc state is global to the OS,
+    // v1.3.0: per-process cache: GameInputSvc state is global to the OS,
     // not per-controller. Checking on every CreateController spawned sc.exe
     // 1–3 times (100–300 ms even when nothing changed). Once we've confirmed
     // the service is running in this process, subsequent calls are a no-op.
@@ -694,11 +694,11 @@ internal static class DeviceOrchestrator
         catch { }
     }
 
-    /// <summary>T11 — pre-warm hook called from HMContext's background ctor
+    /// <summary>T11: pre-warm hook called from HMContext's background ctor
     /// task. Same logic as the gated <see cref="EnsureGameInputService"/>
     /// but exposed at internal scope so callers outside of SetupController
     /// can pre-prime the per-process cache. Safe to call concurrently with
-    /// SetupController's own EnsureGameInputService invocation — the
+    /// SetupController's own EnsureGameInputService invocation: the
     /// volatile-bool gate means only one path actually does the sc.exe work.</summary>
     internal static void PrewarmGameInputService() => EnsureGameInputService();
 
@@ -706,9 +706,9 @@ internal static class DeviceOrchestrator
     //  WriteGameInputRegistry
     // ════════════════════════════════════════════════════════════════════
 
-    // v1.3.0 — per-VID:PID write cache. WriteGameInputRegistry is called
+    // v1.3.0: per-VID:PID write cache. WriteGameInputRegistry is called
     // per CreateController, but the data written is keyed only by
-    // VID:PID — two controllers using the same profile produce identical
+    // VID:PID: two controllers using the same profile produce identical
     // writes. Skip the redundant work after the first per-VID:PID call.
     private static readonly HashSet<uint> s_gameInputRegistryWritten = new();
     private static readonly object s_gameInputRegistryLock = new();
@@ -732,12 +732,12 @@ internal static class DeviceOrchestrator
 
         using var root = Registry.LocalMachine.CreateSubKey(deviceKey);
 
-        // v1.3.0 — keep the parent gpPath key open and create children
+        // v1.3.0: keep the parent gpPath key open and create children
         // through it instead of through Registry.LocalMachine. Each
         // CreateSubKey/OpenSubKey via the static class opens the registry
         // tree from HKLM root every time. Holding a parent handle and
         // creating children relative to it cuts the per-key cost roughly
-        // in half. Also single-passes create + write per child — previously
+        // in half. Also single-passes create + write per child: previously
         // we created all 20 children, then re-opened each to set values.
         using var gp = Registry.LocalMachine.CreateSubKey($@"{deviceKey}\Gamepad");
 
@@ -814,7 +814,7 @@ internal static class DeviceOrchestrator
         key.SetValue("ReportDescriptor", descriptor, RegistryValueKind.Binary);
         key.SetValue("VendorId", (int)profile.VendorId, RegistryValueKind.DWord);
         key.SetValue("ProductId", (int)profile.ProductId, RegistryValueKind.DWord);
-        // v1.3.5 — VersionNumber default 0x0100 (real Sony USB convention).
+        // v1.3.5: VersionNumber default 0x0100 (real Sony USB convention).
         // BT profiles that emulate a real Sony controller need 0 here so
         // Chromium's Dualshock4Controller::BusTypeFromVersionNumber routes
         // browser-driven vibration through SetVibrationBluetooth (Report
@@ -841,7 +841,7 @@ internal static class DeviceOrchestrator
         // and restores on Clear / RecoverOrphans. The HKLM write here stays
         // because it's non-destructive (HKCU wins for joy.cpl anyway) and
         // some legacy MME consumers do read HKLM.
-        // T25-2 — per-VID:PID dedup. The OEM write is keyed only by
+        // T25-2: per-VID:PID dedup. The OEM write is keyed only by
         // VID:PID, not controllerIndex, so two controllers using the same
         // profile produce identical writes. Skip after the first per-VID:PID.
         uint oemKey = ((uint)profile.VendorId << 16) | profile.ProductId;
@@ -868,7 +868,7 @@ internal static class DeviceOrchestrator
         }
     }
 
-    // T25-2 — per-VID:PID OEM-write dedup. WriteInstanceConfig is called
+    // T25-2: per-VID:PID OEM-write dedup. WriteInstanceConfig is called
     // per CreateController; the HKLM Joystick OEM cache is keyed only by
     // VID:PID and writing the same data more than once is wasted work.
     private static readonly HashSet<uint> s_oemWritten = new();
@@ -890,14 +890,14 @@ internal static class DeviceOrchestrator
         // load-bearing detail vs the pre-experiment `HIDMAESTRO_VID_xxx&PID_yyy&IG_00`
         // form is the single `&` → `_` swap between VID and PID. That form
         // (still matching `VID_*&PID_*&IG_*`) triggered a Windows PnP edge
-        // case where SWD devices registered but never fully enumerated —
+        // case where SWD devices registered but never fully enumerated
         // Status=Stopped, HID child Disconnected. Using an underscore between
         // VID and PID breaks the substring match without losing HIDMAESTRO
         // branding or the `&IG_` suffix (load-bearing for HIDAPI/SDL3
         // blocklist + xinputhid INF match).
         string gpEnumeratorSwd    = $"HIDMAESTRO_VID_{gpVid}_PID_{hwPid}&IG_00";      // SWD\… path
 
-        // 1. Look for an existing companion claimed by THIS controllerIndex —
+        // 1. Look for an existing companion claimed by THIS controllerIndex
         //    check new SWD path first, then legacy ROOT path.
         string? gpInstId = FindExistingCompanion(gpEnumeratorSwd, controllerIndex)
                         ?? FindExistingCompanion(gpEnumeratorLegacy, controllerIndex);
@@ -1032,7 +1032,7 @@ internal static class DeviceOrchestrator
         // HIDMAESTRO, etc.), WGI counts the XUSB companion AND the
         // ROOT\VID_*&PID_* main device as two separate RawGameControllers
         // for the same Xbox 360 controller, even though they share a
-        // ContainerID. HIDMAESTRO gets deduped; others don't. Empirical —
+        // ContainerID. HIDMAESTRO gets deduped; others don't. Empirical
         // I don't know which specific WGI code path treats "HIDMAESTRO" as
         // "merge with sibling," so changing it breaks multi-consumer counts.
         string? xusbInstId = FindExistingCompanion("HIDMAESTRO", controllerIndex);
@@ -1105,7 +1105,7 @@ internal static class DeviceOrchestrator
                 // the time the callback fires. Still wait a short time for the
                 // interface to actually register (some PnP coinstallers are
                 // asynchronous even after driver load).
-                // Floor-bumped 2 → 5 s base in v1.3.0 — 2 s was tight even on
+                // Floor-bumped 2 → 5 s base in v1.3.0: 2 s was tight even on
                 // fast hw; some XUSB coinstallers can take 1–4 s to register
                 // the interface even after the SwDeviceCreate callback fires.
                 // Scaling is layered on top of the 5 s base by DeviceManager.
@@ -1118,7 +1118,7 @@ internal static class DeviceOrchestrator
             }
             else if (!result.Success)
             {
-                // SwDeviceCreate failed — record HRESULT in a trace breadcrumb
+                // SwDeviceCreate failed: record HRESULT in a trace breadcrumb
                 // so post-mortem diagnostics know why the companion didn't
                 // materialize. Return null; caller's error path kicks in.
                 try
@@ -1131,7 +1131,7 @@ internal static class DeviceOrchestrator
         }
         else
         {
-            // Existing device — kick it to pick up any changed descriptor.
+            // Existing device: kick it to pick up any changed descriptor.
             DeviceManager.RestartDevice(xusbInstId!);
         }
 
@@ -1194,7 +1194,7 @@ internal static class DeviceOrchestrator
     // ════════════════════════════════════════════════════════════════════
     //  SetHidParentUpperFilterXinputhid
     //  Profile-specific WGI HID-classifier skip. Called only for profiles
-    //  that already publish an HIDMAESTRO XUSB provider — so WGI still has
+    //  that already publish an HIDMAESTRO XUSB provider: so WGI still has
     //  an XUSB Gamepad source after the HID Gamepad is skipped.
     // ════════════════════════════════════════════════════════════════════
 
@@ -1203,13 +1203,13 @@ internal static class DeviceOrchestrator
         // Idempotent: sweep every ROOT HID parent whose HIDMAESTRO counterpart
         // exists (same ControllerIndex registered under ROOT\HIDMAESTRO\*).
         // Writing to just the current controller's instance has a timing race
-        // — Windows PnP occasionally clears properties when a sibling root
+        //: Windows PnP occasionally clears properties when a sibling root
         // device is added shortly after. Sweeping every call converges the
         // state regardless of which iteration set which value.
         try
         {
             // Build a set of controllerIndexes that have an HIDMAESTRO
-            // (profiles with XUSB companions — xbox-360 wired family).
+            // (profiles with XUSB companions: xbox-360 wired family).
             // Sweep BOTH SWD (post-slot-1-skip-fix) and ROOT (legacy)
             // enumerators so a mixed install sees everything.
             var companionIndexes = new HashSet<int>();
@@ -1255,7 +1255,7 @@ internal static class DeviceOrchestrator
                 }
             }
         }
-        catch { /* best-effort — absent tripwire means 2 Gamepads, not a hard failure */ }
+        catch { /* best-effort: absent tripwire means 2 Gamepads, not a hard failure */ }
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -1271,14 +1271,14 @@ internal static class DeviceOrchestrator
         };
         byte[] usbBusGuid = new Guid("9d7debbc-c85d-11d1-9eb4-006008c3a19a").ToByteArray();
 
-        // T11 — trimmed list. The dynamic VID_*/HIDMAESTRO* scan below
+        // T11: trimmed list. The dynamic VID_*/HIDMAESTRO* scan below
         // (lines 1156+) covers VID_045E&PID_02FF&IG_00, VID_045E&PID_0B13&IG_00,
-        // and HIDMAESTRO automatically — they all match the dynamic prefixes.
+        // and HIDMAESTRO automatically: they all match the dynamic prefixes.
         // Only the non-VID/non-HIDMAESTRO enumerators (HID_IG_00, HIDClass,
         // XnaComposite) need explicit hardcoded coverage. Cuts 60 redundant
         // CM_Locate calls per setup (3 enumerators × 2 roots × 10 indices).
         // Issue #28 (v1.3.16): the shared enumerators (HID_IG_00, HIDClass,
-        // XnaComposite) are not exclusively HIDMaestro — vJoy lives at
+        // XnaComposite) are not exclusively HIDMaestro: vJoy lives at
         // ROOT\HIDClass. Gate the property write on IsHidMaestroOwned to
         // avoid stamping our BusType GUID onto a coexisting third-party
         // device.
@@ -1349,7 +1349,7 @@ internal static class DeviceOrchestrator
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  SetupController — full orchestration
+    //  SetupController: full orchestration
     // ════════════════════════════════════════════════════════════════════
 
     public static string? SetupController(
@@ -1365,8 +1365,8 @@ internal static class DeviceOrchestrator
         // Defense-in-depth gate: block until any in-flight TeardownController
         // for this controllerIndex has fully completed (including
         // WaitForDeviceRemoval's CM_NOTIFY_ACTION_DEVICEINSTANCEREMOVED
-        // event). PadForge's contract — "Dispose returns when teardown is
-        // complete" — is enforced primarily by RemoveDevice's
+        // event). PadForge's contract: "Dispose returns when teardown is
+        // complete": is enforced primarily by RemoveDevice's
         // WaitForDeviceRemoval inside TeardownController, but if that wait
         // ever returns early (timeout, unexpected exception, future
         // regression), this gate prevents a new SetupController for the
@@ -1501,7 +1501,7 @@ internal static class DeviceOrchestrator
         }
 
         // ── Step 4: wait for HID child + name finalization ───────────────
-        //    Old: Thread.Sleep(3000) — fixed worst-case wait for PnP async install.
+        //    Old: Thread.Sleep(3000): fixed worst-case wait for PnP async install.
         //    New: poll for the HID child PDO to appear, then finalize names.
         //    On a warm-start machine this exits in <500ms instead of 3000ms.
         {
@@ -1519,7 +1519,7 @@ internal static class DeviceOrchestrator
         // Apply names directly to the parent we just created. We already have
         // the instance ID from CreateDeviceNode/CreateGamepadCompanion, so the
         // pre-v1.3.0-T9 enumerator walk that scanned SWD\ + ROOT\ subtrees
-        // matching Device Parameters\ControllerIndex is pure overhead — it
+        // matching Device Parameters\ControllerIndex is pure overhead: it
         // was finding the same devnode every time. SetAllNamingProperties is
         // a strict superset of FixHidChildNames (BusReportedDeviceDesc +
         // FriendlyName + DeviceDesc on root + first HID child), so dropping
@@ -1532,7 +1532,7 @@ internal static class DeviceOrchestrator
                 catch { }
         }
 
-        // Final name fix — poll for the device to be fully started (DN_STARTED)
+        // Final name fix: poll for the device to be fully started (DN_STARTED)
         // rather than a fixed 2000ms sleep. For xinputhid profiles this waits
         // for xinputhid to fully bind; for others it's typically instant.
         {
@@ -1598,14 +1598,14 @@ internal static class DeviceOrchestrator
             // Profiles with an HIDMAESTRO XUSB companion need the HID parent
             // gated out of WGI's HidClient classifier via xinputhid tripwire
             // (see memory:project-xinputhid-upperfilter-tripwire.md). Without
-            // this, WGI creates TWO Gamepads for the same virtual — one HID-
+            // this, WGI creates TWO Gamepads for the same virtual: one HID-
             // backed with input but no vibration channel, one XUSB-backed with
             // vibration but no input. Setting UpperFilters="xinputhid" on the
             // HID parent makes ProviderManagerWorker::OnPnpDeviceAdded skip
             // HidClient::CreateProvider, leaving the XUSB-backed Gamepad as
             // the single WGI entity.
             //
-            // Must be profile-specific (per-device, not in the INF) — other
+            // Must be profile-specific (per-device, not in the INF): other
             // profiles (DualSense, Xbox Series BT, Switch Pro, etc.) have no
             // HIDMAESTRO; blocking their HID Gamepad would produce zero WGI
             // entities for them.
@@ -1649,7 +1649,7 @@ internal static class DeviceOrchestrator
         }
 
         // ── Step 6: final friendly name ──────────────────────────────────
-        // T10 — direct application on the specific instance IDs we created
+        // T10: direct application on the specific instance IDs we created
         // instead of walking SWD\ + ROOT\ + HIDCLASS by ControllerIndex.
         // We have parentId (mainInstanceId or companionId) and (for
         // non-xinputhid Xbox profiles) xusbCompanionId. The original walk
@@ -1657,7 +1657,7 @@ internal static class DeviceOrchestrator
         // applies to root + first HID child which covers the same naming
         // surface for our devices (single HID child, no second-level
         // grandchildren). Keep ApplyFriendlyNameForController as a fallback
-        // commented out — easy revert if a future PnP edge surfaces a
+        // commented out: easy revert if a future PnP edge surfaces a
         // device we missed here.
         using (var _ts = new TimingScope(controllerIndex, profile.Id, "6.apply_friendly_name"))
         {
@@ -1675,7 +1675,7 @@ internal static class DeviceOrchestrator
         // for slot 0 and the slot order does NOT match the creation order.
         // Only Xbox-VID profiles touch XInput, so non-Xbox profiles skip the
         // wait entirely. When XInput is already full (4/4), we skip
-        // gracefully — the controller is still visible via DI/HIDAPI/Browser.
+        // gracefully: the controller is still visible via DI/HIDAPI/Browser.
         // Timeout is non-fatal: log only, never throw, to match the proven
         // pre-SDK test app behavior.
         if (slotsBefore >= 0 && !xinputFull)
@@ -1683,7 +1683,7 @@ internal static class DeviceOrchestrator
             using var _ts = new TimingScope(controllerIndex, profile.Id, "7.wait_xinput_slot_claim");
             var sw = Stopwatch.StartNew();
             int slotsAfter = slotsBefore;
-            // v1.3.0 — short-circuit when XInput is already at the 4-slot
+            // v1.3.0: short-circuit when XInput is already at the 4-slot
             // cap before we even started: there's no slot 5 to wait for.
             // Without this, every 5th-onward Xbox-family create burns the
             // full 15 s budget waiting for the impossible. The controller
@@ -1695,7 +1695,7 @@ internal static class DeviceOrchestrator
             }
             else
             {
-                // v1.3.2 — budget 500 ms (was 15 s). The slot-claim
+                // v1.3.2: budget 500 ms (was 15 s). The slot-claim
                 // distribution is bimodal: in the working case xinputhid
                 // publishes the new slot in <100 ms (typical observation:
                 // ~65 ms for Xbox 360 wired, ~3-10 ms for Xbox Series BT;
@@ -1707,11 +1707,11 @@ internal static class DeviceOrchestrator
                 // freeze on a single Xbox Series BT create when this hit.
                 //
                 // 500 ms is ~5x the slowest observed healthy-case slot
-                // claim (with TimeoutScale.Apply, 1 s on atom — ~10x
+                // claim (with TimeoutScale.Apply, 1 s on atom: ~10x
                 // healthy). User-validated: PadForge swaps and creates
                 // are visibly instantaneous at this budget. The
                 // regression battery's slot-wait timeout cases now cost
-                // 500 ms each instead of 15 s — the user-perceived UX
+                // 500 ms each instead of 15 s: the user-perceived UX
                 // win is unmistakable even though the battery's wall-
                 // time delta is dominated by run-to-run noise.
                 //
@@ -1731,7 +1731,7 @@ internal static class DeviceOrchestrator
                 }
                 LogDiag($"    XInput slot wait: before={slotsBefore} after={slotsAfter} in {sw.ElapsedMilliseconds}ms (budget={slotWaitBudget}ms)");
                 if (slotsAfter == slotsBefore)
-                    LogDiag($"    XInput slot wait TIMEOUT — xinputhid did not publish a slot. Controller still functional via DI/HIDAPI/Browser/WGI; XInput consumers may see it appear lazily on next poll.");
+                    LogDiag($"    XInput slot wait TIMEOUT: xinputhid did not publish a slot. Controller still functional via DI/HIDAPI/Browser/WGI; XInput consumers may see it appear lazily on next poll.");
             }
         }
 
@@ -1752,7 +1752,7 @@ internal static class DeviceOrchestrator
     /// </summary>
     private static bool WaitForHidChild(string parentInstanceId, int timeoutMs)
     {
-        // v1.3.0 wip 12 — kept the registry-poll shape after empirical
+        // v1.3.0 wip 12: kept the registry-poll shape after empirical
         // diag-log evidence that DeviceManager.WaitForHidChild's
         // CM_Register_Notification path returns False immediately for SWD-
         // rooted gamepad-companion parents (the registration call itself
@@ -1780,7 +1780,7 @@ internal static class DeviceOrchestrator
     {
         // CM_Register_Notification doesn't signal on DN_STARTED transitions
         // (PnP only surfaces add/remove/interface events), so this stays as
-        // a poll loop. v1.3.0 — tighter poll cadence (25 ms vs 100 ms)
+        // a poll loop. v1.3.0: tighter poll cadence (25 ms vs 100 ms)
         // reduces the worst-case tail wait from ~99 ms to ~24 ms after
         // the device actually starts. The 75 ms saved on every Xbox-family
         // create adds up across multi-controller batches.
@@ -1835,7 +1835,7 @@ internal static class DeviceOrchestrator
 
     /// <summary>Internal overload used by HMContext.Dispose's parallel batch
     /// teardown to skip the system-wide HID orphan sweep on every controller.
-    /// The sweep is idempotent but expensive — running it once at the end of
+    /// The sweep is idempotent but expensive: running it once at the end of
     /// the batch (instead of N times concurrently) is a clean win.</summary>
     internal static void TeardownController(int controllerIndex, string? instanceId, bool skipOrphanSweep)
     {
@@ -1858,7 +1858,7 @@ internal static class DeviceOrchestrator
 
         // Capture the HID children of the parent BEFORE any removal step.
         // Once the parent goes, CM_Get_Child / CM_Get_Sibling on it stops
-        // working — so any explicit per-child cleanup needs the list in
+        // working: so any explicit per-child cleanup needs the list in
         // hand first. Covers issue #11 (xbox-360-wired orphan that
         // v1.1.17's post-teardown orphan-sweep was missing because its
         // ROOT parent was still lingering as phantom when the sweep ran).
@@ -1876,7 +1876,7 @@ internal static class DeviceOrchestrator
         // at SWD\HIDMAESTRO_VID_*_PID_*&IG_00, and the XUSB companion at
         // SWD\HIDMAESTRO\<sid>_<idx>) clean up properly only when their
         // HSWDEVICE handle is released. Calling DIF_REMOVE on a Sw-created
-        // devnode FIRST leaves the SWDEVICE kernel refcount dangling — the
+        // devnode FIRST leaves the SWDEVICE kernel refcount dangling: the
         // devnode goes from PnP but the kernel-side state (interface-class
         // registrations, slot-allocator entries) lingers. SwDeviceClose
         // first triggers Windows' clean cascade: devnode removal +
@@ -1884,7 +1884,7 @@ internal static class DeviceOrchestrator
         // state released, in the correct order.
         //
         // On process exit, Windows handles all of this for free regardless
-        // of user-mode order — that's why baseline tests (create N → exit)
+        // of user-mode order: that's why baseline tests (create N → exit)
         // pass even with the wrong order. Mid-process live profile swaps
         // (HMController.Dispose followed immediately by CreateController
         // for a different profile at the same ControllerIndex) require the
@@ -1893,7 +1893,7 @@ internal static class DeviceOrchestrator
         if (!string.IsNullOrEmpty(instanceId))
         {
             // forceFallbacks: this is the live-swap teardown path. We must
-            // leave nothing behind — if the old device persists as a phantom,
+            // leave nothing behind: if the old device persists as a phantom,
             // its driver's WUDFHost kept alive by it, CM IOCTLs keep being
             // served, and the new controller at the same ControllerIndex
             // shares Global\HIDMaestroOutput{N} with the zombie, surfacing
@@ -1913,7 +1913,7 @@ internal static class DeviceOrchestrator
             // slow user machines (low-end CPU + many active HID stacks +
             // Windows running PnP coinstaller work in parallel) the
             // cascade can stretch much further. A 5s or even 15s timeout
-            // is a hard error mode — RemoveDevice returns with
+            // is a hard error mode: RemoveDevice returns with
             // goneAfterDif=false and the caller moves on while the kernel
             // is still cleaning up, breaking PadForge's "Dispose returns
             // when teardown is fully complete" contract. 120s is the
@@ -1962,7 +1962,7 @@ internal static class DeviceOrchestrator
                     using var dp = hmEnum.OpenSubKey($@"{inst}\Device Parameters");
                     if (dp?.GetValue("ControllerIndex") is int ci && ci == controllerIndex)
                     {
-                        // 120s timeout — same generous budget as the
+                        // 120s timeout: same generous budget as the
                         // primary parent removal above, so SwDevice-
                         // managed XUSB companions on slow machines have
                         // time to fully cascade before the gate signals
@@ -1980,7 +1980,7 @@ internal static class DeviceOrchestrator
 
         // Also scan VID_*&IG_00 companions (xinputhid gamepad companions).
         // Sweep SWD (new) + ROOT (legacy) + HID (xinputhid synthesizes
-        // multiple top-level HID collections per parent — when one
+        // multiple top-level HID collections per parent: when one
         // survives the kernel cascade after SwDeviceClose, the surviving
         // sibling under HID\HIDMAESTRO_VID_*_PID_*&IG_00 must be reaped
         // by ControllerIndex match here, otherwise it lingers as a
@@ -2004,7 +2004,7 @@ internal static class DeviceOrchestrator
                         using var dp = vidKey.OpenSubKey($@"{instName}\Device Parameters");
                         if (dp?.GetValue("ControllerIndex") is int ci && ci == controllerIndex)
                         {
-                            // 120s timeout — same rationale as the HIDMAESTRO
+                            // 120s timeout: same rationale as the HIDMAESTRO
                             // sweep above: full cascade-complete on slow
                             // machines must not race the gate.
                             var igSw = Stopwatch.StartNew();
@@ -2029,7 +2029,7 @@ internal static class DeviceOrchestrator
         // Sweep any HID children orphaned by the parent removals above.
         // DeviceManager.RemoveDevice on a ROOT\ parent should cascade to its
         // HID child PDOs, but in practice on Win11 26200 the child sometimes
-        // survives — detached from its removed parent, enumerable by SDL /
+        // survives: detached from its removed parent, enumerable by SDL /
         // RawInput / WGI, and no longer visible through a HIDMaestro PnP
         // ancestor walk. Consumers that filter on "is this ours?" by walking
         // the parent chain see an un-owned HID gamepad at VID:PID 045E:028E
@@ -2040,7 +2040,7 @@ internal static class DeviceOrchestrator
         // children whose registered parent instance-id is a ROOT\ device
         // that can no longer be located (neither live nor phantom). That
         // match is intrinsically "our just-removed parents" and only our
-        // just-removed parents — live controllers still anchor their HID
+        // just-removed parents: live controllers still anchor their HID
         // children to a locatable parent and are untouched.
         if (!skipOrphanSweep)
             try { DeviceManager.RemoveOrphanHidChildren(); } catch { }
@@ -2048,7 +2048,7 @@ internal static class DeviceOrchestrator
         }
         finally
         {
-            // Release the gate — SetupController for this controllerIndex
+            // Release the gate: SetupController for this controllerIndex
             // can now proceed. Reached via every code path including
             // exceptions inside the teardown body.
             EndTeardownGate(controllerIndex);
@@ -2066,7 +2066,7 @@ internal static class DeviceOrchestrator
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  RemoveAllVirtualControllers — purge every HIDMaestro virtual device
+    //  RemoveAllVirtualControllers: purge every HIDMaestro virtual device
     //  from the system, including orphans from prior runs. Used by the
     //  "cleanup" CLI command and by consumers who want a clean slate.
     // ════════════════════════════════════════════════════════════════════
@@ -2249,7 +2249,7 @@ internal static class DeviceOrchestrator
                 // Issue #28 (v1.3.16): HIDMAESTRO* is the only enumerator
                 // we own exclusively. VID_*, XnaComposite, HID_IG_00,
                 // HIDCLASS, SYSTEM are all shared with third-party drivers
-                // — require IsHidMaestroOwned on every instance under those.
+                //: require IsHidMaestroOwned on every instance under those.
                 bool exclusivelyOurs = sub.Equals("HIDMAESTRO", StringComparison.OrdinalIgnoreCase)
                     || sub.StartsWith("HIDMAESTRO", StringComparison.OrdinalIgnoreCase);
 
@@ -2316,7 +2316,7 @@ internal static class DeviceOrchestrator
                         // the parent under the appropriate enumerator,
                         // require IsHidMaestroOwned. If the parent is
                         // already gone (phantom-orphan case), fall back to
-                        // accepting it — the only legitimate writer of HID
+                        // accepting it: the only legitimate writer of HID
                         // children with HM-shape hwid + HM-shape parent
                         // pattern would have been us, and a phantom whose
                         // parent has been removed can't be matched to a
@@ -2343,7 +2343,7 @@ internal static class DeviceOrchestrator
                             // created device from the NEW session can get
                             // assigned to that stale WUDFHost, executing the
                             // OLD driver bytes while the disk has the NEW
-                            // ones — yielding "driver upgraded but behavior
+                            // ones: yielding "driver upgraded but behavior
                             // unchanged" mysteries. Draining the phantoms
                             // lets the stale WUDFHost exit and a fresh one
                             // start with the fresh DLL.
@@ -2541,7 +2541,7 @@ internal static class DeviceOrchestrator
         // DLL mapped keeps the OLD code resident in virtual memory. When a
         // fresh device is created AFTER a driver upgrade, PnP can assign
         // the new device to an existing WUDFHost (they're reused across
-        // devices of the same UMDF class) — and then the new device runs
+        // devices of the same UMDF class): and then the new device runs
         // the OLD driver bytes while the disk has NEW ones. That's the
         // "driver upgraded but behavior unchanged" mystery.
         //
@@ -2551,7 +2551,7 @@ internal static class DeviceOrchestrator
         // DLLs like WUDFx02000.dll, WUDFPlatform.dll). Any WUDFHost that
         // hosts ANOTHER third-party UMDF driver (e.g.
         // microsoft.bluetooth.profiles.hidovergatt.dll for a real BT Xbox
-        // controller) is skipped entirely — that's what the NEVER-kill-
+        // controller) is skipped entirely: that's what the NEVER-kill-
         // WUDFHost rule in feedback-never-kill-wudfhost.md is about.
         if (!skipWudfSteps)
             DrainOrphanedWudfHosts();
@@ -2561,7 +2561,7 @@ internal static class DeviceOrchestrator
 
     /// <summary>Terminate WUDFHost instances that are hosting ONLY our
     /// HIDMaestro driver (plus UMDF framework DLLs). Skips any WUDFHost
-    /// that has another third-party driver loaded — killing those would
+    /// that has another third-party driver loaded: killing those would
     /// break real devices (most notably real Bluetooth Xbox controllers
     /// hosted by microsoft.bluetooth.profiles.hidovergatt.dll).
     ///
@@ -2569,7 +2569,7 @@ internal static class DeviceOrchestrator
     /// disk but doesn't unload it from running WUDFHost processes. Those
     /// keep the OLD code mapped until the process itself exits. Fresh
     /// device creation after an INF upgrade can bind a new device into
-    /// an existing WUDFHost that has the stale mapping — so the new
+    /// an existing WUDFHost that has the stale mapping: so the new
     /// device runs old code. Killing the safe-to-terminate instances
     /// lets PnP spawn a fresh WUDFHost that loads the fresh DLL from
     /// the current DriverStore directory.</summary>
@@ -2585,7 +2585,7 @@ internal static class DeviceOrchestrator
             "WUDFCoinstaller.dll", "WudfSMCClassExt.dll", "Mshidumdf.dll",
         }) frameworkModules.Add(name);
 
-        // Our own UMDF drivers — fine to terminate a host that runs only these.
+        // Our own UMDF drivers: fine to terminate a host that runs only these.
         var ourDrivers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "HIDMaestro.dll", "HMXInput.dll", "HIDMaestroCompanion.dll",
         };
@@ -2602,19 +2602,19 @@ internal static class DeviceOrchestrator
                     string name = m.ModuleName ?? "";
                     string path = m.FileName ?? "";
 
-                    // Framework — ignore
+                    // Framework: ignore
                     if (frameworkModules.Contains(name) ||
                         path.StartsWith(@"C:\Windows\System32\", StringComparison.OrdinalIgnoreCase) &&
                         !path.Contains(@"\DriverStore\", StringComparison.OrdinalIgnoreCase) &&
                         !path.Contains(@"\drivers\umdf\", StringComparison.OrdinalIgnoreCase))
                         continue;
 
-                    // Ours — note it but keep scanning (a WUDFHost with BOTH
+                    // Ours: note it but keep scanning (a WUDFHost with BOTH
                     // ours AND third-party is still must-not-kill).
                     if (ourDrivers.Contains(name)) { hostsOurs = true; continue; }
 
                     // Anything else loaded from DriverStore or the UMDF drivers
-                    // dir — this is another third-party UMDF driver. Abort.
+                    // dir: this is another third-party UMDF driver. Abort.
                     if (path.Contains(@"\DriverStore\FileRepository\", StringComparison.OrdinalIgnoreCase) ||
                         path.Contains(@"\System32\drivers\umdf\", StringComparison.OrdinalIgnoreCase))
                     {
@@ -2628,7 +2628,7 @@ internal static class DeviceOrchestrator
                     try { proc.Kill(); proc.WaitForExit(TimeoutScale.Apply(2000)); } catch { }
                 }
             }
-            catch { /* access denied, process exited, etc. — skip this host */ }
+            catch { /* access denied, process exited, etc. Skip this host */ }
             finally { proc.Dispose(); }
         }
     }
@@ -2641,7 +2641,7 @@ internal static class DeviceOrchestrator
     /// Ported verbatim from the proven pre-SDK test app's implementation.
     /// Critically: handles multi-Report-ID descriptors (e.g. dualsense which
     /// declares Report IDs 1, 2, 3, ...) by counting bits ONLY for the first
-    /// encountered Report ID — that's the input report we use. Adds +1 to
+    /// encountered Report ID: that's the input report we use. Adds +1 to
     /// the byte total for descriptors that have any Report ID, accounting
     /// for the prefix byte the kernel HID stack adds when delivering reports.
     /// </summary>

@@ -1,4 +1,4 @@
-// SideWinder FF2 PID FFB end-to-end check (v1.3.12).
+﻿// SideWinder FF2 PID FFB end-to-end check (v1.3.12).
 //
 // Microsoft SideWinder Force Feedback 2 native firmware used non-canonical
 // PID Report IDs (Create New Effect 0x01, Set Effect Output 0x01, …, Set
@@ -47,7 +47,7 @@ internal static class Program
 
     static int Main()
     {
-        Console.WriteLine("=== SideWinder Force Feedback 2 — descriptor-aware PID dispatch ===");
+        Console.WriteLine("=== SideWinder Force Feedback 2: descriptor-aware PID dispatch ===");
 
         using var ctx = new HMContext();
         ctx.LoadDefaultProfiles();
@@ -84,7 +84,7 @@ internal static class Program
               $"got 0x{rids.BlockFreeReportId:X2}");
         Check("Device Control RID = canonical 0x1C", rids.DeviceControlReportId == 0x1C,
               $"got 0x{rids.DeviceControlReportId:X2}");
-        // No AnyOverride expected — every RID is canonical. AnyOverride being
+        // No AnyOverride expected: every RID is canonical. AnyOverride being
         // false means the descriptor is structurally indistinguishable from
         // an AddPidFfbBlock-built profile for PID dispatch purposes.
         Check("AnyOverride flag clear (all RIDs canonical)", !rids.AnyOverride);
@@ -135,7 +135,7 @@ internal static class Program
         Check("HID handle opened", hidOpen);
         if (!hidOpen) return s_failures > 0 ? 1 : 0;
 
-        // SetFeature(CreateNewEffect at canonical RID 0x11) — driver must
+        // SetFeature(CreateNewEffect at canonical RID 0x11): driver must
         // allocate EBI synchronously, identical to AddPidFfbBlock-built
         // profiles. Payload: effectType (Constant Force = 0x01) +
         // byteCount(LE) = 0.

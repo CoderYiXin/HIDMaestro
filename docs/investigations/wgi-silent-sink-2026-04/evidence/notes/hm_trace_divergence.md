@@ -1,4 +1,4 @@
-# WGI 045E-branch divergence — three hypotheses to differentiate via F310 vs real 360 trace
+﻿# WGI 045E-branch divergence: three hypotheses to differentiate via F310 vs real 360 trace
 
 Per Opus external review (2026-04-17, corrected):
 - F310 (046D:C21D) in XInput mode binds to xusb22 via USB\MS_COMP_XUSB10.
@@ -17,7 +17,7 @@ Per Opus external review (2026-04-17, corrected):
 ### Gate candidate 1: IOCTL_XUSB_GET_INFORMATION response bytes
 F310's xusb22 might return different bytes than a real 360's xusb22:
 - Version word (should be 0x0101 for both)
-- Subtype byte (info[3]) — real 360 returns 0x01; F310 may return 0x01 or something else
+- Subtype byte (info[3]): real 360 returns 0x01; F310 may return 0x01 or something else
 - Capability flags (if any in this struct)
 → Test: API Monitor or ETW capture of DeviceIoControl output buffer. Compare.
 → Fix if divergent: our xusbshim/HMCOMPANION returns EXACTLY the real-360 bytes.
@@ -30,7 +30,7 @@ WGI may pull hardware IDs from the interface and look for VID_045E specifically:
 → Test: ProcMon capture with filter "Operation contains CM_Get" during enumeration.
 → Fix: ensure our virtual's interface path contains VID_045E in the symlink.
   Our xusbshim on HID child registers the interface with that VID embedded in the
-  HID child's hardware ID — should already be present. Verify via enumeration.
+  HID child's hardware ID: should already be present. Verify via enumeration.
 
 ### Gate candidate 3: Parent device class
 F310 sits under "USB (Universal Serial Bus controllers)" / usbhub.sys.
@@ -42,7 +42,7 @@ Real 360 wired sits under **XboxComposite class** (ClassGuid {D61CA365-...}).
 → Fix: our virtual's HMCOMPANION is already Class=XnaComposite (same parent
   class as xusb22-bound devices). xusbshim on HID child has HidClass parent.
   If WGI walks up to find XboxComposite, xusbshim would need its parent
-  (our ROOT device) to also be XboxComposite-class — not HIDClass.
+  (our ROOT device) to also be XboxComposite-class: not HIDClass.
 
 ## How to capture the evidence
 
@@ -58,7 +58,7 @@ API Monitor hook for:
 - `SetupDiGetDeviceProperty*`
 - `CM_Get_DevNode_PropertyW`
 
-Focus on **first 2 seconds** after connecting the device — that's when WGI's
+Focus on **first 2 seconds** after connecting the device: that's when WGI's
 gamepad factory runs its criteria and decides whether to create a Gamepad
 wrapper. Vibration dispatch only matters if wrapper exists.
 

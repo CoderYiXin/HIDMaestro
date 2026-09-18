@@ -1,4 +1,4 @@
-"""Generate wave 2 profiles from all remaining scraped data."""
+﻿"""Generate wave 2 profiles from all remaining scraped data."""
 import json, os
 
 PROFILES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "profiles")
@@ -62,14 +62,14 @@ PROFILES = [
         "vid": "0x0079", "pid": "0x0006", "productString": "PC TWIN SHOCK Gamepad",
         "manufacturerString": "DragonRise Inc.", "type": "gamepad", "connection": "usb",
         "descriptor": "05010904a101a10275089505150026ff00350046ff00093009300930093009318102750495012507463b0165140900814265007501950a2501450105091901290a81020600ff7501950a2501450109018102c0a1027508950446ff0026ff0009029102c0c0",
-        "inputReportSize": None, "notes": "101-byte descriptor. Reconstructed from kernel hid-dr.c. THE most common cheap USB gamepad chipset — used by millions of generic USB gamepads worldwide."
+        "inputReportSize": None, "notes": "101-byte descriptor. Reconstructed from kernel hid-dr.c. THE most common cheap USB gamepad chipset: used by millions of generic USB gamepads worldwide."
     }},
     {"dir": "misc", "file": "ibuffalo-snes.json", "data": {
         "id": "ibuffalo-snes", "name": "iBuffalo Classic USB SNES Gamepad", "vendor": "iBuffalo",
         "vid": "0x0583", "pid": "0x2060", "productString": "USB,2-axis 8-button gamepad",
         "manufacturerString": "iBuffalo", "type": "gamepad", "connection": "usb",
         "descriptor": "05010904a101a10275089502150026ff00350046ff000930093181027501950815002501350045010509190129088102c0c0",
-        "inputReportSize": None, "notes": "50-byte descriptor. Reconstructed from known device characteristics. 2 axes, 8 buttons — the most popular retro USB SNES pad."
+        "inputReportSize": None, "notes": "50-byte descriptor. Reconstructed from known device characteristics. 2 axes, 8 buttons: the most popular retro USB SNES pad."
     }},
     {"dir": "misc", "file": "generic-dinput-gamepad.json", "data": {
         "id": "generic-dinput-gamepad", "name": "Generic DirectInput USB Gamepad", "vendor": "Generic",

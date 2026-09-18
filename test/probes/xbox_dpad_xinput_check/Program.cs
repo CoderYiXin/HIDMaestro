@@ -1,10 +1,10 @@
-// v1.3.3 — Xbox-VID d-pad regression probe (#19).
+﻿// v1.3.3: Xbox-VID d-pad regression probe (#19).
 //
 // Submits each HMHat direction via HMController.SubmitState on an
 // xbox-360-wired virtual, reads XInputGetState, and asserts that
 // wButtons.DPAD_* matches the expected XInput direction bits. This
 // hits the XUSB companion driver (HMXInput.dll) via xinput1_4 →
-// xusb22.sys → IOCTL_XUSB_GET_STATE — the path that issue #19
+// xusb22.sys → IOCTL_XUSB_GET_STATE: the path that issue #19
 // reported broken (bug was that the SDK never wrote the 4-bit hat
 // into the GIP buffer's btnHigh, so the companion's
 // (btnHigh >> 2) & 0x0F always read zero and wButtons.DPAD_* never
@@ -20,7 +20,7 @@ using HIDMaestro;
 
 internal sealed class Program
 {
-    // XInput button masks — XInputGetState wButtons (xinput1_4 / xusb22).
+    // XInput button masks: XInputGetState wButtons (xinput1_4 / xusb22).
     private const ushort XINPUT_GAMEPAD_DPAD_UP    = 0x0001;
     private const ushort XINPUT_GAMEPAD_DPAD_DOWN  = 0x0002;
     private const ushort XINPUT_GAMEPAD_DPAD_LEFT  = 0x0004;
@@ -74,7 +74,7 @@ internal sealed class Program
         int slot = WaitForSlot(timeoutMs: 3000);
         if (slot < 0)
         {
-            Console.WriteLine("  FAIL: no XInput slot claimed for the virtual within 3 s — cannot exercise XUSB companion path.");
+            Console.WriteLine("  FAIL: no XInput slot claimed for the virtual within 3 s: cannot exercise XUSB companion path.");
             try { ctrl.Dispose(); } catch { }
             return 1;
         }

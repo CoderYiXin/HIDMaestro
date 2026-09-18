@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Windows.Gaming.Input;
@@ -8,7 +8,7 @@ using Windows.Gaming.Input.Custom;
 // GameControllerFactoryManager.RegisterCustomFactoryForHardwareId.
 // Per-process historically. Goal tonight: see whether, while THIS process holds the
 // registration live, a SEPARATE process (WgiId / Edge) observes the custom
-// dispatch — i.e. WGI routes put_Vibration through our factory.
+// dispatch: i.e. WGI routes put_Vibration through our factory.
 
 internal sealed class MyFactory : ICustomGameControllerFactory
 {
@@ -61,7 +61,7 @@ internal static class P
 {
     static void Main()
     {
-        Console.WriteLine("XUSB custom-factory spike — registering for VID 045E PID 028E");
+        Console.WriteLine("XUSB custom-factory spike: registering for VID 045E PID 028E");
         try
         {
             var factory = new MyFactory();
@@ -81,7 +81,7 @@ internal static class P
 
         // Gate test per Opus: what does Gamepad.Gamepads[0] actually return?
         // If it's my MyController, custom override is viable. If it's built-in
-        // Gamepad, overrides never fire for consumers — the whole plan is dead.
+        // Gamepad, overrides never fire for consumers: the whole plan is dead.
         Thread.Sleep(800);
         Console.WriteLine("\n[gate-test] Gamepad.Gamepads enumeration:");
         Console.WriteLine($"  Count = {Gamepad.Gamepads.Count}");

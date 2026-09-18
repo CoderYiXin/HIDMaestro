@@ -1,20 +1,20 @@
-#nullable enable
+﻿#nullable enable
 // HIDMaestro PID HidP_SetUsages roundtrip probe (S26).
 //
 // Issue #16 dynamic test: pid.dll's PID_DownloadEffect calls HidP_SetUsages
 // three times to compose the Set Effect Output report. If any returns
 // HIDP_STATUS_USAGE_NOT_FOUND, dispatch fails before the kernel IOCTL is
 // ever issued, and pid.dll AVs in cleanup. v1.1.39's driver instrumentation
-// proved the kernel never sees IOCTL_HID_WRITE_REPORT for Set Effect — so
+// proved the kernel never sees IOCTL_HID_WRITE_REPORT for Set Effect: so
 // the failure is in pid.dll's user-mode HidP_SetUsages call, NOT in the
 // driver / kernel HID stack.
 //
 // This probe deploys a virtual using PadForge's Custom profile descriptor
-// (transcribed from PadForge's HMaestroFfbDescriptor.Build() — Joystick TLC
+// (transcribed from PadForge's HMaestroFfbDescriptor.Build(): Joystick TLC
 // variant since vJoy uses Joystick and we want to A/B against PadForge's
 // Gamepad TLC if needed) and exercises HidP_SetUsages for every PID Output
 // usage pid.dll would set. Any failure prints the specific usage that
-// HidClass's preparsed data couldn't resolve — the same one pid.dll
+// HidClass's preparsed data couldn't resolve: the same one pid.dll
 // silently fails on.
 
 using System;
@@ -141,7 +141,7 @@ internal static class Program
 
         // ── --keep-alive mode ──
         // Skip the test phases. Just hold the virtual up and wait for the
-        // user to press a key. Useful for manual testing — run any
+        // user to press a key. Useful for manual testing: run any
         // DirectInput PID FFB consumer (FfbTest, your own game, joy.cpl,
         // etc.) against this virtual and exit when done.
         if (keepAlive)
@@ -176,7 +176,7 @@ internal static class Program
 
         // Publish basic Pool + State so the device announces FFB capability
         // to the host. Required before any DInput consumer (FfbTest) tries
-        // to enumerate effects. Done HERE — before any other HID I/O — to
+        // to enumerate effects. Done HERE, before any other HID I/O, to
         // mirror what the working --keep-alive path does. The HidP probe
         // phase (the many SetUsages/SetUsageValue calls + WriteFile Set
         // Effect) is deferred to AFTER the FfbTest run, because that pre-
@@ -258,7 +258,7 @@ internal static class Program
                         Axes = HMGamepadStateHelpers.StandardAxes(ctrl.Profile,
                             leftStickX: (float)rng.NextDouble(),
                             leftStickY: (float)rng.NextDouble()),
-                        Hat        = (HMHat)(rng.Next(0, 9)),  // v1.3.3 — exercise d-pad path
+                        Hat        = (HMHat)(rng.Next(0, 9)),  // v1.3.3: exercise d-pad path
                         Buttons = ((rng.Next() & 1) != 0) ? HMButton.A : HMButton.None,
                     };
                     try { ctrl.SubmitState(in s); } catch { break; }
@@ -270,7 +270,7 @@ internal static class Program
             System.Threading.Thread.Sleep(500);
         }
 
-        // ── FfbTest first — clean device, no prior HID I/O ──
+        // ── FfbTest first: clean device, no prior HID I/O ──
         // The canonical regression test for issue #16. FfbTest --probes-only
         // creates a Constant Force effect, calls Start (with magnitude=5000),
         // sleeps 200 ms, calls Stop. pid.dll writes Set Effect (0x11) → Set
@@ -289,7 +289,7 @@ internal static class Program
         // delivers every slot. Assertion: at least one Set Constant Force
         // packet with magnitude > 0 reached the consumer's handler during
         // the FfbTest Start call. Threshold is intentionally permissive
-        // (>= 1) — pid.dll may scale the 5000 we sent down through gain
+        // (>= 1): pid.dll may scale the 5000 we sent down through gain
         // / direction transforms; the load-bearing question is "did ANY
         // magnitude bytes reach the handler at all," not "was it exactly
         // 5000."
@@ -328,7 +328,7 @@ internal static class Program
 
         if (!HidD_GetPreparsedData(hid, out IntPtr pp))
         {
-            Console.Error.WriteLine($"HidP probe: HidD_GetPreparsedData failed (Win32={Marshal.GetLastWin32Error()}) — skipping");
+            Console.Error.WriteLine($"HidP probe: HidD_GetPreparsedData failed (Win32={Marshal.GetLastWin32Error()}), skipping");
             hid.Dispose();
             return failuresFromFfbTest > 0 ? 1 : 0;
         }
@@ -371,12 +371,12 @@ internal static class Program
                     Console.Error.WriteLine($"  WARN: InitializeReportForID(Output, 0x11) NTSTATUS=0x{r:X8}");
             }
 
-            // Test 1 — Effect Block Index (Usage 0x22, 8-bit Variable Output value)
+            // Test 1: Effect Block Index (Usage 0x22, 8-bit Variable Output value)
             Init();
             failures += AssertSetUsageValue("EffectBlockIndex (0x0F:0x22) val=1",
                 HidP_Output, UP_PID, 0, 0x22, 1u, pp, report, reportLen);
 
-            // Test 2 — Effect Type ARRAY. Each iteration resets the buffer
+            // Test 2: Effect Type ARRAY. Each iteration resets the buffer
             // first; ARRAY items only hold one selector at a time per Report
             // Count, so without a reset HidP reports BUFFER_TOO_SMALL when
             // we try to add a second.
@@ -389,14 +389,14 @@ internal static class Program
                     HidP_Output, UP_PID, 0, u, ref n, pp, report, reportLen);
             }
 
-            // Test 3 — Direction Enable (0x56) — disassembly's "call #1" candidate
+            // Test 3, Direction Enable (0x56): the disassembly's "call #1" candidate
             Init();
             ushort[] u56 = { 0x56 };
             uint n56 = 1;
             failures += AssertSetUsages("DirectionEnable (0x0F:0x56)",
                 HidP_Output, UP_PID, 0, u56, ref n56, pp, report, reportLen);
 
-            // Test 4 — Axes Enable: Usage X (0x01:0x30) and Y (0x01:0x31).
+            // Test 4: Axes Enable: Usage X (0x01:0x30) and Y (0x01:0x31).
             // disassembly's "call #2" candidate (per-axis loop).
             Init();
             ushort[] u30 = { 0x30 };
@@ -409,7 +409,7 @@ internal static class Program
             failures += AssertSetUsages("AxesEnable Y (0x01:0x31)",
                 HidP_Output, UP_GENERIC_DESKTOP, 0, u31, ref n31, pp, report, reportLen);
 
-            // Test 5 — UsageValue fields (Duration 0x50, Trigger Repeat 0x54,
+            // Test 5: UsageValue fields (Duration 0x50, Trigger Repeat 0x54,
             // Sample Period 0x51, Start Delay 0xA7, Gain 0x52, Trigger Button 0x53)
             // These use HidP_SetUsageValue, not SetUsages.
             Init();
@@ -426,9 +426,9 @@ internal static class Program
             failures += AssertSetUsageValue("TriggerButton (0x0F:0x53) val=1",
                 HidP_Output, UP_PID, 0, 0x53, 1u, pp, report, reportLen);
 
-            // Test 6 — Direction Ordinal Instance 1 + 2 (0x000A:0x0001, 0x0002).
+            // Test 6: Direction Ordinal Instance 1 + 2 (0x000A:0x0001, 0x0002).
             // These are 16-bit Variable Output values, so HidP_SetUsageValue
-            // is the right API (not SetUsages — which is for Buttons/Arrays).
+            // is the right API (not SetUsages: which is for Buttons/Arrays).
             Init();
             failures += AssertSetUsageValue("Direction Ord Inst 1 (0x0A:0x0001) val=180",
                 HidP_Output, UP_ORDINAL, 0, 0x0001, 180u, pp, report, reportLen);
@@ -437,7 +437,7 @@ internal static class Program
             failures += AssertSetUsageValue("Type Specific Block Offset Ord Inst 1 (0x0A:0x0001) val=0",
                 HidP_Output, UP_ORDINAL, 0, 0x0001, 0u, pp, report, reportLen);
 
-            // Final: HidD_SetFeature with the assembled report bytes — closing
+            // Final: HidD_SetFeature with the assembled report bytes: closing
             // the loop on whether the Output report writes through HidClass.
             // (Independent of HidP_SetUsages success; even with composition
             // errors, the buffer is valid bytes.)
@@ -475,7 +475,7 @@ internal static class Program
             // every write up to RING_SLOTS (64) per drain.
             //
             // Test: spam K bursts of 3 distinct Report IDs (0x11, 0x15,
-            // 0x1A) — total 3K writes — then sleep enough for the SDK's
+            // 0x1A), total 3K writes, then sleep enough for the SDK's
             // poll loop to drain (≥16 ms = 2 poll cycles, plenty of
             // headroom). Assert OutputReceived count == 3K, broken down
             // by Report ID.
@@ -544,12 +544,12 @@ internal static class Program
             }
 
             // FfbTest already ran above (before the HidP probe phase). The
-            // HidP probe results above are diagnostic only — the regression
+            // HidP probe results above are diagnostic only: the regression
             // bar is FfbTest + the round-trip magnitude assertion. If
             // either fails, the probe fails.
             if (failuresFromFfbTest == 0 && roundTripFailures == 0)
             {
-                Console.WriteLine($"=== PASS — FfbTest + round-trip OK; HidP probe diagnostic failures: {failures} ===");
+                Console.WriteLine($"=== PASS: FfbTest + round-trip OK, HidP probe diagnostic failures: {failures} ===");
                 return 0;
             }
             if (roundTripFailures > 0)
@@ -602,7 +602,7 @@ internal static class Program
         bool exited = proc.WaitForExit(20000);
         if (!exited)
         {
-            Console.WriteLine("  FfbTest hung past 20s — killing");
+            Console.WriteLine("  FfbTest hung past 20s, killing");
             try { proc.Kill(entireProcessTree: true); } catch { }
             proc.WaitForExit(2000);
         }
@@ -693,7 +693,7 @@ internal static class Program
         d.AddRange(new byte[] { 0x75, 0x01, 0x95, 0x08 });
         d.AddRange(new byte[] { 0x81, 0x02 });
 
-        // Inline PadForge HMaestroFfbDescriptor.Build() — FFB block
+        // Inline PadForge HMaestroFfbDescriptor.Build(): FFB block
         d.AddRange(BuildFfbBlock());
 
         d.Add(0xC0); // End Application Collection

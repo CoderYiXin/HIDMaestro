@@ -1,4 +1,4 @@
-// Issue #22 / #27 — trigger axis classifier regression probe.
+﻿// Issue #22 / #27: trigger axis classifier regression probe.
 //
 // AddStick / AddTrigger Usage-code convention as of v1.3.14 (issue #27):
 //     AddStick("Left")  → X (0x30) + Y (0x31)
@@ -9,12 +9,12 @@
 // Exercises the Custom-Extended layouts the issue bodies called out as
 // silently broken pre-fix:
 //
-//   Case 1: 1 stick + 1 trigger        — Trigger field (RC=1, LogicalMin=0)
+//   Case 1: 1 stick + 1 trigger: Trigger field (RC=1, LogicalMin=0)
 //                                        must classify as LeftTrigger, not
 //                                        get silently claimed as RightStickX
 //                                        by the unconditional case-0x33 arm.
 //
-//   Case 2: 2 sticks + 1 trigger       — Right stick (Z+Rz, RC=2) must
+//   Case 2: 2 sticks + 1 trigger: Right stick (Z+Rz, RC=2) must
 //                                        classify as RightStickX/Y while the
 //                                        lone Rx trigger (RC=1) lands in
 //                                        LeftTrigger; sweep is direct 0..max
@@ -22,18 +22,18 @@
 //
 // Plus the don't-regress cases:
 //
-//   Case 3: 6-axis builder layout (X+Y+Z+Rz sticks + Rx+Ry triggers) — the
+//   Case 3: 6-axis builder layout (X+Y+Z+Rz sticks + Rx+Ry triggers): the
 //           default builder output.
 //
-//   Case 3b: 4-axis DInput (X+Y+Z+Rz only, no Rx/Ry, RC=1) — the F310 /
+//   Case 3b: 4-axis DInput (X+Y+Z+Rz only, no Rx/Ry, RC=1): the F310 /
 //           WebKit "standard gamepad" pattern. fourAxisDInput rescues Z/Rz
 //           into RightStickX/Y because no triggers exist.
 //
-//   Case 4: 2 sticks + 2 triggers      — independent triggers route to
+//   Case 4: 2 sticks + 2 triggers: independent triggers route to
 //                                        LeftTrigger / RightTrigger and write
 //                                        independently (no combined synthesis).
 //
-//   Case 5: Xbox-360-wired-shape (X+Y+Rx+Ry+Z+Vx+Vy) — Rx/Ry at RC=2 are
+//   Case 5: Xbox-360-wired-shape (X+Y+Rx+Ry+Z+Vx+Vy): Rx/Ry at RC=2 are
 //           the right stick, Z (combined trigger) sits in CombinedTrigger,
 //           Vx in LeftTrigger, Vy in RightTrigger. Hand-rolled raw
 //           descriptor independent of the builder convention.
@@ -163,7 +163,7 @@ internal sealed class Program
             Check("Standard 6-axis: RightTrigger from Ry", b.RightTrigger != null && b.RightTrigger.Usage == 0x34);
         }
 
-        // 4-axis DInput (real) — X+Y+Z+Rz only, no Rx/Ry. A hand-built
+        // 4-axis DInput (real): X+Y+Z+Rz only, no Rx/Ry. A hand-built
         // descriptor matching the WebKit "standard gamepad" pattern: 8-bit
         // unsigned values, X/Y/Z/Rz declared together (Report Count 4).
         Console.WriteLine("\n--- Case 3b: 4-axis DInput (X+Y+Z+Rz, 8-bit, RC=4) ---");
@@ -193,7 +193,7 @@ internal sealed class Program
                   b.LeftTrigger == null);
         }
 
-        // ── Case 4: 2 sticks + 2 triggers — independent (don't-regress) ───────
+        // ── Case 4: 2 sticks + 2 triggers: independent (don't-regress) ───────
         Console.WriteLine("\n--- Case 4: 2 sticks + 2 independent triggers ---");
         {
             byte[] desc = new HidDescriptorBuilder()
@@ -221,7 +221,7 @@ internal sealed class Program
             Check("LT=0, RT=1 → RightTrigger field full-scale", rAtFullR == b.RightTrigger!.LogicalMax);
         }
 
-        // ── Case 5: Xbox 360 wired shape — combined Z + Vx/Vy (don't-regress) ─
+        // ── Case 5: Xbox 360 wired shape: combined Z + Vx/Vy (don't-regress) ─
         Console.WriteLine("\n--- Case 5: Xbox 360 wired shape (combined Z + Vx/Vy) ---");
         {
             // Hand-roll the Xbox-360-wired descriptor shape: X, Y, Rx, Ry, Z,
@@ -274,9 +274,9 @@ internal sealed class Program
                   z2 == b.CombinedTrigger.LogicalMax, $"got {z2}, expected {b.CombinedTrigger.LogicalMax}");
         }
 
-        // ── Case 6: Custom Extended (PadForge BEEF:F000) — read live profile ──
+        // ── Case 6: Custom Extended (PadForge BEEF:F000): read live profile ──
         // This matches what PadForge ships as its custom-shaped virtual.
-        // Sticks=2, triggers=1 — the same shape as case 2 but verifying the
+        // Sticks=2, triggers=1: the same shape as case 2 but verifying the
         // SDK's profile-loaded path classifies it the same as the
         // builder-built path.
         Console.WriteLine("\n--- Case 6: PadForge custom-extended path (sticks=2, triggers=1) ---");
@@ -431,7 +431,7 @@ internal sealed class Program
                 if (sticks.Length == 0 && triggers.Length == 0 && !hat && btnCount == 0)
                     continue;
                 // Skip stickBits/triggerBits when the corresponding axis type
-                // isn't present — those are no-op variants.
+                // isn't present: those are no-op variants.
                 if (sticks.Length == 0 && sBits != 8) continue;
                 if (triggers.Length == 0 && tBits != 8) continue;
 
@@ -439,7 +439,7 @@ internal sealed class Program
                 // 4 paired stick slots + however many of [Rx, Ry, Slider, Dial]
                 // remain after sticks consume Rx/Ry/Slider/Dial. Configs that
                 // would overflow the pool intentionally throw at AddStick /
-                // AddTrigger build time. Skip them — Case 8 already exercises
+                // AddTrigger build time. Skip them: Case 8 already exercises
                 // the 4-stick boundary, and pool-overflow throws are part of
                 // the API contract documented on the methods.
                 int triggerSlotsTaken = 0;
@@ -563,7 +563,7 @@ internal sealed class Program
                 bool wantRT = expRT != 0;
 
                 // CombinedTrigger should never be set for builder-emitted
-                // descriptors — it's a pure Vx/Vy override slot.
+                // descriptors: it's a pure Vx/Vy override slot.
                 if (b.CombinedTrigger != null) {
                     ok = false; detail += " CombinedTrigger unexpectedly set;";
                 }

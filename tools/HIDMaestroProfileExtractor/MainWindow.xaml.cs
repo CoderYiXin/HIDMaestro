@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -111,7 +111,7 @@ public partial class MainWindow : Window
             SaveButton.IsEnabled = true;
             CopyButton.IsEnabled = true;
             int descByteCount = _lastExtracted.GetDescriptorBytes()?.Length ?? 0;
-            StatusText.Text = $"Extracted {row.Info.ProductString ?? "device"} — {descByteCount}-byte descriptor.";
+            StatusText.Text = $"Extracted {row.Info.ProductString ?? "device"}: {descByteCount}-byte descriptor.";
         }
         catch (Exception ex)
         {

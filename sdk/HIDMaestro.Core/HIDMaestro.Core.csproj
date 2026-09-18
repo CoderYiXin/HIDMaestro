@@ -11,11 +11,11 @@
     <!-- Library identity -->
     <AssemblyName>HIDMaestro.Core</AssemblyName>
     <RootNamespace>HIDMaestro</RootNamespace>
-    <Description>HIDMaestro UMDF2 virtual HID controller engine — embed in your app to create exact-fidelity virtual game controllers.</Description>
+    <Description>HIDMaestro UMDF2 virtual HID controller engine: embed in your app to create exact-fidelity virtual game controllers.</Description>
 
     <!-- Pack everything (driver DLLs, INFs, signing/catalog tools, profile JSONs)
          inside the assembly as embedded resources so single-file publishing in
-         the consuming app picks them up automatically — no sibling files, no
+         the consuming app picks them up automatically: no sibling files, no
          WDK install required on the user's machine. -->
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
 
@@ -37,7 +37,7 @@
       <_HMDriverFiles Include="$(HMBuildDir)HMXInput.dll" />
       <_HMDriverFiles Include="$(HMBuildDir)hidmaestro.inf" />
       <_HMDriverFiles Include="$(HMBuildDir)hidmaestro_xusb.inf" />
-      <!-- hmswd.exe — SWD device creation helper, shelled out to by
+      <!-- hmswd.exe: SWD device creation helper, shelled out to by
            SwdDeviceFactory for the ROOT\ → SWD\ migration (slot-1-skip fix).
            Embedded here so single-file deployment still has it. -->
       <_HMDriverFiles Include="$(HMBuildDir)hmswd.exe" Condition="Exists('$(HMBuildDir)hmswd.exe')" />

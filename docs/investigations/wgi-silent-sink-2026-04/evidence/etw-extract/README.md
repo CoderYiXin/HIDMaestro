@@ -1,4 +1,4 @@
-# ETW Extract — msedge.exe gaming device file accesses
+﻿# ETW Extract: msedge.exe gaming device file accesses
 
 Filtered extract from a 1.4 GB kernel ETW trace captured during a Chromium `vibrationActuator.playEffect` click targeting HIDMaestro's virtual Xbox 360 Wired controller on hardwaretester.com.
 
@@ -26,6 +26,6 @@ msedge.exe accessed gaming-stack files during the Chromium click:
 
 ## Cited in finding.md
 
-The extract supports the architectural framing. Full msedge module-load list is also in the finding — `xinput1_4.dll`, `Windows.Gaming.Input.dll`, `HID.DLL` loaded; `GameInput.dll` / `XInputOnGameInput.dll` NOT loaded.
+The extract supports the architectural framing. Full msedge module-load list is also in the finding: `xinput1_4.dll`, `Windows.Gaming.Input.dll`, `HID.DLL` loaded; `GameInput.dll` / `XInputOnGameInput.dll` NOT loaded.
 
 See `msedge-device-files.txt` for the full extracted list.

@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 setlocal enabledelayedexpansion
 
 :: ================================================================
@@ -13,7 +13,7 @@ setlocal enabledelayedexpansion
 ::   - Visual Studio with C++ workload (vcvarsall)
 ::   - Windows SDK 10.0 (for HID, SetupAPI, DInput, WinRT C++/WinRT, etc.)
 ::   - Microsoft WIL (header-only, expected at ..\..\..\wil\include
-::     relative to this script — clone from github.com/microsoft/wil)
+::     relative to this script: clone from github.com/microsoft/wil)
 :: ================================================================
 
 set "SRC_DIR=%~dp0"

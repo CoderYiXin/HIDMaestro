@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using HIDMaestro.Internal;
 
@@ -57,7 +57,7 @@ namespace HIDMaestro;
 ///   <item>The HKCU Joystick target is per-calling-user. On a single-user
 ///         workstation that matches the DirectInput scope visually; on a
 ///         multi-user machine, only the user who called <see cref="Set"/>
-///         sees the joy.cpl label change — the HKLM paths still carry the
+///         sees the joy.cpl label change: the HKLM paths still carry the
 ///         override for DirectInput consumers regardless of user.</item>
 ///   <item>DirectInput and joy.cpl both cache OEM names per-process on first
 ///         enumeration. A joy.cpl window that was already open when the

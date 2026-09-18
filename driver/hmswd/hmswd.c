@@ -1,5 +1,5 @@
-/*
- * hmswd.c — HIDMaestro SWD-enumerated device creation helper.
+﻿/*
+ * hmswd.c: HIDMaestro SWD-enumerated device creation helper.
  *
  * Why a separate native binary: .NET 10 P/Invoke to cfgmgr32!SwDeviceCreate
  * on Win11 26200 returns hr=0x8007007E (ERROR_MOD_NOT_FOUND) synchronously,
@@ -12,7 +12,7 @@
  * and exits. The SDK invokes it via Process.Start and records the instance
  * ID for later DIF_REMOVE teardown.
  *
- * Device removal uses standard PnP (DIF_REMOVE / devcon / pnputil) — no
+ * Device removal uses standard PnP (DIF_REMOVE / devcon / pnputil): no
  * special "destroy" command is needed because SWDeviceLifetimeParentPresent
  * keeps the device alive until reboot or explicit removal.
  *
@@ -31,7 +31,7 @@
  *   `remove` reconnects to a previously-created SWD device by calling
  *   SwDeviceCreate with identical arguments (per the docs, this returns a
  *   fresh handle to the existing device), downgrades its lifetime from
- *   ParentPresent to Handle, then SwDeviceClose — which is the only
+ *   ParentPresent to Handle, then SwDeviceClose: which is the only
  *   documented path to tear down SWDeviceLifetimeParentPresent devices.
  *   pnputil /remove-device /force and DIF_REMOVE both silently no-op on
  *   FAILEDINSTALL-state SWD phantoms, which is why this helper exists.
@@ -59,7 +59,7 @@ static WCHAR   g_inst_id[256];
 
 /* Self-log: write every step's hresult to %TEMP%\HIDMaestro\hmswd_self.log
  * so we can diagnose silent no-ops (exit=0 is not proof of effect when PnP
- * refuses the operation). Appended, never truncated — rotate manually if
+ * refuses the operation). Appended, never truncated: rotate manually if
  * it grows. */
 static void self_log(const wchar_t *fmt, ...)
 {
@@ -163,7 +163,7 @@ usage:
     // SilentInstall + NoDisplayInUI suppress UAC prompts and Device-Setup
     // balloons. For create we also pass DriverRequired so SwDeviceCreate
     // blocks until the matching INF is installed and bound. For remove we
-    // intentionally drop DriverRequired — the device we're reconnecting to
+    // intentionally drop DriverRequired: the device we're reconnecting to
     // may be in CONFIGFLAG_FAILEDINSTALL state (the whole reason we're
     // removing it), and DriverRequired would make SwDeviceCreate block
     // forever waiting for a bind that will never succeed.
@@ -227,12 +227,12 @@ usage:
                 lastLogTick - startTick, (int)cr, devStatus, problem);
         }
         /* Treat "live in PnP tree with DN_STARTED set" as authoritative
-         * success — but only for CREATE. The fast path was added for
+         * success: but only for CREATE. The fast path was added for
          * the subsequent-run SwDeviceCreate reuse-fast-path scenario
          * where the callback never fires even though the devnode is
          * live. For REMOVE, the SwDevice handle returned by
          * SwDeviceCreate must be fully bound (callback fired) before
-         * SwDeviceSetLifetime(Handle) is legal — taking the fast path
+         * SwDeviceSetLifetime(Handle) is legal: taking the fast path
          * on REMOVE leaves hDev half-bound and SetLifetime fails with
          * hr=0x80070032 ERROR_NOT_SUPPORTED, after which a subsequent
          * SwDeviceClose does NOT downgrade lifetime, the kernel
@@ -280,7 +280,7 @@ usage:
         return 0;
     }
 
-    /* remove: downgrade lifetime to Handle, then Close — PnP will remove the
+    /* remove: downgrade lifetime to Handle, then Close: PnP will remove the
      * devnode when the last HSWDEVICE handle goes away. This is the only
      * documented path that tears down SWDeviceLifetimeParentPresent devices
      * stuck in FAILEDINSTALL state. */
@@ -292,7 +292,7 @@ usage:
         return 5;
     }
     SwDeviceClose(hDev);
-    self_log(L"  SwDeviceClose returned — device should now be removed");
+    self_log(L"  SwDeviceClose returned: device should now be removed");
     wprintf(L"OK REMOVED\n");
     fflush(stdout);
     return 0;

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -22,7 +22,7 @@
 // loaded by Edge/Chrome via --app=http://127.0.0.1:<port>/. Same-origin
 // fetch() to /result lets us POST gamepad readings without CORS issues.
 //
-// We deliberately probe what real web pages see — same code path as
+// We deliberately probe what real web pages see: same code path as
 // gamepad-tester.com / hardwaretester.com / PadForge web UI etc.
 
 const SERVER_URL = "/result";
@@ -34,7 +34,7 @@ const readings = document.getElementById('readings');
 const samples = [];
 let gamepadEverSeen = false;
 
-// Title-based progress markers — survive even if fetch is blocked
+// Title-based progress markers: survive even if fetch is blocked
 function mark(s) { document.title = 'HM:' + s; }
 mark('script_start');
 window.addEventListener('error', e => mark('err:' + (e.message || 'unknown').slice(0, 40)));
@@ -125,7 +125,7 @@ function finish() {
     });
 }
 
-// Start sampling immediately (don't wait for gamepadconnected — Chrome may
+// Start sampling immediately (don't wait for gamepadconnected: Chrome may
 // have already enumerated the gamepad before our handler ran).
 setTimeout(sample, 100);
 </script>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using System.IO;
@@ -7,7 +7,7 @@ using System.IO;
 // a test byte sequence, then also issue a WriteFile to cover the
 // IOCTL_HID_WRITE_REPORT path. Exercises both HID output routes so a
 // consumer-side OutputReceived handler sees the packets the probe sent.
-// (Driver-side diagnostic logging was removed — this probe now verifies
+// (Driver-side diagnostic logging was removed: this probe now verifies
 // only client-reachable behavior.)
 
 internal static class P

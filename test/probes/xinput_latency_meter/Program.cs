@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -15,7 +15,7 @@ using System.Threading;
 //   xinput_latency_meter.exe <duration_sec> <out.csv> [slot ...]
 //
 // If no slots are specified, polls all four (0-3). xinputhid does not
-// always allocate consecutive slot numbers across virtuals — a common
+// always allocate consecutive slot numbers across virtuals: a common
 // assignment for 2x xbox-series-xs-bt is slots 0 and 2, not 0 and 1.
 // If you want targeted slots only, pass them explicitly.
 

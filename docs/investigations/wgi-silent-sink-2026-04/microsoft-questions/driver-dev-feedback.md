@@ -1,4 +1,4 @@
-# WGI XUSB haptic dispatch gating on ROOT-enumerated UMDF2 virtuals
+﻿# WGI XUSB haptic dispatch gating on ROOT-enumerated UMDF2 virtuals
 
 **Windows build:** 11 26200.8115 (Kits 10.0.26100.0)
 **Device class:** XUSB (Xbox 360 / Xbox One compatible controllers)
@@ -15,7 +15,7 @@ We maintain a user-mode virtual HID controller project (HIDMaestro) that creates
 
 Direct `xinput1_4.dll::XInputSetState(slot, &vibration)` works correctly against our virtual. We capture the raw IOCTL_XUSB_SET_STATE input buffer at our UMDF2 upper filter with the expected wire layout `[0x00, 0x00, LEFT_motor, RIGHT_motor, 0x02]` and dispatch motor bytes to the consumer application.
 
-However, `Windows.Gaming.Input.Gamepad::put_Vibration` from any caller — including Chromium Edge 147 `GamepadHapticActuator.playEffect` — produces **zero motor-bearing SET_STATE bytes at our driver** across all three instrumentation points (xinputhid-filter path, xusb22-replica path, HID output report handlers), even with the caller satisfying the documented focus gate.
+However, `Windows.Gaming.Input.Gamepad::put_Vibration` from any caller, including Chromium Edge 147 `GamepadHapticActuator.playEffect`, produces **zero motor-bearing SET_STATE bytes at our driver** across all three instrumentation points (xinputhid-filter path, xusb22-replica path, HID output report handlers), even with the caller satisfying the documented focus gate.
 
 WGI enumeration probes DO arrive at our driver. Three-layer log excerpt during a Chromium click window:
 
@@ -38,7 +38,7 @@ Our source-file footprint scan of `Windows.Gaming.Input.dll` (via embedded `__FI
 
 Is WGI's XUSB haptic dispatch hard-gated on USB-bus enumeration of the target device?
 
-If so, is there a documented mechanism for a UMDF2 virtual device registered under the ROOT enumerator to appear as a valid WGI haptic dispatch target — for example, by satisfying a specific device interface property, a registry value under the driver's device key, or a DEVPKEY we can set from the filter driver?
+If so, is there a documented mechanism for a UMDF2 virtual device registered under the ROOT enumerator to appear as a valid WGI haptic dispatch target: for example, by satisfying a specific device interface property, a registry value under the driver's device key, or a DEVPKEY we can set from the filter driver?
 
 If the gate is not USB-enumeration per se, what is it, and can it be satisfied from UMDF2 without a kernel-mode bus driver?
 

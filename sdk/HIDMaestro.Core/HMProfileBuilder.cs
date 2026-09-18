@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using HIDMaestro.Internal;
 
@@ -10,7 +10,7 @@ namespace HIDMaestro;
 /// or to create modified variants of existing profiles with different
 /// descriptors, button counts, or axis layouts.
 ///
-/// <para>Example — clone an existing profile with a different PID:</para>
+/// <para>Example: clone an existing profile with a different PID:</para>
 /// <code>
 /// var existing = ctx.GetProfile("dualsense")!;
 /// var custom = new HMProfileBuilder()
@@ -21,7 +21,7 @@ namespace HIDMaestro;
 /// using var ctrl = ctx.CreateController(custom);
 /// </code>
 ///
-/// <para>Example — build a completely custom controller:</para>
+/// <para>Example: build a completely custom controller:</para>
 /// <code>
 /// var custom = new HMProfileBuilder()
 ///     .Id("my-joystick")
@@ -118,7 +118,7 @@ public sealed class HMProfileBuilder
     /// <c>InputReportByteSize</c> otherwise. Replaces the
     /// <c>.Descriptor(b.Build()).InputReportSize(b.InputReportByteSize + 1)</c>
     /// pair that's easy to get wrong (PadForge tracked this down across
-    /// several iterations of issue #16 — the kernel sized the input
+    /// several iterations of issue #16: the kernel sized the input
     /// buffer wrong when the +1 was missing, HidClass preparsed data
     /// was misaligned, and pid.dll resolved Feature reports to Report
     /// ID 0 instead of the declared values).</summary>

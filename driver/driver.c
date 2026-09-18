@@ -1,11 +1,11 @@
-/*
- * HIDMaestro — UMDF2 Virtual HID Minidriver
+﻿/*
+ * HIDMaestro: UMDF2 Virtual HID Minidriver
  *
  * Architecture:
  *   HidClass.sys → MsHidUmdf.sys (pass-through) → HIDMaestro.dll (lower filter)
  *
  * Configuration via registry (HKLM\SOFTWARE\HIDMaestro):
- *   ReportDescriptor (REG_BINARY) — raw HID descriptor bytes
+ *   ReportDescriptor (REG_BINARY): raw HID descriptor bytes
  *   VendorId (REG_DWORD)
  *   ProductId (REG_DWORD)
  *   VersionNumber (REG_DWORD)
@@ -61,7 +61,7 @@ static const UCHAR g_SonyCalibration[34] = {
 };
 
 /* Append the decimal representation of a ULONG to a wide-string buffer.
- * Self-contained — no C runtime dependency. The driver doesn't link against
+ * Self-contained: no C runtime dependency. The driver doesn't link against
  * MSVCRT, so swprintf/wsprintf aren't available. Buffer must be NUL-terminated. */
 static VOID
 AppendUlongDecimal(_Inout_ WCHAR *dest, _In_ ULONG value, _In_ SIZE_T maxChars)
@@ -112,7 +112,7 @@ InitInstancePaths(
 
     ctx->ControllerIndex = index;
 
-    /* Build per-instance paths. Multi-digit indices fully supported — there's
+    /* Build per-instance paths. Multi-digit indices fully supported: there's
      * no artificial cap on controller count. XInput tops out at 4 slots
      * (Microsoft's limit, not ours), but DInput / HIDAPI / WGI / browser
      * see all virtual controllers regardless of count. */
@@ -163,7 +163,7 @@ InitInstancePaths(
      * at least 4 digits so it sorts naturally. SDL3 / HIDAPI use this string
      * to distinguish identical controllers; without it, two virtual DualSense
      * with the same VID/PID/ProductString get bucketed as one device by
-     * hid_enumerate. The exact format isn't part of any contract — consumers
+     * hid_enumerate. The exact format isn't part of any contract: consumers
      * are expected to treat the string as opaque. */
     {
         static const WCHAR prefix[] = L"HM-CTL-";
@@ -223,7 +223,7 @@ ReadConfigFromRegistry(
     /*
      * UMDF2 runs in user-mode (WUDFHost.exe), so WdfRegistryOpenKey with
      * kernel-style paths (\Registry\Machine\...) does NOT work. We use
-     * the Win32 RegOpenKeyExW API directly — UMDF2 has full Win32 access.
+     * the Win32 RegOpenKeyExW API directly: UMDF2 has full Win32 access.
      */
     HKEY    hKey = NULL;
     LONG    result;
@@ -239,7 +239,7 @@ ReadConfigFromRegistry(
         result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\HIDMaestro",
                                0, KEY_READ, &hKey);
         if (result != ERROR_SUCCESS)
-            return; /* No config key — use defaults */
+            return; /* No config key: use defaults */
     }
 
     /* Read ReportDescriptor (REG_BINARY) */
@@ -253,7 +253,7 @@ ReadConfigFromRegistry(
          * for ensuring the descriptor includes whatever data channel items
          * are needed (e.g., Feature Report ID 2).
          *
-         * We do NOT modify the descriptor here — injecting Report IDs into
+         * We do NOT modify the descriptor here: injecting Report IDs into
          * descriptors that use the default (no-ID) report can violate HID
          * validation rules. The client pre-processes the descriptor.
          */
@@ -372,7 +372,7 @@ ReadConfigFromRegistry(
         }
     }
 
-    /* Read InputReportByteLength (REG_DWORD) — for capping SET_FEATURE→input.
+    /* Read InputReportByteLength (REG_DWORD): for capping SET_FEATURE→input.
      * Bounds-check to HIDMAESTRO_MAX_REPORT_SIZE so a corrupt registry can't
      * cause buffer overflows or wildly wrong report sizing. */
     dwordSize = sizeof(dwordVal);
@@ -412,7 +412,7 @@ TryOpenSharedMapping(_In_ PDEVICE_CONTEXT ctx)
  * the section appears (test app may not have created it yet at first IOCTL).
  *
  * IMPORTANT: WUDFHost runs as LocalService which lacks SeCreateGlobalPrivilege,
- * so the driver CANNOT CreateFileMapping in the Global\ namespace — only
+ * so the driver CANNOT CreateFileMapping in the Global\ namespace: only
  * the test app (running elevated) can. */
 /* Stale-handle recovery (issue #2, output side of #1): periodic re-open
  * every 500 writes (~2s) so we pick up fresh sections after SDK teardown. */
@@ -451,11 +451,11 @@ EnsurePidStateMapping(_In_ PDEVICE_CONTEXT ctx)
 {
     if (ctx->PidStateMemPtr != NULL) return TRUE;
 
-    /* v1.1.39 — opened READ_WRITE because v1.1.37+ driver-side EBI
+    /* v1.1.39: opened READ_WRITE because v1.1.37+ driver-side EBI
      * allocation, FreeEbi, and ResetPidState all WRITE the section
      * (BL_* fields, EbiAllocBitmap, State_*). Pre-1.1.39 we opened
      * FILE_MAP_READ which made every write an access violation that
-     * terminated WUDFHost — surfaced to the caller as Win32 1291
+     * terminated WUDFHost: surfaced to the caller as Win32 1291
      * "The process hosting the driver for this device has been
      * terminated." Combined with the IOCTL_UMDF_HID_* constants being
      * wrong (the case statements never matched the framework's
@@ -545,7 +545,7 @@ AllocateEbiInBlockLoad(_In_ PDEVICE_CONTEXT ctx)
         ULONG bit = 1UL << (ebi - 1);
         ULONG prev = (ULONG)InterlockedOr((volatile LONG *)&pid->EbiAllocBitmap, (LONG)bit);
         if ((prev & bit) == 0) {
-            /* We just transitioned this bit from 0 to 1 — we own EBI. */
+            /* We just transitioned this bit from 0 to 1: we own EBI. */
             allocatedEbi = ebi;
             loadStatus = 1; /* Success */
             InterlockedIncrement((volatile LONG *)&pid->EbiAllocatedCount);
@@ -578,10 +578,10 @@ AllocateEbiInBlockLoad(_In_ PDEVICE_CONTEXT ctx)
     pid->SeqNo = seq + 1; /* even */
 }
 
-/* v1.1.38 — PID Device Reset (CTRL_DEVRST=4). Mirrors vJoy's
+/* v1.1.38: PID Device Reset (CTRL_DEVRST=4). Mirrors vJoy's
  * `Ffb_ResetPIDData` (vJoy-Brunner/driver/sys/hid.c:2627). Clears all
  * EBI allocations and resets the Block Load and State fields to safe
- * initial values. Pool fields are NOT reset — those are consumer-
+ * initial values. Pool fields are NOT reset: those are consumer-
  * published static config. dinput8's
  * IDirectInputDevice8::SendForceFeedbackCommand(DISFFC_RESET) arrives as
  * IOCTL_UMDF_HID_SET_OUTPUT_REPORT with Report ID 0x1C, Control byte 4. */
@@ -668,7 +668,7 @@ PublishOutput(_In_ PDEVICE_CONTEXT ctx,
      * Reader scans slots from LastSeen+1 to Head, validates each by
      * checking slot.SeqNo == expected, copies, re-checks SeqNo for
      * torn-write detection. If LastSeen+N < Head, oldest packets have
-     * been overwritten — reader logs and skips ahead to Head-N+1. */
+     * been overwritten: reader logs and skips ahead to Head-N+1. */
     /* Multi-producer reservation (audit of #34, pre-existing bug): the
      * main driver and the XUSB companion BOTH publish to this ring
      * (DirectInput FFB / HID output here, XInput rumble there), and the
@@ -703,7 +703,7 @@ PublishOutput(_In_ PDEVICE_CONTEXT ctx,
     if (ctx->OutputSignalEvent) SetEvent(ctx->OutputSignalEvent);
 }
 
-/* Read shared input via memory mapping. RAM-only — no disk fallback.
+/* Read shared input via memory mapping. RAM-only: no disk fallback.
  * Output: *out is filled with the shared struct on success. */
 static BOOLEAN
 ReadSharedInput(_In_ PDEVICE_CONTEXT ctx, _Out_ HIDMAESTRO_SHARED_INPUT *out)
@@ -1251,7 +1251,7 @@ static DWORD WINAPI SwitchStreamProc(_In_ LPVOID Parameter)
 /* Core per-frame work extracted from the old EvtSharedMemTimer.
  * Called from the event-driven worker thread whenever the SDK signals
  * InputDataEvent (or the 50 ms safety tick fires). Doing all the HID
- * report-build + manual-queue drain here — no WDF timer, no IRQL games:
+ * report-build + manual-queue drain here: no WDF timer, no IRQL games:
  * WdfRequestComplete / WdfWaitLock* are documented safe from a raw worker
  * thread in UMDF2. */
 static void
@@ -1281,10 +1281,10 @@ ProcessSharedInput(_In_ PDEVICE_CONTEXT ctx)
     if (ctx->SwitchProtocol) { ctx->SharedMemSeqNo = seqNo; return; }
 
     /* Build HID input report from shared file Data (native descriptor format).
-     * Report MUST be exactly InputReportByteLength bytes — HidClass rejects
+     * Report MUST be exactly InputReportByteLength bytes: HidClass rejects
      * short reports.  Zero-fill first, then overlay actual data.
      *
-     * v1.3.5 — vendor-blob mode-switch path. When ExtendedReportSize > 0
+     * v1.3.5: vendor-blob mode-switch path. When ExtendedReportSize > 0
      * the SDK passes the FULL RID-included extended report (e.g. 78-byte
      * Sony BT Report 0x31 with CRC32). Pass through verbatim. */
     UCHAR inputReport[HIDMAESTRO_MAX_REPORT_SIZE];
@@ -1313,19 +1313,19 @@ ProcessSharedInput(_In_ PDEVICE_CONTEXT ctx)
         inputSize = expectedSize; /* Always send full expected length */
     }
 
-    /* v1.3.5 — vendor-blob mode-switch path. When the SDK arms extended
+    /* v1.3.5: vendor-blob mode-switch path. When the SDK arms extended
      * emission (Sony BT post-handshake, ExtendedReportSize > 0), it has
      * already written the FULL RID-included extended report (e.g. 78-byte
      * Sony BT Report 0x31 with CRC32) into shared.ExtendedReportData.
      * Overwrite the legacy-encoded inputReport/inputSize with the
-     * pass-through bytes — the legacy encode above is harmless work for
+     * pass-through bytes: the legacy encode above is harmless work for
      * the few-microsecond window before the overwrite, which keeps the
      * function single-path-shape (Visual C++ codegen produces materially
      * different code under compilers' cache-line / branch-prediction
      * heuristics for nested if-else than for straight-line; an early
      * benchmark with the extended path as a leading branch showed a
      * ~6× input-rate regression on USB DS5 even when the branch was not
-     * taken — see issue #21). For the common case (ExtendedReportSize=0)
+     * taken: see issue #21). For the common case (ExtendedReportSize=0)
      * this is one cmp + jz; on modern x86 with branch prediction it's
      * effectively free. */
     if (shared.ExtendedReportSize > 0
@@ -1354,13 +1354,13 @@ ProcessSharedInput(_In_ PDEVICE_CONTEXT ctx)
     }
 
     /* Complete exactly ONE pending READ_REPORT per shared-memory state
-     * change — not ALL queued requests. HidClass pre-queues READ_REPORTs
+     * change: not ALL queued requests. HidClass pre-queues READ_REPORTs
      * for performance; draining the entire queue with the same cached
      * report means one logical press from user mode becomes N HID
      * reports (where N = queue depth), each of which RawInput delivers
      * as a separate WM_INPUT. Consumers that handle RawInput per-message
      * (Start Menu / Xbox accessories UI) then register N navigation
-     * events per single press — the triple/double-movement bug in
+     * events per single press: the triple/double-movement bug in
      * issue #8, empirically verified via InputSourceCounter probe
      * (5 WM_INPUTs from one hDevice per single press, state change
      * visible only once at XInput/RGC/UINav).
@@ -1379,7 +1379,7 @@ ProcessSharedInput(_In_ PDEVICE_CONTEXT ctx)
             NTSTATUS cs = RequestCopyFromBuffer(pendingRead, inputReport, inputSize);
             WdfRequestComplete(pendingRead, NT_SUCCESS(cs) ? STATUS_SUCCESS : STATUS_BUFFER_TOO_SMALL);
 
-            /* Send Col2 (Report ID 0x20) if available — one Col2 read
+            /* Send Col2 (Report ID 0x20) if available: one Col2 read
              * paired with one Col1 read, still one logical "frame." */
             if (col2Size > 0 &&
                 NT_SUCCESS(WdfIoQueueRetrieveNextRequest(ctx->ManualQueue, &pendingRead))) {
@@ -1427,7 +1427,7 @@ ProcessSharedInput(_In_ PDEVICE_CONTEXT ctx)
  * the SDK kept signaling the old event (keeping staleWakeups small) but
  * the shared-memory view was pointing at destroyed/stale pages. In that
  * state the 5s timeout never fired (events kept arriving) and the stale
- * counter reset on each signal, so recycle never triggered — permanent
+ * counter reset on each signal, so recycle never triggered: permanent
  * deadlock until WUDFHost was killed.
  *
  * Two-phase wait:
@@ -1438,7 +1438,7 @@ ProcessSharedInput(_In_ PDEVICE_CONTEXT ctx)
  *   Phase 2 (steady state): wait on (StopEvent, InputDataEvent) with a
  *     500 ms timeout so even if the SDK never signals, we recycle and
  *     re-verify handles every half second. When the SDK is active this
- *     is still effectively zero CPU (events arrive well under 500 ms) —
+ *     is still effectively zero CPU (events arrive well under 500 ms)
  *     the timeout is a safety net, not a polling interval.
  *
  * StopEvent is signaled from:
@@ -1473,7 +1473,7 @@ SharedInputWorkerProc(_In_ LPVOID Parameter)
      * handles to re-open fresh. There is NO return path out of this loop
      * except StopEvent with TearingDown set (issue #38). */
     for (;;) {
-        /* Phase 1: bootstrap — wait for the SDK to create the named event.
+        /* Phase 1: bootstrap: wait for the SDK to create the named event.
          * StopEvent is checked on every 200 ms tick so teardown stays
          * responsive even when the SDK hasn't started up yet. */
         while (ctx->InputDataEvent == NULL) {
@@ -1696,7 +1696,7 @@ EvtDeviceAdd(
     UNREFERENCED_PARAMETER(Driver);
 
     /* HIDMaestro.dll only loads for HIDClass devices (gamepad companion).
-     * XUSB companion uses HMXInput.dll — separate DLL, no shared code. */
+     * XUSB companion uses HMXInput.dll: separate DLL, no shared code. */
 
     /* FunctionMode=1 skips filter mode so we can register XUSB on the HID device.
      * This tells DI to use XInput mapping (5 axes) instead of raw HID.
@@ -1704,7 +1704,7 @@ EvtDeviceAdd(
     DWORD functionMode = 0;
     {
         HKEY hFm;
-        /* FunctionMode is read BEFORE device creation — ctx not yet available.
+        /* FunctionMode is read BEFORE device creation: ctx not yet available.
          * Use Controller0 as default (test app writes here for the primary device). */
         if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\HIDMaestro\\Controller0", 0, KEY_READ, &hFm) == ERROR_SUCCESS
             || RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\HIDMaestro", 0, KEY_READ, &hFm) == ERROR_SUCCESS) {
@@ -1841,7 +1841,7 @@ EvtDeviceAdd(
     status = WdfWaitLockCreate(WDF_NO_OBJECT_ATTRIBUTES, &ctx->OutputLock);
     if (!NT_SUCCESS(status)) return status;
 
-    /* Default queue (parallel) — HID IOCTLs from MsHidUmdf */
+    /* Default queue (parallel): HID IOCTLs from MsHidUmdf */
     WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queueConfig, WdfIoQueueDispatchParallel);
     queueConfig.EvtIoDeviceControl = EvtIoDeviceControl;
 
@@ -1864,7 +1864,7 @@ EvtDeviceAdd(
      * Global\HIDMaestroInputEvent<N> alongside the section and SetEvents
      * it per frame; we OpenEvent lazily in the worker (it may not exist
      * yet at EvtDeviceAdd time). StopEvent is our sentinel for shutdown.
-     * Replaces the old 1 ms WdfTimer busy poll — see commit/diff for the
+     * Replaces the old 1 ms WdfTimer busy poll: see commit/diff for the
      * CPU-saturation root cause. */
     ctx->InputDataEvent = NULL;
     /* Create a NAMED StopEvent so external cleanup code (SDK's
@@ -1908,13 +1908,13 @@ EvtDeviceAdd(
          * + create new context on the same ControllerIndex), the OLD context's
          * EvtDeviceContextCleanup signaled this event (manual-reset → stays
          * signaled) to wake its worker. If any process still holds a handle to
-         * the event when the new context runs — the SDK's
+         * the event when the new context runs: the SDK's
          * RemoveAllVirtualControllers utility keeps a handle briefly, and the
-         * kernel object survives as long as any ref exists — then our
+         * kernel object survives as long as any ref exists: then our
          * CreateEventW above hands us that still-signaled event. The worker
          * immediately sees WAIT_OBJECT_0 on StopEvent and returns 0: HID input
          * path dead for the rest of this session. (HIDMAESTRO still runs its
-         * own path, so XUSB / Guide still works — which is the exact partial-
+         * own path, so XUSB / Guide still works: which is the exact partial-
          * hang symptom: only Guide flashes after a live-swap on Xbox 360.) */
         ResetEvent(ctx->StopEvent);
         ctx->WorkerThread = CreateThread(NULL, 0, SharedInputWorkerProc, ctx, 0, NULL);
@@ -1974,7 +1974,7 @@ EvtIoDeviceControl(
         /*
          * The input buffer's low 16 bits identify which device-level string
          * the HID class wants. The values aren't the documented HID_STRING_ID_*
-         * constants from the WDK headers (1/2/3) — under MsHidUmdf the HID
+         * constants from the WDK headers (1/2/3): under MsHidUmdf the HID
          * class actually sends 14/15/16 for manufacturer/product/serial. Both
          * the constant-form and the actual-observed-form are accepted in case
          * the mapping changes between Windows versions.
@@ -1985,7 +1985,7 @@ EvtIoDeviceControl(
          * one device by SDL3/HIDAPI's hid_enumerate, which uses the serial
          * string as the disambiguator. PadForge has the same problem.
          *
-         * For all other string IDs we return the product string — that's
+         * For all other string IDs we return the product string: that's
          * what joy.cpl and games display.
          */
         PVOID  inBuf = NULL;
@@ -2031,7 +2031,7 @@ EvtIoDeviceControl(
          * with stale cached data, HIDClass immediately re-issues, and we
          * burn a core per device hammering the kernel↔user mode bridge.
          * GET_INPUT_REPORT (a different IOCTL, polled diagnostic path) is
-         * unaffected — it still reads the cache directly.
+         * unaffected: it still reads the cache directly.
          */
         /* Switch Pro mode: pending 0x81/0x21 replies preempt; otherwise
          * every read parks and the 60 Hz stream thread completes it on
@@ -2068,7 +2068,7 @@ EvtIoDeviceControl(
 
     case IOCTL_HID_WRITE_REPORT: {
         /*
-         * HID write path — used by HIDAPI / SDL3 / WriteFile to send output
+         * HID write path: used by HIDAPI / SDL3 / WriteFile to send output
          * reports (DualSense report 0x02 haptics+triggers+LED, generic LED
          * control, etc). The first byte is the HID Report ID (0 if the
          * descriptor uses no IDs). Forward to the output shared section so
@@ -2116,7 +2116,7 @@ EvtIoDeviceControl(
          * Forward to the output shared section tagged as a feature report so
          * the consumer can distinguish from regular output reports.
          *
-         * v1.1.37 — PID FFB Create New Effect (0x11) and Block Free (0x1F)
+         * v1.1.37: PID FFB Create New Effect (0x11) and Block Free (0x1F)
          * are handled SYNCHRONOUSLY inside this IOCTL handler, before
          * forwarding to the consumer. Mirrors vJoy's `Ffb_ProcessPacket`
          * for `HID_ID_NEWEFREP+0x10`: kernel/driver allocates the EBI in
@@ -2139,19 +2139,19 @@ EvtIoDeviceControl(
             /* PID FFB report routing inside SetFeature. v1.1.39 covers
              * all three Set-direction PID handshake reports here because
              * the canonical PID descriptor declares 0x11/0x1B/0x1C as
-             * BOTH Feature and Output direction — pid.dll/dinput8 may
+             * BOTH Feature and Output direction: pid.dll/dinput8 may
              * route via either HidD_SetFeature OR HidD_SetOutputReport
              * depending on transport-mode global. The same handlers
              * exist in IOCTL_UMDF_HID_SET_OUTPUT_REPORT below; whichever
              * IOCTL the framework delivers, the driver acts the same.
              *
-             * v1.3.7 — Report IDs are profile-specific. SDK writes the
+             * v1.3.7: Report IDs are profile-specific. SDK writes the
              * descriptor-derived overrides into the shared section so
              * non-canonical PID layouts (Microsoft SideWinder uses
              * Set Effect=0x01, Block Free=0x0B, Device Control=0x0C)
              * route through the same handlers as the canonical
              * 0x11/0x1B/0x1C builder-emitted layouts. We MUST open the
-             * shared section BEFORE reading the RID overrides — on
+             * shared section BEFORE reading the RID overrides: on
              * first IOCTL the section is unmapped and an unconditional
              * read would fall back to canonical IDs and miss
              * non-canonical RIDs entirely. EnsurePidStateMapping is
@@ -2210,7 +2210,7 @@ EvtIoDeviceControl(
          * Backward compat: if no SDK has published (PidEnabled == 0) or
          * the section doesn't exist (consumer doesn't use FFB), Pool
          * returns STATUS_NO_SUCH_DEVICE and Block Load / State return
-         * STATUS_NOT_SUPPORTED — matching vJoy's "FFB not enabled"
+         * STATUS_NOT_SUPPORTED: matching vJoy's "FFB not enabled"
          * convention and HIDMaestro's pre-v1.1.35 behavior of
          * STATUS_NOT_SUPPORTED across all GetFeature calls.
          *
@@ -2470,7 +2470,7 @@ EvtIoDeviceControl(
             } else if (reportId == 0x02) {
                 /* DS4 calibration. USB = 37 bytes
                  * (DS4_FEATURE_REPORT_CALIBRATION_SIZE), BT = 41 bytes
-                 * (DS4_FEATURE_REPORT_CALIBRATION_BLUETOOTH_SIZE — the
+                 * (DS4_FEATURE_REPORT_CALIBRATION_BLUETOOTH_SIZE: the
                  * extra 4 are CRC32; we don't compute a real CRC, the
                  * known DS4 consumers tolerate zeros the same way the
                  * existing DS5 stubs leak past CRC validation). The
@@ -2516,7 +2516,7 @@ EvtIoDeviceControl(
             break;
         }
 
-        /* v1.3.7 — descriptor-driven PID Report ID overrides for
+        /* v1.3.7: descriptor-driven PID Report ID overrides for
          * non-canonical PID layouts (Microsoft SideWinder etc.). Open
          * the shared section first so a fresh-IOCTL read on a profile
          * with non-canonical IDs picks up the SDK-published overrides
@@ -2536,7 +2536,7 @@ EvtIoDeviceControl(
             if (sec->BlockLoadReportId)       blockLoadRid       = sec->BlockLoadReportId;
         }
 
-        /* GetFeature(Create New Effect) — silent success (mirrors vJoy).
+        /* GetFeature(Create New Effect): silent success (mirrors vJoy).
          * Buffer left untouched. Doesn't gate on PidEnabled so this works
          * even for non-FFB consumers, matching vJoy's "always SUCCESS for
          * unhandled report IDs" fallthrough behavior. */
@@ -2613,12 +2613,12 @@ EvtIoDeviceControl(
          * UMDF2 input buffer layout for HID_XFER_PACKET-style IOCTLs is just
          * the raw report bytes (Report ID byte first if descriptor uses IDs).
          *
-         * v1.1.38 — handle PID Block Free (0x1B) and Device Control (0x1C)
+         * v1.1.38: handle PID Block Free (0x1B) and Device Control (0x1C)
          * here. Block Free is Output direction in the canonical PID
          * descriptor (vJoy-Brunner/driver/sys/hidReportDescSingle.h:558,
          * `0x91, 0x02` items). Device Control is Output direction
          * (hidReportDescSingle.h:571) and on Control=4 (CTRL_DEVRST) we
-         * reset PID state — mirrors vJoy hid.c:2849.
+         * reset PID state: mirrors vJoy hid.c:2849.
          *
          * Report ID 0x11 is intentionally NOT handled here. 0x11 is
          * dual-purpose in the PID descriptor: Feature direction = Create
@@ -2686,7 +2686,7 @@ EvtIoDeviceControl(
 
     case IOCTL_UMDF_HID_GET_INPUT_REPORT: {
         /*
-         * v1.1.38 — vJoy returns STATUS_NOT_SUPPORTED for this IOCTL
+         * v1.1.38: vJoy returns STATUS_NOT_SUPPORTED for this IOCTL
          * unconditionally (vJoy-Brunner/driver/sys/hid.c:244). HIDMaestro
          * pre-1.1.38 returned 17 zeroed bytes via a default-size fallback,
          * which dinput8 would parse against descriptor-declared report
@@ -2712,11 +2712,11 @@ EvtIoDeviceControl(
 
         UCHAR inReportId = ((UCHAR *)inBuf)[0];
 
-        /* PID State Report (Input direction in the canonical descriptor —
+        /* PID State Report (Input direction in the canonical descriptor
          * vJoy hidReportDescSingle.h:752 declares 0x14 with embedded
          * Input items inside a Feature collection). dinput8 may issue
          * HidD_GetInputReport(StateRid) during CreateEffect to read State.
-         * v1.3.7 — match against SDK-published State RID with canonical
+         * v1.3.7: match against SDK-published State RID with canonical
          * fallback so non-canonical PID layouts (SideWinder etc.) resolve.
          * Open shared section first; otherwise the very first IOCTL read
          * before any other handler ran would miss the override. */
@@ -2752,7 +2752,7 @@ EvtIoDeviceControl(
         }
         WdfWaitLockRelease(ctx->InputLock);
 
-        /* Anything else: vJoy parity — STATUS_NOT_SUPPORTED. */
+        /* Anything else: vJoy parity: STATUS_NOT_SUPPORTED. */
         status = STATUS_NOT_SUPPORTED;
         break;
     }
@@ -2765,7 +2765,7 @@ EvtIoDeviceControl(
 
     /* XUSB IOCTLs (IOCTL_XUSB_GET_INFORMATION/GET_CAPABILITIES/GET_STATE/
      * SET_STATE/GET_LED_STATE/GET_BATTERY_INFO/POWER_INFO) used to be
-     * handled here. Removed in v1.3.4 — the main HID device never
+     * handled here. Removed in v1.3.4: the main HID device never
      * registers the XUSB interface (see WdfDeviceCreateDeviceInterface
      * comment further up); xinput1_4 talks exclusively to the XUSB
      * companion (HMXInput.dll), which has its own handlers in

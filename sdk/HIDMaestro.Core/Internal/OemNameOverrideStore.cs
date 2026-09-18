@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Win32;
@@ -42,7 +42,7 @@ namespace HIDMaestro.Internal;
 ///
 /// <para>Backward compatibility: pending records written by an earlier
 /// build of this store (which captured only the DirectInput target)
-/// are still replayed correctly — missing Joystick fields are treated
+/// are still replayed correctly: missing Joystick fields are treated
 /// as "no restore needed" for that target, which is the safe default
 /// since no new Joystick write happened under that old record.</para>
 ///
@@ -65,12 +65,12 @@ internal static class OemNameOverrideStore
     private const string JoystickOemNameValue = "OEMName";       // no space
 
     // ── Pending-record hive (sibling of HKLM\SOFTWARE\HIDMaestro;
-    //    deliberately NOT under it — see DeviceOrchestrator cleanup)
+    //    deliberately NOT under it: see DeviceOrchestrator cleanup)
     private const string PendingRoot = @"SOFTWARE\HIDMaestroOemOverrides";
     private const string MutexName = @"Global\HIDMaestro-OEM-Recovery";
 
     // ── Pending-record value names ─────────────────────────────────
-    // DirectInput (v1 fields — preserved for backward compat)
+    // DirectInput (v1 fields: preserved for backward compat)
     private const string DI_OriginalName    = "OriginalOemName";
     private const string DI_OriginalExisted = "OriginalKeyExisted";
     // Joystick HKLM (v2 fields)
@@ -161,7 +161,7 @@ internal static class OemNameOverrideStore
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Write pass — mutate all three targets
+    //  Write pass: mutate all three targets
     // ────────────────────────────────────────────────────────────────
 
     private static void WriteAllTargets(string vidPid, string label)
@@ -178,7 +178,7 @@ internal static class OemNameOverrideStore
             key.SetValue(JoystickOemNameValue, label, RegistryValueKind.String);
         }
 
-        // 3. Joystick (HKCU) — wins over HKLM, what joy.cpl actually shows
+        // 3. Joystick (HKCU): wins over HKLM, what joy.cpl actually shows
         using (var key = Registry.CurrentUser.CreateSubKey($@"{JoystickRoot}\{vidPid}", writable: true)!)
         {
             key.SetValue(JoystickOemNameValue, label, RegistryValueKind.String);
@@ -186,7 +186,7 @@ internal static class OemNameOverrideStore
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Capture pass — save originals for all three targets
+    //  Capture pass: save originals for all three targets
     // ────────────────────────────────────────────────────────────────
 
     private static void CaptureAllOriginalsToPendingStore(string vidPid)
@@ -230,7 +230,7 @@ internal static class OemNameOverrideStore
     }
 
     // ────────────────────────────────────────────────────────────────
-    //  Restore pass — replay record, delete pending entry
+    //  Restore pass: replay record, delete pending entry
     // ────────────────────────────────────────────────────────────────
 
     private static void RestoreFromPendingStore(string vidPid)

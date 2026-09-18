@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,8 +16,8 @@ namespace HIDMaestro;
 /// preparsed-data blob returned by <c>HidD_GetPreparsedData</c> using
 /// the libusb/hidapi algorithm (Chromium WebHID team's reverse
 /// engineering). The result is <b>logically equivalent</b> to what the
-/// device originally returned over USB — same report IDs, field layouts,
-/// logical ranges, usage pages, sizes — but not byte-for-byte identical.
+/// device originally returned over USB: same report IDs, field layouts,
+/// logical ranges, usage pages, sizes: but not byte-for-byte identical.
 /// For HIDMaestro's purpose (creating a virtual that behaves the same as
 /// the physical device), logical equivalence is the correct fidelity
 /// bar, because filter drivers can mutate the descriptor before it
@@ -38,7 +38,7 @@ public static class HMDeviceExtractor
     /// <summary>Enumerate every HID-class device currently connected.
     /// Returns one <see cref="HMHidDeviceInfo"/> per HID interface (a
     /// single physical device with multiple top-level collections will
-    /// appear multiple times, one per collection — pick the one whose
+    /// appear multiple times, one per collection: pick the one whose
     /// <see cref="HMHidDeviceInfo.TopLevelUsage"/> matches what you
     /// want to emulate).</summary>
     public static IReadOnlyList<HMHidDeviceInfo> ListDevices()
@@ -69,7 +69,7 @@ public static class HMDeviceExtractor
     {
         if (device is null) throw new ArgumentNullException(nameof(device));
 
-        // Find the device fresh — the path may still be valid, but this
+        // Find the device fresh: the path may still be valid, but this
         // also re-reads the descriptor in case the device reconnected.
         var matches = HidDeviceEnumerator.Enumerate()
             .Where(r => r.DevicePath.Equals(device.DevicePath, StringComparison.OrdinalIgnoreCase))
@@ -119,7 +119,7 @@ public static class HMDeviceExtractor
             "logically equivalent to the physical device's HID report descriptor but " +
             "not guaranteed byte-identical.";
 
-        // Deliberately skip InputReportSize — HidP_GetCaps's ReportByteLength
+        // Deliberately skip InputReportSize: HidP_GetCaps's ReportByteLength
         // includes a Report ID byte for some no-Report-ID devices on certain
         // Windows builds, producing an off-by-one vs. what the descriptor
         // actually writes. Leaving it null makes the SDK derive the correct
@@ -130,7 +130,7 @@ public static class HMDeviceExtractor
         // profiles commonly carry a curated deviceDescription distinct from
         // productString (e.g. F310's "Logitech Gamepad F310" alongside the
         // "Logitech Dual Action" iProduct). On extract there is no curator,
-        // so productString is the best available floor — it's what the
+        // so productString is the best available floor: it's what the
         // physical device reports as its own name. Emitting null would
         // leave the Device Manager / joy.cpl identity blank for imported
         // profiles and silently diverge from catalog-authored ones. See

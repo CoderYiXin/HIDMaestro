@@ -1,4 +1,4 @@
-// HIDMaestro SDK quickstart — demonstrates the full API surface.
+﻿// HIDMaestro SDK quickstart: demonstrates the full API surface.
 //
 // What it does:
 //   1. Loads the SDK's embedded profile catalog
@@ -50,7 +50,7 @@ int loaded = ctx.LoadDefaultProfiles();
 Console.WriteLine($"  Loaded {loaded} embedded profiles");
 
 // ── 2. Driver install ────────────────────────────────────────────────
-// Idempotent — if a matching package is already in the driver
+// Idempotent: if a matching package is already in the driver
 // store this returns quickly.
 Console.Write("  Installing driver... ");
 ctx.InstallDriver();
@@ -96,11 +96,11 @@ Console.WriteLine($"  Overrode joy.cpl label for VID_{x360Vid:X4}&PID_{x360Pid:X
 // signal (issue #34; 8 ms poll fallback against pre-#34 drivers) and
 // drains every slot written since the last wake, in monotonic SeqNo
 // order. Multiple OutputReceived invocations per poll
-// are normal — DirectInput PID FFB writes Set Effect → Set Constant
+// are normal: DirectInput PID FFB writes Set Effect → Set Constant
 // Force / Set Periodic → Effect Operation Start within 1-3 ms and all
 // three surface here as separate packets (the pre-1.1.40 single-slot
 // channel coalesced those bursts and silently dropped the magnitude
-// packet — see issue #16). Keep handlers cheap (no synchronous I/O,
+// packet: see issue #16). Keep handlers cheap (no synchronous I/O,
 // no long locks); a stall longer than ~512 ms while the driver is
 // writing at burst rate begins overwriting the oldest packets.
 ctrl0.OutputReceived += (controller, packet) =>
@@ -118,9 +118,9 @@ ctrl1.OutputReceived += (controller, packet) =>
 // Profiles with a HID PID 1.0 force-feedback collection in their
 // descriptor (Logitech wheels, some HOTAS, DirectInput FFB joysticks)
 // expect the device to answer HidD_GetFeature for three Report IDs:
-//   0x12  Block Load  — issued after dinput8 sends Create New Effect
-//   0x13  Pool         — issued by EnumEffects / IDirectInputDevice8::Initialize
-//   0x14  PID State    — issued during effect Start/Stop
+//   0x12  Block Load: issued after dinput8 sends Create New Effect
+//   0x13  Pool: issued by EnumEffects / IDirectInputDevice8::Initialize
+//   0x14  PID State: issued during effect Start/Stop
 //
 // HIDMaestro reads these from a per-controller shared section the
 // consumer fills via PublishPidPool / PublishPidState. Before the
@@ -130,7 +130,7 @@ ctrl1.OutputReceived += (controller, packet) =>
 // than hanging or retrying.
 //
 // Block Load is allocated by the driver synchronously inside its
-// SetFeature(0x11 Create New Effect) IOCTL handler — by the time the
+// SetFeature(0x11 Create New Effect) IOCTL handler: by the time the
 // SDK's OutputReceived fires for the Create New Effect notification,
 // the BL state is already canonical and readable via
 // GetCurrentPidBlockLoad. PublishPidBlockLoad is reserved for
@@ -138,13 +138,13 @@ ctrl1.OutputReceived += (controller, packet) =>
 // (e.g., reflecting a real physical device's EBI assignment).
 //
 // Custom-built profiles needing PID FFB should call
-// HidDescriptorBuilder.AddPidFfbBlock when authoring the descriptor —
+// HidDescriptorBuilder.AddPidFfbBlock when authoring the descriptor
 // it emits the canonical "minimum viable" PID FFB report set
 // (one Create New Effect Feature, full Output report set), auto-injects
 // the Report ID 0x01 input prefix, and rejects Gamepad-TLC misuse.
 // Adding extra Feature reports (0x12/0x13/0x14) inside the same
 // Application Collection AVs pid.dll (DirectX 8-era FFB enumeration
-// bug, not OS-build-gated) — see the doc on AddPidFfbBlock.
+// bug, not OS-build-gated): see the doc on AddPidFfbBlock.
 ctrl0.PublishPidPool(
     ramPoolSize:             0xFFFF,
     simultaneousEffectsMax:  16,
@@ -192,10 +192,10 @@ while (sw.ElapsedMilliseconds < 5_000)
     // Controller 0 (DualSense): full circle + ramping triggers + toggling A.
     // Note: the DualSense profile has triggerButtons=[6,7], so whenever
     // LeftTrigger or RightTrigger is nonzero, buttons 7/8 (L2/R2 digital)
-    // automatically engage — matching real DS4/DualSense hardware behavior.
+    // automatically engage: matching real DS4/DualSense hardware behavior.
     var state0 = new HMGamepadState
     {
-        // v1.3.9 — single unified Axes dict drives every analog input.
+        // v1.3.9: single unified Axes dict drives every analog input.
         // Helper resolves the canonical 6-slot convention into the active
         // profile's declared sticks/triggers (Sony's Z=right-stick-X,
         // Rx=left-trigger axisMap is honored automatically).
@@ -209,7 +209,7 @@ while (sw.ElapsedMilliseconds < 5_000)
         Buttons      = ((int)t % 2 == 0) ? HMButton.A : HMButton.B,
         Hat          = (HMHat)(1 + ((int)(t * 2) % 8)),  // cycle N through NW
 
-        // v1.3.5 Sony surface — touchpad finger 0 traces a circle, gravity
+        // v1.3.5 Sony surface: touchpad finger 0 traces a circle, gravity
         // vector at +1g on Y for a face-up controller, battery at 80%
         // charging. ds.daidr.me's touchpad / motion / battery panels render
         // these for any DualSense (USB or BT, post-arm) virtual.
@@ -251,7 +251,7 @@ while (sw.ElapsedMilliseconds < 5_000)
 double hz = frames * 1000.0 / sw.ElapsedMilliseconds;
 Console.WriteLine($"  Sent {frames} frames per controller ({hz:F0} Hz)");
 
-// ── 6. SubmitRawReport — for exotic HID features ─────────────────────
+// ── 6. SubmitRawReport: for exotic HID features ─────────────────────
 // Some devices have capabilities that HMGamepadState doesn't model:
 // touchpad coordinates, gyroscope data, vendor-specific LED control,
 // sensor packets, etc. SubmitRawReport sends an arbitrary HID input
@@ -267,14 +267,14 @@ rawReport[0] = 0x00;             // Report ID 0 (or whatever the descriptor uses
 // ... fill rawReport[1..16] with the desired HID report bytes ...
 // ctrl0.SubmitRawReport(rawReport);  // uncommented, this would override the
 //                                     // current state with raw bytes
-Console.WriteLine("  (SubmitRawReport available for exotic HID features — see source)");
+Console.WriteLine("  (SubmitRawReport available for exotic HID features: see source)");
 
 // ── 7. Dispose a single controller while others stay live ────────────
 // Each HMController is independently disposable. Disposing one removes
-// just that virtual device from the system — the others keep running.
+// just that virtual device from the system: the others keep running.
 // This is the pattern PadForge uses when a user disconnects one physical
 // controller while others remain active.
-Console.WriteLine("\n  Disposing controller 1 (Xbox 360) — controller 0 stays live...");
+Console.WriteLine("\n  Disposing controller 1 (Xbox 360): controller 0 stays live...");
 HMOemNameOverride.Clear(x360Vid, x360Pid);  // Restore the pre-override joy.cpl label
 ctrl1.Dispose();
 Console.WriteLine("  Controller 1 removed. Controller 0 still active for 2 more seconds...");
@@ -316,7 +316,7 @@ foreach (var d in connected.Take(5))
 //   File.WriteAllText("captured.json", json);
 
 // ── 8. Inspect profile characteristics ───────────────────────────────
-// Every profile's descriptor layout is publicly accessible — buttons,
+// Every profile's descriptor layout is publicly accessible: buttons,
 // axes, hat, bit sizes, connection type, driver mode. PadForge uses
 // this to show users what a profile provides before deploying it.
 Console.WriteLine("\n  Inspecting DualSense profile characteristics:");
@@ -328,7 +328,7 @@ Console.WriteLine($"    Trigger:    {dsProfile.TriggerBits}-bit");
 Console.WriteLine($"    Connection: {dsProfile.Connection}");
 Console.WriteLine($"    Report:     {dsProfile.InputReportSize} bytes");
 
-// ── 9. Custom profile — DualSense with 16 buttons ───────────────────
+// ── 9. Custom profile: DualSense with 16 buttons ───────────────────
 // Clone an existing profile and modify it. Here we take the DualSense
 // (15 buttons) and create a variant with 16 buttons by building a
 // custom descriptor. The virtual controller spoofs as a DualSense to
@@ -364,11 +364,11 @@ var customState = new HMGamepadState
     Buttons = (HMButton)(1u << 15),  // bit 15 = button 16
 };
 ctrl2.SubmitState(in customState);
-Console.WriteLine("  Submitted frame with button 16 held — check joy.cpl!");
+Console.WriteLine("  Submitted frame with button 16 held: check joy.cpl!");
 Thread.Sleep(3000);
 
 // ── 10. Fully custom controller from scratch ─────────────────────────
-// Build a controller that doesn't exist in the catalog — a simple
+// Build a controller that doesn't exist in the catalog: a simple
 // 4-axis, 6-button flight stick with a hat switch and DirectInput PID
 // force-feedback. AddPidFfbBlock emits the canonical "minimum viable"
 // FFB report set; pair it with PublishPidPool / PublishPidState (and
@@ -422,7 +422,7 @@ while (sw.ElapsedMilliseconds < 3_000)
     Thread.Sleep(4);
 }
 
-// ── 10b. High-resolution hat — HOTAS / pro flight-stick targets ──────
+// ── 10b. High-resolution hat: HOTAS / pro flight-stick targets ──────
 // HMGamepadState ships four input shapes for the hat field; the encoder
 // picks the highest-priority non-null one and ignores the rest. The
 // chain (highest → lowest priority):
@@ -464,22 +464,22 @@ Console.WriteLine("OK");
 // Demonstrate all four hat-input shapes in sequence
 Console.WriteLine("  Cycling through the four hat-input shapes (1 sec each)...");
 
-// 1. Octant enum — limited to 8 cardinal/diagonal positions
+// 1. Octant enum: limited to 8 cardinal/diagonal positions
 ctrlHotas.SubmitState(new HMGamepadState { Hat = HMHat.NorthEast });
 Console.WriteLine("    [Hat = HMHat.NorthEast]      → octant input");
 Thread.Sleep(1000);
 
-// 2. HatDegrees — float angle, snaps to nearest of 16 positions (22.5° each)
+// 2. HatDegrees: float angle, snaps to nearest of 16 positions (22.5° each)
 ctrlHotas.SubmitState(new HMGamepadState { HatDegrees = 67.5f });
 Console.WriteLine("    [HatDegrees = 67.5f]         → 67.5° → idx 3 (ENE)");
 Thread.Sleep(1000);
 
-// 3. HatHundredths — same idea as HatDegrees but integer-only (hundredths)
+// 3. HatHundredths: same idea as HatDegrees but integer-only (hundredths)
 ctrlHotas.SubmitState(new HMGamepadState { HatHundredths = 22500 }); // 225.00°
 Console.WriteLine("    [HatHundredths = 22500]      → 225.00° → idx 10 (SW-ish)");
 Thread.Sleep(1000);
 
-// 4. HatRaw — bit-exact descriptor value
+// 4. HatRaw: bit-exact descriptor value
 ctrlHotas.SubmitState(new HMGamepadState
 {
     HatRaw = (ushort)(hotas.HatLogicalMin!.Value + 7) // mid-range position
@@ -493,7 +493,7 @@ ctrlHotas.SubmitState(new HMGamepadState { HatDegrees = 350f });
 Console.WriteLine("    [HatDegrees = 350f]          → wraps to North (the % range protects LogicalMax)");
 Thread.Sleep(1000);
 
-// Null state — Hat=None, all other fields null → descriptor null state
+// Null state: Hat=None, all other fields null → descriptor null state
 ctrlHotas.SubmitState(new HMGamepadState { Hat = HMHat.None });
 Console.WriteLine("    [Hat = HMHat.None]           → null state (no direction)");
 Thread.Sleep(500);
@@ -501,7 +501,7 @@ Thread.Sleep(500);
 // ── 10c. v1.3.5: data-driven vendor-blob input + output ──────────────
 // Sony BT profiles (DualSense BT, DualSense Edge BT, etc.) use a 78-byte
 // vendor-blob HID report (Report 0x31) that the descriptor declares as
-// one opaque field. Pre-v1.3.5 the SDK couldn't pack this — it locked to
+// one opaque field. Pre-v1.3.5 the SDK couldn't pack this: it locked to
 // the descriptor's first input report (Report 1, 9 bytes) and Steam Input
 // / dualsense-tester saw a broken DualSense.
 //
@@ -562,7 +562,7 @@ Console.WriteLine("\n  10c. Sony BT vendor-blob path (Report 0x31)...");
                 Console.WriteLine($"    [decoded] lightbar RGB=#{c[0]:X2}{c[1]:X2}{c[2]:X2}");
             }
         };
-        Console.WriteLine($"    Subscribed to OutputDecoded — waiting briefly for any host output...");
+        Console.WriteLine($"    Subscribed to OutputDecoded: waiting briefly for any host output...");
         Thread.Sleep(800);
         // No host is sending output during this demo, so the event won't
         // fire. In a real consumer (PadForge), this is where game rumble
@@ -615,7 +615,7 @@ Console.WriteLine($"    AvailableAxes ({hotasFull.AxisCount}): " +
 
 using (var ctrlHotasFull = ctx.CreateController(hotasFull))
 {
-    // v1.3.9 — single Axes dict drives every analog input. The classifier
+    // v1.3.9: single Axes dict drives every analog input. The classifier
     // resolved Slider→LeftTrigger via the v1.3.8 case-0x36 extension; the
     // helper auto-fills the canonical 6-slot mapping from the profile's
     // Sticks/Triggers (here just LeftStickX/Y from the X+Y stick). The
@@ -632,12 +632,12 @@ using (var ctrlHotasFull = ctx.CreateController(hotasFull))
     Thread.Sleep(500);
 }
 
-// ── 11. SubmitRawReport — ViGEmBus DS4 migration pattern ─────────────
+// ── 11. SubmitRawReport: ViGEmBus DS4 migration pattern ─────────────
 // This shows how PadForge (or any app migrating from ViGEmBus) can
 // submit full DS4/DualSense reports including touchpad, gyro, and
 // battery data using SubmitRawReport. The caller packs the raw byte
-// buffer in the device's native wire format — same as ViGEmBus's
-// DS4_REPORT_EX — and HIDMaestro passes it through unchanged.
+// buffer in the device's native wire format: same as ViGEmBus's
+// DS4_REPORT_EX: and HIDMaestro passes it through unchanged.
 //
 // Key difference from ViGEmBus: pass DATA BYTES ONLY (no Report ID
 // prefix). The driver prepends the Report ID automatically. For the
@@ -659,7 +659,7 @@ Console.WriteLine("OK");
     // Build a raw DS4 report with touchpad finger data.
     // This is the same byte layout PadForge's DS4VirtualController uses.
     // Byte offsets match Sony's DS4 USB wire format (not the HID descriptor's
-    // logical field order — SubmitRawReport bypasses descriptor parsing).
+    // logical field order: SubmitRawReport bypasses descriptor parsing).
     byte[] raw = new byte[63]; // 63 data bytes (no Report ID prefix)
 
     // Sticks (bytes 0-3): center = 128
@@ -705,7 +705,7 @@ Console.WriteLine("OK");
     Thread.Sleep(2000);
 }
 
-// ── 12. PadForge migration reference — all four target profiles ──────
+// ── 12. PadForge migration reference: all four target profiles ──────
 // Complete SubmitRawReport examples for the four controller types
 // PadForge supports or plans to support. Each shows the exact byte
 // layout for the profile's native wire format.
@@ -715,7 +715,7 @@ Console.WriteLine("OK");
 // Note: Xbox 360 uses SubmitState (not raw) because HMGamepadState
 // maps 1:1 to the descriptor's standard fields. No vendor-specific
 // touchpad/gyro region. XInput delivery is via the XUSB companion.
-Console.WriteLine("\n  12a. Xbox 360 Wired — via SubmitState");
+Console.WriteLine("\n  12a. Xbox 360 Wired: via SubmitState");
 {
     var x360Ref = ctx.GetProfile("xbox-360-wired")!;
     Console.Write($"  Creating {x360Ref.Name}... ");
@@ -723,7 +723,7 @@ Console.WriteLine("\n  12a. Xbox 360 Wired — via SubmitState");
     Console.WriteLine("OK");
 
     // Xbox 360 has combined triggers (Z axis), 10 buttons, hat, two 16-bit sticks.
-    // SubmitState handles everything — no raw report needed.
+    // SubmitState handles everything: no raw report needed.
     // Guide routes through the XUSB companion (btnHigh 0x40 → wButtons 0x0400),
     // visible via XInputGetStateEx (ordinal 100).
     var x360State = new HMGamepadState
@@ -747,7 +747,7 @@ Console.WriteLine("\n  12a. Xbox 360 Wired — via SubmitState");
 // Profile: xbox-series-xs-bt | VID 045E PID 0B13 | No Report ID | 17 bytes
 // Uses xinputhid for XInput + 16-button synthesis. SubmitState is the
 // primary path. No vendor touchpad/gyro region.
-Console.WriteLine("\n  12b. Xbox Series X|S Bluetooth — via SubmitState");
+Console.WriteLine("\n  12b. Xbox Series X|S Bluetooth: via SubmitState");
 {
     var xsBtProfile = ctx.GetProfile("xbox-series-xs-bt")!;
     Console.Write($"  Creating {xsBtProfile.Name}... ");
@@ -777,12 +777,12 @@ Console.WriteLine("\n  12b. Xbox Series X|S Bluetooth — via SubmitState");
     Thread.Sleep(1500);
 }
 
-// ── 12c. DualSense (PS5) — with touchpad via SubmitRawReport ────────
+// ── 12c. DualSense (PS5): with touchpad via SubmitRawReport ────────
 // Profile: dualsense | VID 054C PID 0CE6 | Report ID 0x01 | 64 bytes
 // Standard fields work via SubmitState. For touchpad/gyro/battery,
 // use SubmitRawReport with the 63-byte data buffer (no Report ID
-// prefix — the driver adds 0x01 automatically).
-Console.WriteLine("\n  12c. DualSense — SubmitState + SubmitRawReport for touchpad");
+// prefix: the driver adds 0x01 automatically).
+Console.WriteLine("\n  12c. DualSense: SubmitState + SubmitRawReport for touchpad");
 {
     var dsProfile2 = ctx.GetProfile("dualsense")!;
     Console.Write($"  Creating {dsProfile2.Name}... ");
@@ -873,5 +873,5 @@ Console.WriteLine("\n  12d. Switch Pro Controller: SubmitState with IMU");
     Console.WriteLine("  Streamed Switch Pro input with A + IMU for ~1s");
 }
 
-Console.WriteLine("\n=== Demo complete — disposing all controllers ===");
+Console.WriteLine("\n=== Demo complete: disposing all controllers ===");
 // using-statements handle cleanup of all controllers and ctx.

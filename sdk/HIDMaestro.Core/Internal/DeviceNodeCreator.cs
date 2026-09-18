@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32;
@@ -7,7 +7,7 @@ namespace HIDMaestro.Internal;
 
 /// <summary>
 /// Per-controller virtual device node creation. This is the heart of HIDMaestro
-/// — it builds a root-enumerated PnP device of the right HID class with the
+///: it builds a root-enumerated PnP device of the right HID class with the
 /// right hardware ID, writes the per-instance ControllerIndex, installs the
 /// driver against it, and waits for the HID class to layer on top before
 /// returning.
@@ -49,17 +49,17 @@ namespace HIDMaestro.Internal;
 /// </summary>
 internal static class DeviceNodeCreator
 {
-    // T34 — per-hwId DeviceOverrides write dedup. Same hwId = same override
+    // T34: per-hwId DeviceOverrides write dedup. Same hwId = same override
     // path, so writing the same Removable=1 value more than once per process
     // is wasted work. ConcurrentBag-flavored dedup (HashSet behind a lock).
     private static readonly System.Collections.Generic.HashSet<string> s_deviceOverridesWritten =
         new(StringComparer.OrdinalIgnoreCase);
     private static readonly object s_deviceOverridesLock = new();
-    /// <summary>HID class GUID — every virtual controller is created in this class.</summary>
+    /// <summary>HID class GUID: every virtual controller is created in this class.</summary>
     private static readonly Guid HIDClassGuid =
         new Guid("745a17a0-74d3-11d0-b6fe-00a0c90f57da");
 
-    /// <summary>Result of creating a device node — instance ID + the in-process device-info handle.
+    /// <summary>Result of creating a device node: instance ID + the in-process device-info handle.
     /// On success the caller can pass the instanceId to e.g. <c>WaitForHidChild</c> for downstream waits.
     /// On failure InstanceId is null.</summary>
     public readonly struct Result
@@ -90,7 +90,7 @@ internal static class DeviceNodeCreator
 
         // driverPid: alternate PID in the hardware ID used for driver matching only
         // (e.g. xinputhid's INF matches PID 0x02FF). Apps still see the real PID via
-        // HID attributes — the driver returns it from IOCTL_HID_GET_DEVICE_ATTRIBUTES.
+        // HID attributes: the driver returns it from IOCTL_HID_GET_DEVICE_ATTRIBUTES.
         string hwPid = profile.DriverPid != null
             ? $"{Convert.ToUInt16(profile.DriverPid, 16):X4}" : pid;
 
@@ -101,7 +101,7 @@ internal static class DeviceNodeCreator
         {
             // xinputhid path. The &IG_00 in the path is what causes HIDAPI/SDL3 to
             // skip the device (HIDAPI's GAMECONTROLLER blocklist), forcing them to
-            // use XInput instead — which is what we want for Xbox Series.
+            // use XInput instead: which is what we want for Xbox Series.
             enumerator = $"VID_{vid}&PID_{hwPid}&IG_00";
             hwId = $"root\\VID_{vid}&PID_{hwPid}&IG_00";
         }
@@ -115,7 +115,7 @@ internal static class DeviceNodeCreator
         }
         else
         {
-            // Standard HID device — DualSense, generic third-party gamepads, etc.
+            // Standard HID device: DualSense, generic third-party gamepads, etc.
             // No upper filter, plain HID class.
             enumerator = "HIDClass";
             hwId = $"root\\VID_{vid}&PID_{pid}";
@@ -257,7 +257,7 @@ internal static class DeviceNodeCreator
                 // DeviceOverrides marks the device as Removable BEFORE registration.
                 // This tells PnP to generate a unique ContainerId per instance instead
                 // of merging all our ROOT devices into one container in Settings.
-                // T34 — per-hwId dedup: the override path is keyed only by hwId,
+                // T34: per-hwId dedup: the override path is keyed only by hwId,
                 // so the same write happens for every controller of the same profile.
                 // Skip after the first per-process per-hwId write.
                 bool needsOverride;
@@ -280,7 +280,7 @@ internal static class DeviceNodeCreator
                 }
 
                 // DIF_REGISTERDEVICE actually creates the PnP node. This is admin-only
-                // (SeLoadDriverPrivilege) — failures here mean the consumer process
+                // (SeLoadDriverPrivilege): failures here mean the consumer process
                 // isn't elevated.
                 if (!SetupDiCallClassInstaller(0x19 /*DIF_REGISTERDEVICE*/, dis,
                         devInfoHandle.AddrOfPinnedObject()))
@@ -315,7 +315,7 @@ internal static class DeviceNodeCreator
             // (Removed 2026-04-21: post-registration registry write to
             // Enum\<instId>\ContainerID. PnP caches ContainerID at first
             // enumeration and ignores subsequent registry writes to this
-            // path — stable MS behavior across Windows 10/11. The write
+            // path: stable MS behavior across Windows 10/11. The write
             // ran every deploy but never took effect; verified empirically
             // during issue #8 investigation. The DeviceOverrides write
             // above is retained because its effect on older Windows
@@ -337,7 +337,7 @@ internal static class DeviceNodeCreator
 
             // XnaComposite (legacy XInput path) needs an explicit restart to
             // load. Issue #28 (v1.3.16): ROOT\XNACOMPOSITE\0000 may belong
-            // to a third-party legacy XInput shim — only restart it when
+            // to a third-party legacy XInput shim: only restart it when
             // its HardwareID proves HM ownership.
             if (!profile.UsesUpperFilter
                 && DeviceManager.IsHidMaestroOwned(@"ROOT\XNACOMPOSITE\0000"))
@@ -345,7 +345,7 @@ internal static class DeviceNodeCreator
                 DeviceManager.RestartDevice(@"ROOT\XNACOMPOSITE\0000");
             }
 
-            // Wait for the HID interface to arrive — this is what the Phase 1 loop
+            // Wait for the HID interface to arrive: this is what the Phase 1 loop
             // races against. The enumerator MUST match the one we created the device
             // under (xinputhid uses the &IG_00 form, plain HID uses HIDClass).
             string devEnumer;
@@ -356,7 +356,7 @@ internal static class DeviceNodeCreator
             else
                 devEnumer = "HIDClass";
 
-            // T23-2 — fast-path the instance-ID lookup. The pre-DIF_REGISTERDEVICE
+            // T23-2: fast-path the instance-ID lookup. The pre-DIF_REGISTERDEVICE
             // walk above already discovered our newly-created devnode. After
             // UpdateDriverForPlugAndPlayDevicesW the device's enumerator path
             // doesn't change for the &IG_00 / VID_* path (the device stays at
@@ -396,7 +396,7 @@ internal static class DeviceNodeCreator
             // Apply the friendly name directly to the device we just created
             // (parentId is in scope). The prior FixHidChildNames call walked
             // SWD\ + ROOT\ enumerator subtrees by ControllerIndex to find the
-            // same devnode we already have — pure overhead. SetAllNamingProperties
+            // same devnode we already have: pure overhead. SetAllNamingProperties
             // is a strict superset (BusReportedDeviceDesc + FriendlyName +
             // DeviceDesc on root + first HID child) and skips the walk.
             string displayName = profile.DeviceDescription ?? profile.ProductString;

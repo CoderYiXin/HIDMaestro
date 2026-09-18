@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 // HIDMaestro PID FFB EBI alloc/free + pool exhaustion probe (v1.1.37 / S25).
 //
 // Companion to S24 (pid_ffb_roundtrip). Where S24 verifies the static
@@ -8,7 +8,7 @@
 //      PublishPidBlockLoad is still callable; consumer-published BL fields
 //      survive a subsequent driver-side allocation only if the driver
 //      doesn't fire (HidClass blocks the dynamic SetFeature path in our
-//      probe environment — same wall S24 hits).
+//      probe environment: same wall S24 hits).
 //
 //   2. Multi-controller PID-state independence. Two controllers, two
 //      separate Global\HIDMaestroPidState{N} sections, distinct Pool
@@ -218,7 +218,7 @@ internal static class Program
         bool dynamicHit = false;
         if (hidA != null && !hidA.IsInvalid)
         {
-            // Reset bitmap-side state by closing/reopening — driver retains
+            // Reset bitmap-side state by closing/reopening: driver retains
             // bitmap across the session. Note bitmap before, then check after.
             ReadSectionBytes(secAName, out sec);
             uint before = BitConverter.ToUInt32(sec, OFF_EBI_BITMAP);
@@ -237,7 +237,7 @@ internal static class Program
             }
             else
             {
-                Console.WriteLine($"  [dynamic SetFeature/SetOutputReport] SKIP — both rejected by HidClass " +
+                Console.WriteLine($"  [dynamic SetFeature/SetOutputReport] SKIP: both rejected by HidClass " +
                     $"(Win32={Marshal.GetLastWin32Error()}). PadForge FfbTest is the dynamic arbiter.");
             }
 
@@ -261,7 +261,7 @@ internal static class Program
         }
         else
         {
-            Console.WriteLine("  [dynamic SetFeature/SetOutputReport] SKIP — no HID handle");
+            Console.WriteLine("  [dynamic SetFeature/SetOutputReport] SKIP: no HID handle");
         }
 
         if (failures == 0) { Console.WriteLine("=== PASS ==="); return 0; }

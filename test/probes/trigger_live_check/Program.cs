@@ -1,4 +1,4 @@
-// Issue #22 — END-TO-END trigger classifier check.
+﻿// Issue #22: END-TO-END trigger classifier check.
 //
 // Creates a real virtual controller via HMContext.CreateController with a
 // PadForge-style custom layout (configurable sticks/triggers), submits state
@@ -259,7 +259,7 @@ internal sealed class Program
         // Stick mid + max checks (regression on builder-built sticks).
         if (rb.LeftStickX != null)
         {
-            // v1.3.9 — sticks are uniformly [0..1] (1.0 = full right / max).
+            // v1.3.9: sticks are uniformly [0..1] (1.0 = full right / max).
             ctrl.SubmitState(new HMGamepadState
             {
                 Axes = HMGamepadStateHelpers.StandardAxes(ctrl.Profile, leftStickX: 1.0f)

@@ -1,13 +1,13 @@
-// PadForge discussion #130 (HIDMaestro regression). The Xbox 360 wired
+﻿// PadForge discussion #130 (HIDMaestro regression). The Xbox 360 wired
 // profile's split-trigger workaround broke at the v1.3.9 refactor:
 // BuildReportInto's combined-Z synthesis reads from
-// state.Axes[LeftTrigger.Usage] and state.Axes[RightTrigger.Usage] — i.e.
-// state.Axes[Vx] and state.Axes[Vy] — but consumers (PadForge) write
+// state.Axes[LeftTrigger.Usage] and state.Axes[RightTrigger.Usage]: i.e.
+// state.Axes[Vx] and state.Axes[Vy]: but consumers (PadForge) write
 // state.Axes[Z] = leftTrigger and state.Axes[Rz] = rightTrigger because
 // ResolveAxisByRole defaults to HMAxis.Z / HMAxis.Rz when the profile has
 // no axisMap. Vx / Vy stay at their seed values (0 or 0.5) so the
 // synthesis always lands on combined = 0.5 and joy.cpl shows the Z axis
-// pinned at midpoint regardless of LT/RT input — except the per-axis loop
+// pinned at midpoint regardless of LT/RT input: except the per-axis loop
 // at line 695 wrote Z = state.Axes[Z] = leftTrigger right before
 // synthesis overwrote it, so the symptom that surfaces is "Z reflects LT
 // only; RT does nothing." The XInput / WGI Vx / Vy fields also carry
@@ -78,7 +78,7 @@ internal sealed class Program
         // Asymmetry between profiles (wired works, wireless doesn't) is
         // exactly the user-visible regression class the issue called out.
         // Specialty controllers (wheel, dance pad, flight stick, guitar)
-        // intentionally don't carry this combo — they're not gamepad-
+        // intentionally don't carry this combo: they're not gamepad-
         // shaped and don't go through the combined-Z path.
         var profileIds = new[]
         {
@@ -136,7 +136,7 @@ internal sealed class Program
 
             // Consumer-written state.Axes carries trigger values at the
             // canonical user-facing positions (HMAxis.Z for LT, HMAxis.Rz
-            // for RT — what PadForge's ResolveAxisByRole defaults to when
+            // for RT: what PadForge's ResolveAxisByRole defaults to when
             // the profile carries no axisMap).
             // Case A: LT=1.0, RT=0.0 → expect combined Z at LogicalMin,
             // Vx full-scale, Vy zero.

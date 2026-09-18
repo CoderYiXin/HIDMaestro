@@ -1,5 +1,5 @@
-"""
-HIDMaestro browser gamepad verification — invoked by scripts/verify.py.
+﻿"""
+HIDMaestro browser gamepad verification: invoked by scripts/verify.py.
 
 Launches a real browser (Edge or Chrome) in --app= mode pointed at index.html.
 The page polls navigator.getGamepads() across 30 samples and POSTs results
@@ -209,7 +209,7 @@ def run_browser_check(timeout_s: float = 20.0) -> dict:
                 _fields_ = [("type", ctypes.c_ulong), ("u", INPUTUNION)]
             screen_w = user32.GetSystemMetrics(0)
             screen_h = user32.GetSystemMetrics(1)
-            # Click at (200, 200) — well inside our 400x300 window at (100,100)
+            # Click at (200, 200): well inside our 400x300 window at (100,100)
             cx = int(200 * 65535 / max(screen_w, 1))
             cy = int(200 * 65535 / max(screen_h, 1))
             for flags in (

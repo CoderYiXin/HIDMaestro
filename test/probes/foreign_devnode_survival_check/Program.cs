@@ -1,12 +1,12 @@
-// Issue #28 regression probe (v1.3.16).
+﻿// Issue #28 regression probe (v1.3.16).
 //
 // Verifies that an HM SetupController + Teardown cycle does NOT mutate a
-// coexisting foreign root-enumerated HIDClass device — the vJoy / PadForge-v2
+// coexisting foreign root-enumerated HIDClass device: the vJoy / PadForge-v2
 // repro shape from the original report.
 //
 // The probe:
 //   1. Creates a foreign devnode at ROOT\HIDClass\NNNN with HardwareID
-//      "root\VID_1234&PID_BEAD&REV_0222" — same enumerator and HardwareID
+//      "root\VID_1234&PID_BEAD&REV_0222": same enumerator and HardwareID
 //      shape vJoy uses on the reporter's machine. The devnode has no INF /
 //      driver bound, so it lands in the "no driver, but registered" state
 //      that's safe for a unit-test fixture.
@@ -27,7 +27,7 @@
 //      - interface keys still intact
 //   5. Removes the foreign devnode via DIF_REMOVE.
 //
-// Exit 0 on PASS, 1 on FAIL. Idempotent — leaves no devnode behind.
+// Exit 0 on PASS, 1 on FAIL. Idempotent: leaves no devnode behind.
 
 using System;
 using System.Linq;
@@ -155,7 +155,7 @@ internal sealed class Program
                 throw new InvalidOperationException(
                     $"SetupDiCreateDeviceInfoW failed: 0x{Marshal.GetLastWin32Error():X8}");
 
-            // HardwareID multi-sz — vJoy-shape.
+            // HardwareID multi-sz: vJoy-shape.
             string hwMulti = "root\\VID_1234&PID_BEAD&REV_0222\0\0";
             byte[] hwBytes = Encoding.Unicode.GetBytes(hwMulti);
             if (!SetupDiSetDeviceRegistryPropertyW(dis, devInfoHandle.AddrOfPinnedObject(),
@@ -220,7 +220,7 @@ internal sealed class Program
             {
                 ctx.LoadDefaultProfiles();
                 // Find a plain-HID profile (DualSense USB or similar). We don't
-                // need anything specific — only the create/teardown sweeps
+                // need anything specific: only the create/teardown sweeps
                 // matter for issue #28.
                 var profile = ctx.GetProfile("dualsense")
                            ?? ctx.GetProfile("xbox-360-wired")

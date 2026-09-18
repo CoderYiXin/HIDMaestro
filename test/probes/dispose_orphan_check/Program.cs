@@ -1,4 +1,4 @@
-// Issue #9 reproducer: create xbox-360-wired virtual, dispose it, scan
+﻿// Issue #9 reproducer: create xbox-360-wired virtual, dispose it, scan
 // HID enumerator for orphan HID children whose parent ROOT\ device no
 // longer exists. Exits 0 if no orphans; exits 1 if any orphan found.
 //
@@ -64,20 +64,20 @@ internal static partial class P
                         if (instKey is null) continue;
                         if (instKey.GetValue("ParentIdPrefix") is not string)
                         {
-                            // Fall through — check via parent devnode
+                            // Fall through: check via parent devnode
                         }
 
                         // Reconstruct parent from registry or devnode
                         if (CM_Locate_DevNodeW(out uint childInst, childId, 0) == CR_SUCCESS)
                         {
-                            // Live child — check if its parent still exists
+                            // Live child: check if its parent still exists
                             if (CM_Locate_DevNodeW(out uint _, childId, CM_LOCATE_DEVNODE_PHANTOM) == CR_SUCCESS)
                             {
                                 // check explicit parent
                             }
                             // Use DeviceManager's sweep logic: if the kernel thinks the
                             // parent devnode can't be located, it's an orphan.
-                            // Simpler: the DeviceManager.RemoveOrphanHidChildren does this check —
+                            // Simpler: the DeviceManager.RemoveOrphanHidChildren does this check
                             // but it ALSO removes. For diagnostic we just count.
                             // Use reflection or just assume any HIDMaestro-matching HID child that
                             // lingers is suspect.

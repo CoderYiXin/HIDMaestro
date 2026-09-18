@@ -1,4 +1,4 @@
-namespace HIDMaestro;
+﻿namespace HIDMaestro;
 
 /// <summary>Lightweight description of a currently-connected HID device,
 /// returned by <see cref="HMDeviceExtractor.ListDevices"/>. Opaque fields
@@ -65,10 +65,10 @@ public sealed class HMHidDeviceInfo
     }
 
     /// <summary>Best-effort display label for dropdowns/lists:
-    /// <c>"VID_XXXX:PID_YYYY — ProductString"</c>.</summary>
+    /// <c>"VID_XXXX:PID_YYYY: ProductString"</c>.</summary>
     public override string ToString()
     {
         string product = ProductString ?? "(unknown)";
-        return $"VID_{VendorId:X4}:PID_{ProductId:X4} — {product}";
+        return $"VID_{VendorId:X4}:PID_{ProductId:X4}: {product}";
     }
 }

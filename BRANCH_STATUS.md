@@ -1,4 +1,4 @@
-# Branch status: `v1-dev-experiment-xusb-child-pdo`
+﻿# Branch status: `v1-dev-experiment-xusb-child-pdo`
 
 **Created to answer:** can HIDMaestro virtuals receive browser-dispatched rumble on Win11 26200+ by registering the XUSB interface class (and related WGI interface GUIDs) on the virtual's HID child via a UMDF2 upper filter?
 
@@ -6,13 +6,13 @@
 
 ## What this branch adds over master
 
-- **`driver/xusbshim.c`** (new, 744 lines) — UMDF2 HID upper filter that registers `GUID_DEVINTERFACE_XUSB`, `GUID_DEVINTERFACE_WINEXINPUT`, and additional WGI enumeration GUIDs on the virtual's HID child. Implements XUSB IOCTL handlers (SET_STATE / GET_STATE / GET_CAPABILITIES / GET_INFORMATION / WAIT_GUIDE) that mirror `xusb22.sys` + `xinputhid.sys` behavior.
-- **`driver/hidmaestro_xusbshim.inf` + `hidmaestro_xusbshim_class.inf`** — INFs that bind xusbshim as an extension INF on HID children matching VID 045E & select PIDs.
-- **`driver/companion.c` changes** — HMCOMPANION also registers additional WGI enumeration GUIDs; diagnostic logging to `xusbshim_log.txt` for cross-path visibility with the filter side.
-- **`driver/driver.c` changes** — `LogHidOutputReport` helper for HID output IOCTL instrumentation; claims `XINPUT_CAPS_FFB_SUPPORTED` flag in GET_CAPABILITIES (experiment-specific).
-- **`profiles/microsoft/xbox-360-wired-ffb.json`** — experimental Xbox 360 Wired profile variant with a 22-byte PID force-feedback collection appended to the HID descriptor. **Unexplored** — starting point for Y-alt-A in the finding.
-- **SDK internal changes** — `DeviceOrchestrator`, `DriverBuilder`, `PnputilHelper` adjustments for multi-INF install orchestration and the xusbshim Extension INF pipeline.
-- **`scripts/build.cmd` + `build_all.cmd`** — build rules for the xusbshim DLL and its INF packaging.
+- **`driver/xusbshim.c`** (new, 744 lines): UMDF2 HID upper filter that registers `GUID_DEVINTERFACE_XUSB`, `GUID_DEVINTERFACE_WINEXINPUT`, and additional WGI enumeration GUIDs on the virtual's HID child. Implements XUSB IOCTL handlers (SET_STATE / GET_STATE / GET_CAPABILITIES / GET_INFORMATION / WAIT_GUIDE) that mirror `xusb22.sys` + `xinputhid.sys` behavior.
+- **`driver/hidmaestro_xusbshim.inf` + `hidmaestro_xusbshim_class.inf`**: INFs that bind xusbshim as an extension INF on HID children matching VID 045E & select PIDs.
+- **`driver/companion.c` changes**: HMCOMPANION also registers additional WGI enumeration GUIDs; diagnostic logging to `xusbshim_log.txt` for cross-path visibility with the filter side.
+- **`driver/driver.c` changes**: `LogHidOutputReport` helper for HID output IOCTL instrumentation; claims `XINPUT_CAPS_FFB_SUPPORTED` flag in GET_CAPABILITIES (experiment-specific).
+- **`profiles/microsoft/xbox-360-wired-ffb.json`**: experimental Xbox 360 Wired profile variant with a 22-byte PID force-feedback collection appended to the HID descriptor. **Unexplored**, and the starting point for Y-alt-A in the finding.
+- **SDK internal changes**: `DeviceOrchestrator`, `DriverBuilder`, `PnputilHelper` adjustments for multi-INF install orchestration and the xusbshim Extension INF pipeline.
+- **`scripts/build.cmd` + `build_all.cmd`**: build rules for the xusbshim DLL and its INF packaging.
 
 ## What works (post-fix, on this branch)
 
@@ -32,7 +32,7 @@
 
 ## Status
 
-**Dead end for the original browser-vibration objective.** Infrastructure kept available for future Y-alt-A exploration or interface-registration experiments. Not recommended for merge to master in its current form — the xusbshim layer is redundant with HMCOMPANION for direct XInput dispatch, and the WGI silent-sink is architectural per the finding.
+**Dead end for the original browser-vibration objective.** Infrastructure kept available for future Y-alt-A exploration or interface-registration experiments. Not recommended for merge to master in its current form: the xusbshim layer is redundant with HMCOMPANION for direct XInput dispatch, and the WGI silent-sink is architectural per the finding.
 
 ## Tag
 
@@ -40,6 +40,6 @@ Snapshot tagged at this branch state: `archive/wgi-silent-sink-closeout-2026-04`
 
 ## See also
 
-- [docs/investigations/wgi-silent-sink-2026-04/finding.md](docs/investigations/wgi-silent-sink-2026-04/finding.md) — formal finding this branch produced
-- [docs/investigations/wgi-silent-sink-2026-04/investigation-history.md](docs/investigations/wgi-silent-sink-2026-04/investigation-history.md) — session-by-session narrative
-- [test/probes/](test/probes/) — diagnostic tools developed on this branch, promoted to master
+- [docs/investigations/wgi-silent-sink-2026-04/finding.md](docs/investigations/wgi-silent-sink-2026-04/finding.md): formal finding this branch produced
+- [docs/investigations/wgi-silent-sink-2026-04/investigation-history.md](docs/investigations/wgi-silent-sink-2026-04/investigation-history.md): session-by-session narrative
+- [test/probes/](test/probes/): diagnostic tools developed on this branch, promoted to master

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 HIDMaestro API Verification Script
 
@@ -41,7 +41,7 @@ class XINPUT_STATE(ctypes.Structure):
 
 
 def _count_xusb_interfaces() -> int:
-    """Enumerate GUID_DEVINTERFACE_XUSB {EC87F1E3-...} — total XInput-visible
+    """Enumerate GUID_DEVINTERFACE_XUSB {EC87F1E3-...}: total XInput-visible
     devices at the PnP layer. This is what XInput Test and similar tools
     actually count, and it's the correct metric for "how many XInput
     controllers are attached." It can exceed xinput1_4.dll's 4-slot cap
@@ -92,14 +92,14 @@ def _count_xusb_interfaces() -> int:
 def check_xinput(repeats: int) -> dict:
     """Counts XInput-visible controllers two ways and returns BOTH in the
     result. The authoritative count is `interfaces` (XUSB device interfaces
-    at the PnP layer — matches XInput Test's view and exceeds 4 when many
+    at the PnP layer: matches XInput Test's view and exceeds 4 when many
     virtuals are present). `slots` is the legacy xinput1_4 slot view, which
     has 4-slot cap and slot-allocator gaps with multi-virtual setups.
 
     Per-slot moving/static detection still uses XInputGetStateEx (ordinal 100
     of XInput1_4.dll) so the Guide bit + legacy-filter bypass apply.
     """
-    # (1) XUSB device interface count — the "XInput Test" view.
+    # (1) XUSB device interface count: the "XInput Test" view.
     n_interfaces = _count_xusb_interfaces()
 
     # (2) xinput1_4 slot probe.
@@ -139,12 +139,12 @@ def check_xinput(repeats: int) -> dict:
 
 
 # ---------------------------------------------------------------------------
-#  DirectInput8 (with Acquire — joy.cpl/Dolphin do the same)
+#  DirectInput8 (with Acquire: joy.cpl/Dolphin do the same)
 # ---------------------------------------------------------------------------
 #
 # xinputhid eats HID reads, so passive paths (WinMM joyGetPosEx) see only
 # 32767 forever. The only working path is DI8 with a real top-level window
-# and Acquire — exactly what joy.cpl does.
+# and Acquire: exactly what joy.cpl does.
 
 class _GUID(ctypes.Structure):
     _fields_ = [("d1", ctypes.c_ulong), ("d2", ctypes.c_ushort),
@@ -360,7 +360,7 @@ def check_directinput(repeats: int) -> dict:
                 # HID descriptor. For our Xbox 360 wired profile, the
                 # descriptor uses Vx/Vy (usages 0x40/0x41) to carry trigger
                 # data for the browser side, but those are NOT DirectInput
-                # axes — joy.cpl ignores them. Count only standard joystick
+                # axes: joy.cpl ignores them. Count only standard joystick
                 # usages (0x30 X .. 0x35 Rz). This matches joy.cpl.
                 axis_count = [0]
                 def axis_cb(p, _r):
@@ -373,7 +373,7 @@ def check_directinput(repeats: int) -> dict:
                     dev, EnumObjsCb(axis_cb), None, 3)
                 di_axes = axis_count[0]
 
-                # VID/PID via DIPROP_GUIDANDPATH = MAKEDIPROP(12) — works for
+                # VID/PID via DIPROP_GUIDANDPATH = MAKEDIPROP(12): works for
                 # devices whose path contains "vid_xxxx&pid_xxxx" (HID#VID_*).
                 vid = pid = 0
                 pgp = _DIPROPGUIDANDPATH()
@@ -451,7 +451,7 @@ def check_hidapi() -> dict:
     # HM-CTL-* serial prefix (same approach as check_hid_order). The old
     # 0x045E-only enumeration missed every non-Xbox profile (DualSense, etc.),
     # which caused false negatives when a multi-profile run included non-Xbox
-    # controllers — they would never appear in `non_ig` and `live_data` would
+    # controllers: they would never appear in `non_ig` and `live_data` would
     # be checked against an empty set.
     all_devs = [d for d in hid.enumerate(0, 0)
                 if (d.get("serial_number") or "").startswith("HM-CTL-")]
@@ -488,7 +488,7 @@ def check_hidapi() -> dict:
             dev = hid.device()
             dev.open_path(d["path"])
             dev.set_nonblocking(1)
-            # Drain a few reads — the test pattern is ~80Hz so 200ms is enough
+            # Drain a few reads: the test pattern is ~80Hz so 200ms is enough
             # to see something for an actively-driven controller.
             saw_data = False
             import time as _t
@@ -516,7 +516,7 @@ def check_hidapi() -> dict:
 # "HM-CTL-" (our virtual-controller serial prefix) and confirm they appear in
 # the same order they were created. The hid.enumerate() iteration order is
 # the same one Windows.Devices.HumanInterfaceDevice.HidDevice.FindAllAsync
-# uses, which is the same enumerator WGI consumes internally — so this is
+# uses, which is the same enumerator WGI consumes internally: so this is
 # the canonical "what every well-behaved consumer sees" order.
 #
 # A consumer that displays them in a different order (e.g. Dolphin's
@@ -572,10 +572,10 @@ def check_hid_order(expected_count: int) -> dict:
 
 
 # ---------------------------------------------------------------------------
-#  GameInput / Windows.Gaming.Input — RawGameController enumeration
+#  GameInput / Windows.Gaming.Input: RawGameController enumeration
 # ---------------------------------------------------------------------------
 #
-# Walks Windows.Gaming.Input.RawGameController.RawGameControllers — the same
+# Walks Windows.Gaming.Input.RawGameController.RawGameControllers: the same
 # WGI source Dolphin's WGInput backend uses ("WGInput/N/<DisplayName>"). This
 # sees ANY HID-class gamepad-like device (gamepad OR joystick usage), unlike
 # Gamepad.Gamepads which only sees devices WGI has promoted to the Gamepad
@@ -612,7 +612,7 @@ def check_gameinput(repeats: int, expected: int = 1) -> dict:
 
     # Presence-only check. RawGameController.get_current_reading via
     # winrt-python returns ts=0/all-zero values regardless of buffer format,
-    # event subscription, or message pump — even when XInput, DI8, browser,
+    # event subscription, or message pump: even when XInput, DI8, browser,
     # and Dolphin all see live data on the same device. The wrapper appears
     # to not properly marshal the out-buffer reads. Movement is verified
     # canonically by check_xinput / check_directinput / check_browser, so
@@ -638,7 +638,7 @@ def check_gameinput(repeats: int, expected: int = 1) -> dict:
 def check_browser() -> dict:
     """Launch a real browser at scripts/browser_check/index.html and read what
     navigator.getGamepads() returns. This is the only way to know whether the
-    browser path is actually working — different controllers use different
+    browser path is actually working: different controllers use different
     Chromium gamepad source backends (XInput / WGI / RawInput / HID), and the
     backend choice can't be inferred from any single OS API.
 
@@ -712,7 +712,7 @@ def main():
 
     # DirectInput8 must run FIRST in the process. xinputhid freezes the
     # joystick state buffer for any in-process DI8 client once ANY other
-    # HID/XInput consumer in the same process has touched the device — even
+    # HID/XInput consumer in the same process has touched the device: even
     # hidapi's enumerate-and-open-strings cycle is enough to freeze it.
     # GetDeviceState then returns 32767 forever. So check_directinput runs
     # before anything else that touches HID.
@@ -736,7 +736,7 @@ def main():
     if force_no_xinput:
         print("SKIP  (--no-xinput)")
     elif not hm_devices:
-        # No HIDMaestro devices visible at all — there's nothing to test against.
+        # No HIDMaestro devices visible at all: there's nothing to test against.
         # Caller almost certainly forgot to start the test app.
         print("FAIL  no HIDMaestro devices found (test app not running?)")
         failures.append("No HIDMaestro devices visible")
@@ -744,7 +744,7 @@ def main():
         xi = check_xinput(repeats)
         n_ifaces = xi.get("interfaces", 0)
         if expect_xinput:
-            # Xbox profile present — at least one slot must be live AND the
+            # Xbox profile present: at least one slot must be live AND the
             # XUSB device interface count should match the number of Xbox
             # profiles (2 xinputhid-bound HID children per Xbox Series BT +
             # 2 HIDMAESTRO XUSB companions per Xbox 360 wired, etc.).
@@ -756,7 +756,7 @@ def main():
                 gap_note = ""
                 if n_ifaces > xi["count"]:
                     gap_note = (f"  [{n_ifaces} XUSB interface(s) present; "
-                                f"{n_ifaces - xi['count']} not bound to a xinput1_4 slot — "
+                                f"{n_ifaces - xi['count']} not bound to a xinput1_4 slot: "
                                 f"xinputhid per-boot allocator gap, harmless]")
                 print(f"PASS  {xi['count']}/{n_ifaces} slot(s) live ({slot_summary}){gap_note}")
             elif xi["count"] >= 1:
@@ -766,7 +766,7 @@ def main():
                 print(f"FAIL  no slot connected (expected {xbox_count} Xbox slot(s))")
                 failures.append("XInput: no slot connected")
         else:
-            # No Xbox profile — XInput should NOT be occupied by HIDMaestro.
+            # No Xbox profile: XInput should NOT be occupied by HIDMaestro.
             # If a slot is occupied, that's the user's real Xbox controller; we
             # have no way to attribute. Treat as PASS (not applicable).
             if xi["count"] == 0:
@@ -774,7 +774,7 @@ def main():
             else:
                 print(f"PASS  not applicable (other Xbox device on slot {xi['slots'][0]['slot']})")
 
-    # -- DirectInput (DI8 with Acquire — see note above; called before XInput) --
+    # -- DirectInput (DI8 with Acquire: see note above; called before XInput) --
     print(f"  DirectInput: ", end="")
     if not di.get("available"):
         print(f"SKIP  ({di.get('error', 'unavailable')})")
@@ -844,7 +844,7 @@ def main():
             # Legacy fallback (pre-serial-fix): use the old check
             if len(non_ig) == 0 and len(ig_devs) > 0:
                 ids = ", ".join(f"PID=0x{d['pid']:04X}" for d in ig_devs)
-                print(f"OK    {len(ig_devs)} dev IG-filtered ({ids}) — SDL3 falls through to XInput backend")
+                print(f"OK    {len(ig_devs)} dev IG-filtered ({ids}): SDL3 falls through to XInput backend")
             elif len(non_ig) == controllers and hi.get("live_data"):
                 ids = ", ".join(f"PID=0x{d['pid']:04X} Bus={d['bus']}" for d in non_ig)
                 print(f"PASS  {len(non_ig)} dev live ({ids})")
@@ -873,7 +873,7 @@ def main():
     if not ho.get("available"):
         print(f"SKIP  ({ho.get('error', 'unavailable')})")
     elif ho["count"] == 0:
-        print("FAIL  no HM-CTL-* serials found — driver pre-serial-fix or no devices")
+        print("FAIL  no HM-CTL-* serials found: driver pre-serial-fix or no devices")
         failures.append("HID order: no HIDMaestro devices visible")
     elif ho["count"] != controllers:
         print(f"FAIL  found {ho['count']} HIDMaestro device(s), expected {controllers}")

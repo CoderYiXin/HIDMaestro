@@ -1,10 +1,10 @@
-<#
+﻿<#
 .SYNOPSIS
 Spin up a Windows Sandbox preconfigured for HIDMaestro testing.
 
 .DESCRIPTION
 Generates a .wsb at $env:TEMP with this repo's absolute paths mapped in, then
-shells out to Sandbox.exe. Each Sandbox launch is a pristine Win 11 image —
+shells out to Sandbox.exe. Each Sandbox launch is a pristine Win 11 image
 useful for catching missing dependencies, validating the fresh-install path,
 and confirming the locale fix works against a non-English Windows display
 language. Not useful for slow-hardware simulation; Sandbox inherits host CPU.

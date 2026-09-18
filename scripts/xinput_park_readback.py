@@ -1,4 +1,4 @@
-"""Cemu-equivalent XInput readback diagnostic.
+﻿"""Cemu-equivalent XInput readback diagnostic.
 
 The user reports that Cemu's controller-config visualizer shows our virtual
 Xbox Series X|S BT controller drawing weird shapes (changing per-run) on
@@ -15,8 +15,8 @@ That is the entire transformation. Then the visualizer paints whatever
 result.axis.y is (after deadzone). So if XInputGetState returns the wrong
 sThumbLY for our virtual device, the visualizer draws garbage.
 
-This script calls XInputGetState directly via ctypes — the same Win32 API
-Cemu's m_XInputGetState resolves to — and prints sThumbLX/sThumbLY for the
+This script calls XInputGetState directly via ctypes: the same Win32 API
+Cemu's m_XInputGetState resolves to: and prints sThumbLX/sThumbLY for the
 slot the user nominates. Run it AFTER 'park'ing the SDK at known left-stick
 positions and verify that XInput returns the expected values at each.
 
@@ -33,7 +33,7 @@ import sys
 import time
 
 
-# XInput structures (XINPUT_STATE / XINPUT_GAMEPAD) — shape is fixed across
+# XInput structures (XINPUT_STATE / XINPUT_GAMEPAD): shape is fixed across
 # every xinput*.dll Microsoft has shipped, so the layout is safe to hardcode.
 class XINPUT_GAMEPAD(ctypes.Structure):
     _fields_ = [

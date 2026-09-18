@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,7 +21,7 @@ namespace HIDMaestro;
 /// embedded as resources inside this assembly. On first run on a given
 /// machine, call <see cref="InstallDriver"/> to extract them to %TEMP% and
 /// register them with Windows via pnputil. This requires admin and only
-/// needs to happen once per machine — subsequent runs detect that the
+/// needs to happen once per machine: subsequent runs detect that the
 /// driver is already in the DriverStore and skip the install. The temp
 /// extraction is deleted after install; nothing is left in the consuming
 /// app's directory.</para>
@@ -29,7 +29,7 @@ namespace HIDMaestro;
 /// <para><b>Admin requirement:</b> Windows requires SeLoadDriverPrivilege
 /// (admin) for both <see cref="InstallDriver"/> and <see cref="CreateController"/>.
 /// This matches every other virtual-controller library on Windows
-/// (ViGEmBus, vJoy, etc.) and is fundamental — there is no API path that
+/// (ViGEmBus, vJoy, etc.) and is fundamental: there is no API path that
 /// lets a standard user create a HIDClass device.</para>
 /// </summary>
 public sealed class HMContext : IDisposable
@@ -44,18 +44,18 @@ public sealed class HMContext : IDisposable
     /// controllers are separate steps; this constructor only allocates the
     /// in-process state.
     ///
-    /// <para>v1.3.0 — fires a background warm-up that pre-extracts the
+    /// <para>v1.3.0: fires a background warm-up that pre-extracts the
     /// embedded driver payload to %TEMP% and pre-computes the manifest
     /// hash. Both are normally done synchronously by the first
     /// <see cref="InstallDriver"/> call; doing them in parallel with
     /// whatever the consumer is doing on the foreground thread (UI init,
     /// profile lookups, settings UI) hides 200–500 ms of cold-start cost
     /// in the consumer's think-time budget. Failures are silently
-    /// swallowed — if the warm-up couldn't extract for some reason, the
+    /// swallowed: if the warm-up couldn't extract for some reason, the
     /// foreground InstallDriver path will retry it.</para></summary>
     public HMContext()
     {
-        // T28 — fan out independent prewarm tasks in parallel. The original
+        // T28: fan out independent prewarm tasks in parallel. The original
         // serial sequence was: Sha256Hex → EnsureExtracted → LoadEmbedded →
         // IsDriverInstalled → PrewarmGameInputService, taking ~150-250 ms
         // total on a cold launch. Splitting into independent threads lets
@@ -124,7 +124,7 @@ public sealed class HMContext : IDisposable
     /// <summary>Extract the embedded driver files to %TEMP%, install the
     /// self-signed code-signing certificate to the trusted root and trusted
     /// publisher stores, sign the driver binaries, and register them with
-    /// Windows via pnputil. Requires admin. Idempotent and silent — no
+    /// Windows via pnputil. Requires admin. Idempotent and silent: no
     /// user prompts beyond the elevation that brought the calling process
     /// here. The temp extraction is deleted on success.
     ///
@@ -143,7 +143,7 @@ public sealed class HMContext : IDisposable
         // prior process crashed or was force-killed (Dispose never ran), its
         // virtual controllers + HIDMAESTRO stay PnP-live and REMAIN BOUND to
         // the old INF. On the next launch, DriverBuilder.FullDeploy calls
-        // pnputil /delete-driver /uninstall /force — which fails with "One or
+        // pnputil /delete-driver /uninstall /force: which fails with "One or
         // more devices are presently installed using the specified INF" and
         // leaves the old INF + stale DLL bytes in DriverStore. The subsequent
         // /add-driver then sees package-already-present + "Needed repairing"
@@ -284,9 +284,9 @@ public sealed class HMContext : IDisposable
     }
 
     /// <summary>Load the default profile catalog embedded in the SDK
-    /// assembly. The catalog ships with every supported controller — Xbox
+    /// assembly. The catalog ships with every supported controller: Xbox
     /// 360, Xbox One/Series, DualShock 4, DualSense, Stadia, common
-    /// third-party gamepads — so consumers don't need to ship profile JSONs
+    /// third-party gamepads: so consumers don't need to ship profile JSONs
     /// alongside their app.</summary>
     public int LoadDefaultProfiles()
     {
@@ -508,11 +508,11 @@ public sealed class HMContext : IDisposable
     }
 
     /// <summary>Re-apply friendly names to every live controller. Call once
-    /// after creating ALL controllers — there is a Windows PnP race where the
+    /// after creating ALL controllers: there is a Windows PnP race where the
     /// first controller's friendly name gets overwritten by the SECOND
     /// controller's driver-bind activity. Re-applying after all PnP has
     /// settled makes the writes stick. The proven pre-SDK test app called
-    /// this as "Phase 1.5 — Finalizing device names".
+    /// this as "Phase 1.5: Finalizing device names".
     ///
     /// Instead of a fixed 2-second sleep, polls for every controller's HID
     /// child to reach DN_STARTED (driver fully bound) before re-applying.
@@ -529,7 +529,7 @@ public sealed class HMContext : IDisposable
         // Wait until every controller's HID child is in DN_STARTED state,
         // which means PnP is done binding drivers on that device tree.
         // Replaces a fixed Thread.Sleep(2000) that wasted time on fast
-        // machines and was fragile on slow ones. T24-2 — tightened poll
+        // machines and was fragile on slow ones. T24-2: tightened poll
         // cadence (100 ms → 25 ms). On fast-machine cases where DN_STARTED
         // is already true on entry, this exits in ≤25 ms instead of waiting
         // up to 100 ms for the next poll. CM_Get_DevNode_Status is sub-µs
@@ -562,7 +562,7 @@ public sealed class HMContext : IDisposable
     // Called by HMController.Dispose; the context tears down its half of the state.
     /// <summary>Set during HMContext.Dispose's parallel batch teardown so
     /// per-controller TeardownController calls skip the system-wide HID
-    /// orphan sweep — the sweep runs ONCE after the batch instead of N
+    /// orphan sweep: the sweep runs ONCE after the batch instead of N
     /// times concurrently.</summary>
     private bool _batchDisposing;
 
@@ -596,8 +596,8 @@ public sealed class HMContext : IDisposable
     /// <para>Per-controller teardown blocks 5-11s waiting on Windows PnP's
     /// synchronous DIF_REMOVE (xinputhid filter unload for BT, XUSB companion
     /// teardown for non-xinputhid Xbox). The per-controller work is fully
-    /// independent — different devnodes, different ContainerIDs, different
-    /// kernel locks — so we run all dispose calls in parallel and the
+    /// independent: different devnodes, different ContainerIDs, different
+    /// kernel locks: so we run all dispose calls in parallel and the
     /// wall-clock collapses from sum(N) to max(N). For 4 controllers
     /// that's typically 34s -> ~10s.</para>
     /// </summary>

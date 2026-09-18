@@ -1,10 +1,10 @@
-"""Scan XInput-visible controllers from two angles:
+﻿"""Scan XInput-visible controllers from two angles:
 
-  1. GUID_DEVINTERFACE_XUSB ({EC87F1E3}) enumeration — ground truth for
+  1. GUID_DEVINTERFACE_XUSB ({EC87F1E3}) enumeration: ground truth for
      "how many XInput-compatible devices does Windows see". This is what
      "XInput Test" and similar 3rd-party tools show. Can exceed 4.
 
-  2. xinput1_4.dll slot probe (XInputGetStateEx, ordinal 100) — shows which
+  2. xinput1_4.dll slot probe (XInputGetStateEx, ordinal 100): shows which
      of the 4 user-mode XInput slots currently have live state. Gaps here
      don't mean a device is missing; they mean xinputhid's per-boot slot
      allocator hasn't assigned a contiguous range.
@@ -54,7 +54,7 @@ setupapi.SetupDiDestroyDeviceInfoList.restype = wt.BOOL
 
 def count_xusb_interfaces() -> int:
     """Enumerate GUID_DEVINTERFACE_XUSB via SetupDi. Returns the total count
-    of distinct XUSB device interfaces on the system — every xinputhid-bound
+    of distinct XUSB device interfaces on the system: every xinputhid-bound
     HID child + every root-enumerated XUSB publisher."""
     xusb = GUID(0xEC87F1E3, 0xC13B, 0x4100,
                 (ctypes.c_ubyte * 8)(0xB5, 0xF7, 0x8B, 0x84, 0xD5, 0x42, 0x60, 0xCB))
@@ -104,7 +104,7 @@ def main() -> int:
     print(f"\nSummary: {n_interfaces} XInput device(s) present; {claimed}/4 xinput1_4 slots claimed")
     if n_interfaces > claimed:
         gap = n_interfaces - claimed
-        print(f"         ({gap} XInput device(s) published but not bound to a xinput1_4 slot — "
+        print(f"         ({gap} XInput device(s) published but not bound to a xinput1_4 slot: "
               f"xinputhid's per-boot slot allocator leaves gaps when multiple virtuals coexist)")
     return 0
 

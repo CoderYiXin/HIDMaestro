@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -80,7 +80,7 @@ partial class Program
             "probe-xusb" or "xusb-vibrate" or
             "make-custom-profile";  // pure file-IO + descriptor synthesis, no PnP
 
-        // Single-instance: kill any other HIDMaestroTest processes — but NEVER for
+        // Single-instance: kill any other HIDMaestroTest processes: but NEVER for
         // read-only probes, which must coexist with a running emulate.
         if (!readOnlyCmd)
         {
@@ -184,7 +184,7 @@ partial class Program
     // Per-controller pattern threads + per-controller cancellation tokens so
     // individual controllers can be disposed/replaced live without disturbing
     // the others. Output passthrough is wired via HMController.OutputReceived
-    // — every rumble/haptic/FFB packet from any host app is decoded and
+    //: every rumble/haptic/FFB packet from any host app is decoded and
     // printed to the console with profile context, so the host→virtual
     // direction can be verified end-to-end without launching a real game.
 
@@ -208,7 +208,7 @@ partial class Program
         public volatile int MarkButton = -1;
         // 'park' mode: hold the LEFT stick at literal (ParkX, ParkY) values
         // in the [-1..+1] range and submit a static frame. Used by the
-        // Cemu-style SDL2 readback diagnostic — we can park at known
+        // Cemu-style SDL2 readback diagnostic: we can park at known
         // positions and verify SDL_GameControllerGetAxis returns the
         // expected value at each. Sentinel float.NaN = not in park mode.
         public float ParkX = float.NaN;
@@ -274,7 +274,7 @@ partial class Program
         // not drained by the harness between Send-Cmd calls. Per-controller
         // setup output (Loaded N profiles / Creating controller / ->created
         // in N ms / Phase 1 total / etc.) plus the help text accumulates
-        // ~2-4 KB by the time the stdin loop starts — the next
+        // ~2-4 KB by the time the stdin loop starts: the next
         // Console.WriteLine then blocks on the full pipe and the test
         // process hangs forever waiting on a buffer that never drains.
         // Redirect all chatter to TextWriter.Null. Keep the original stdout
@@ -320,7 +320,7 @@ partial class Program
         }
         Console.WriteLine($"  Phase 1 (creation) total: {phase1Sw.ElapsedMilliseconds} ms for {slots.Count} slot(s)");
 
-        // Phase 1.5: re-apply friendly names (PnP race fix — see HMContext.FinalizeNames doc).
+        // Phase 1.5: re-apply friendly names (PnP race fix: see HMContext.FinalizeNames doc).
         var finalizeSw = Stopwatch.StartNew();
         Console.Write("  Finalizing device names... ");
         ctx.FinalizeNames();
@@ -333,12 +333,12 @@ partial class Program
         if (startMarked)
         {
             for (int i = 0; i < slots.Count; i++) slots[i].MarkButton = i;
-            Console.WriteLine($"  --mark: marked {slots.Count} controller(s) — each holds button=its index");
+            Console.WriteLine($"  --mark: marked {slots.Count} controller(s): each holds button=its index");
         }
 
         Console.WriteLine($"\n  All {slots.Count} controller(s) ready.\n");
 
-        // Phase 2: input threads — one test-pattern thread per controller.
+        // Phase 2: input threads: one test-pattern thread per controller.
         s_patternSleepMs = System.Math.Max(1000 / rateHz, 1);
         // Raise timer resolution to 1 ms so Thread.Sleep(1) doesn't coarsen to
         // 15.6 ms. Honored process-wide; released at emulate exit.
@@ -394,7 +394,7 @@ partial class Program
         {
             TestDebugLog("quit-watcher: waiting for named event");
             try { quitEvent.WaitOne(); } catch { }
-            TestDebugLog("quit-watcher: SIGNALED — injecting 'quit' into inbox");
+            TestDebugLog("quit-watcher: SIGNALED: injecting 'quit' into inbox");
             try { stdinInbox.Add("quit"); } catch { }
         }) { IsBackground = true, Name = "quit-watcher" };
         quitWatcher.Start();
@@ -424,7 +424,7 @@ partial class Program
                         if (bomState == 0 && oneByte[0] == 0xEF) { bomState = 1; continue; }
                         if (bomState == 1 && oneByte[0] == 0xBB) { bomState = 2; continue; }
                         if (bomState == 2 && oneByte[0] == 0xBF) { bomState = 3; firstChars = false; continue; }
-                        // Not BOM after all — replay the bytes we held back.
+                        // Not BOM after all: replay the bytes we held back.
                         firstChars = false;
                         if (bomState >= 1) sb.Append((char)0xEF);
                         if (bomState >= 2) sb.Append((char)0xBB);
@@ -462,13 +462,13 @@ partial class Program
             {
             if (line.Equals("quit", StringComparison.OrdinalIgnoreCase))
             {
-                TestDebugLog("stdin loop: 'quit' received — breaking loop");
+                TestDebugLog("stdin loop: 'quit' received: breaking loop");
                 break;
             }
             if (line.Equals("pause", StringComparison.OrdinalIgnoreCase))
             {
                 foreach (var s in slots) s.Paused = true;
-                Console.WriteLine($"  paused {slots.Count} pattern thread(s) — driver should now be idle");
+                Console.WriteLine($"  paused {slots.Count} pattern thread(s): driver should now be idle");
                 continue;
             }
             if (line.Equals("resume", StringComparison.OrdinalIgnoreCase))
@@ -480,13 +480,13 @@ partial class Program
             if (line.Equals("mark", StringComparison.OrdinalIgnoreCase))
             {
                 for (int i = 0; i < slots.Count; i++) slots[i].MarkButton = i;
-                Console.WriteLine($"  marked {slots.Count} controller(s) — each holds button=its index");
+                Console.WriteLine($"  marked {slots.Count} controller(s): each holds button=its index");
                 continue;
             }
             if (line.Equals("unmark", StringComparison.OrdinalIgnoreCase))
             {
                 foreach (var s in slots) s.MarkButton = -1;
-                Console.WriteLine($"  unmarked {slots.Count} controller(s) — back to time-varying pattern");
+                Console.WriteLine($"  unmarked {slots.Count} controller(s): back to time-varying pattern");
                 continue;
             }
             // park <idx> <x> <y>     pin slot N's left stick to literal x,y in [-1..+1]
@@ -499,7 +499,7 @@ partial class Program
                 if (sub.Length == 1 && sub[0].Equals("off", StringComparison.OrdinalIgnoreCase))
                 {
                     foreach (var s in slots) { s.ParkX = float.NaN; s.ParkY = float.NaN; }
-                    Console.WriteLine($"  park off — {slots.Count} controller(s) back to time-varying pattern");
+                    Console.WriteLine($"  park off: {slots.Count} controller(s) back to time-varying pattern");
                     continue;
                 }
                 if (sub.Length == 3
@@ -527,7 +527,7 @@ partial class Program
                 continue;
             }
 
-            // remove <index> — dispose a single controller without replacement
+            // remove <index>: dispose a single controller without replacement
             if (line.StartsWith("remove ", StringComparison.OrdinalIgnoreCase))
             {
                 var rmArg = line.Substring(7).Trim();
@@ -545,7 +545,7 @@ partial class Program
                         try { s.Thread?.Join(2000); } catch { }
                         try { s.Ctrl.Dispose(); } catch { }
                         s.Ctrl = null!;
-                        Console.WriteLine($"  removed slot {rmIdx} in {rmSw.ElapsedMilliseconds} ms — {slots.Count(x => x.Ctrl != null!)} controller(s) remain");
+                        Console.WriteLine($"  removed slot {rmIdx} in {rmSw.ElapsedMilliseconds} ms: {slots.Count(x => x.Ctrl != null!)} controller(s) remain");
                     }
                 }
                 else
@@ -581,7 +581,7 @@ partial class Program
             {
                 // [ACK] goes to the ORIGINAL stdout, not the silenced
                 // TextWriter.Null we may have redirected to under
-                // HIDMAESTRO_QUIET=1 — the harness blocks on this marker.
+                // HIDMAESTRO_QUIET=1: the harness blocks on this marker.
                 s_origConsoleOut.WriteLine("[ACK]");
                 s_origConsoleOut.Flush();
             }
@@ -618,14 +618,14 @@ partial class Program
         TestDebugLog($"  DisposeControllersInParallel EXIT total={cleanupSw.ElapsedMilliseconds}ms");
         Console.WriteLine($"  total cleanup: {cleanupSw.ElapsedMilliseconds} ms");
         if (rateHz >= 500) timeEndPeriod(1);
-        TestDebugLog("cleanup EXIT — returning from Emulate");
+        TestDebugLog("cleanup EXIT: returning from Emulate");
         // Under regression battery (HIDMAESTRO_QUIET=1), all kernel-side
         // teardown is done via DisposeControllersInParallel above. The
         // remaining `using var ctx` Dispose is a no-op (controllers list
         // is empty) but .NET runtime shutdown / DllMain DLL_PROCESS_DETACH
         // / finalizer queue takes ~15-20 s on Win11 26200, which delays
         // the harness's per-scenario verify. Self-kill via TerminateProcess
-        // bypasses all of that — kernel-side is already clean, nothing of
+        // bypasses all of that: kernel-side is already clean, nothing of
         // value remains to be unwound.
         if (Environment.GetEnvironmentVariable("HIDMAESTRO_QUIET") == "1")
         {
@@ -831,7 +831,7 @@ partial class Program
     /// updates regularly, each producing ~150 bytes; the harness only
     /// drains stdout inside Send-Cmd so accumulated bytes between
     /// commands fill the 4 KB pipe in seconds, blocking the test app's
-    /// next Console.WriteLine indefinitely — which manifests as a
+    /// next Console.WriteLine indefinitely: which manifests as a
     /// multi-minute hang between quit and cleanup, leading to KILL
     /// before kernel teardown can complete).</summary>
     static readonly bool s_quietMode =
@@ -876,10 +876,10 @@ partial class Program
 
         // DualSense / DS4 output report (HID OUTPUT). Motor offsets differ
         // between USB and BT report formats:
-        //   DS5 USB Report 0x02 — motors at data[2..3]
-        //   DS5 BT  Report 0x31 — BT framing prefix shifts motors to data[3..4]
-        //   DS4 USB Report 0x05 — motors at data[3..4] (byte 1 = enable flags)
-        //   DS4 BT  Report 0x11 — Sony BT 0xC0 0x20 framing → motors at data[5..6]
+        //   DS5 USB Report 0x02: motors at data[2..3]
+        //   DS5 BT  Report 0x31: BT framing prefix shifts motors to data[3..4]
+        //   DS4 USB Report 0x05: motors at data[3..4] (byte 1 = enable flags)
+        //   DS4 BT  Report 0x11: Sony BT 0xC0 0x20 framing → motors at data[5..6]
         //                        (per Chromium dualshock4_controller.cc
         //                         SetVibrationBluetooth: bytes 6/7 of the
         //                         RID-included buffer = data[5..6] post-strip).
@@ -930,7 +930,7 @@ partial class Program
     // timeBeginPeriod support so Sleep(1) actually yields ~1 ms (default Windows
     // timer resolution coarsens Sleep(1) to 15.6 ms on non-multimedia threads).
     // Needed to reproduce PadForge's 1 kHz SubmitState rate in the issue #3 test
-    // battery — without this, --rate-hz 1000 silently runs at ~200 Hz.
+    // battery: without this, --rate-hz 1000 silently runs at ~200 Hz.
     [System.Runtime.InteropServices.DllImport("winmm.dll")]
     static extern uint timeBeginPeriod(uint uPeriod);
     [System.Runtime.InteropServices.DllImport("winmm.dll")]
@@ -1027,12 +1027,12 @@ partial class Program
                     rightStickY:  0.5f,
                     leftTrigger:  lt,
                     rightTrigger: rt),
-                // Cycle hat through N..NW at 2 Hz. v1.3.3 (#19) — exercising
+                // Cycle hat through N..NW at 2 Hz. v1.3.3 (#19): exercising
                 // the d-pad path here makes the canonical test runner visibly
                 // catch any future regression in HMController.SubmitState's
                 // GIP-buffer hat packing.
                 Hat          = (HMHat)(1 + ((int)(t * 2) % 8)),
-                // A at 1Hz, Share at 0.33Hz — distinct cadences so each is
+                // A at 1Hz, Share at 0.33Hz: distinct cadences so each is
                 // individually observable in any consumer (joy.cpl, browser
                 // Gamepad Tester). Guide is deliberately OMITTED because the
                 // Windows shell fires a Guide-long-press haptic ack to slot 0
@@ -1328,7 +1328,7 @@ partial class Program
         byte[] desc;
         if (args is { Length: >= 1 })
         {
-            // Parse from hex argument — used to inspect arbitrary descriptors
+            // Parse from hex argument: used to inspect arbitrary descriptors
             // (e.g. output from HMDeviceExtractor) via the same pipeline.
             try
             {
@@ -1505,7 +1505,7 @@ partial class Program
     //
     // This is the same API surface PadForge uses to construct its own
     // Custom profile (see HMaestroProfileCatalog.BuildCustomProfile in
-    // the PadForge source) — testing this round-trip ensures the SDK's
+    // the PadForge source): testing this round-trip ensures the SDK's
     // custom-profile path gets the same swap-teardown coverage as the
     // embedded catalog profiles.
     static int MakeCustomProfile(string[] args)
@@ -1567,7 +1567,7 @@ partial class Program
 
     // ── sdk-demo ──
 
-    /// <summary>Minimal SDK consumer demo — exercises HMContext → CreateController → SubmitState.
+    /// <summary>Minimal SDK consumer demo: exercises HMContext → CreateController → SubmitState.
     /// Creates one controller, feeds a left-stick circle for 5s, then cleans up.</summary>
     static int SdkDemo(string[] args)
     {
@@ -1784,7 +1784,7 @@ partial class Program
                     in3Pin.AddrOfPinnedObject(), 3, outPin.AddrOfPinnedObject(), 24, out ret, IntPtr.Zero);
                 Console.WriteLine($"    GET_CAPABILITIES[24]: ok={ok} err={Marshal.GetLastWin32Error()} returned={ret} bytes={HexSlice(outBuf, (int)ret)}");
 
-                // Also fire the EXTENDED variant — WGI uses 36-byte request. Input byte[0]=0x02 is the variant flag.
+                // Also fire the EXTENDED variant: WGI uses 36-byte request. Input byte[0]=0x02 is the variant flag.
                 Array.Clear(outBuf);
                 byte[] inEx = new byte[] { 0x02, 0x01, 0x00 };
                 var inExPin = GCHandle.Alloc(inEx, GCHandleType.Pinned);

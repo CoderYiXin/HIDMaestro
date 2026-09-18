@@ -1,9 +1,9 @@
-/*
- * HIDMaestro Companion — UMDF2 driver for XUSB XInput + WinExInput.
+﻿/*
+ * HIDMaestro Companion: UMDF2 driver for XUSB XInput + WinExInput.
  * Registers XUSB and WinExInput device interfaces.
  * Reads gamepad state from a per-instance pagefile-backed shared section
- * (Global\HIDMaestroInput<N>) — RAM-only, no disk I/O.
- * No HID, no filter mode — runs as System-class function driver.
+ * (Global\HIDMaestroInput<N>): RAM-only, no disk I/O.
+ * No HID, no filter mode: runs as System-class function driver.
  */
 
 #define WIN32_NO_STATUS
@@ -72,11 +72,11 @@ typedef struct _COMPANION_CTX {
     ULONGLONG LastVidCheckTick;
     BOOLEAN   CachedIsXbox;
     BOOLEAN   VidCheckValid;
-    /* Async XUSB input pump — holds pended IOCTL_XUSB_WAIT_FOR_INPUT
+    /* Async XUSB input pump: holds pended IOCTL_XUSB_WAIT_FOR_INPUT
      * requests. WGI's XusbDevice::QueueInputBuffer (Windows.Gaming.Input.dll
      * @ 0x18006af0c) issues this IOCTL async via InputOutputIoctlAsync and
-     * waits for the 29-byte XUSB state to arrive. Completing it synchronously
-     * — or with an error — kills the pump, and Gamepad::SendControllerVibration
+     * waits for the 29-byte XUSB state to arrive. Completing it synchronously,
+     * or with an error, kills the pump, and Gamepad::SendControllerVibration
      * silently bails at the flag_0x184 gate because OnInputResumed never fires
      * on the WGI Gamepad's IGameControllerInputSink. See Ghidra decomp. */
     WDFQUEUE WaitForInputQueue;
@@ -86,7 +86,7 @@ typedef struct _COMPANION_CTX {
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(COMPANION_CTX, GetCompanionCtx)
 
 /* Append the decimal representation of a ULONG to a wide-string buffer.
- * Self-contained — companion doesn't link MSVCRT, no swprintf available.
+ * Self-contained: companion doesn't link MSVCRT, no swprintf available.
  * Lets the section/registry-path builders support indices > 9 so the
  * test app and SDK aren't capped at 4 controllers. */
 static VOID
@@ -116,7 +116,7 @@ AppendUlongDecimal(WCHAR *dest, ULONG value, SIZE_T maxChars)
 /* Must stay in sync with HIDMAESTRO_SHARED_INPUT in driver/driver.h.
  * Data[] widened from 64 to 256 bytes 2026-04-23 to carry full DualSense
  * BT / Switch Pro gyro-bearing reports through the shared memory pipe
- * without truncation. v1.3.5 — added ExtendedReportSize/ExtendedReportData
+ * without truncation. v1.3.5: added ExtendedReportSize/ExtendedReportData
  * tail for Sony BT vendor-blob mode-switch path. Companion only reads
  * SeqNo + GipData; the tail is unused here but mirrored so any
  * MapViewOfFile sizing or future field offset reuses driver.h's layout. */
@@ -278,7 +278,7 @@ static BOOLEAN EnsureOutputMapping(PCOMPANION_CTX ctx)
     /* Periodic re-open: close stale mapping every 500 writes */
     if (ctx->OutputMemPtr != NULL) {
         if (++ctx->OutputWriteCount < 500) return TRUE;
-        /* Time to re-validate — close and re-open */
+        /* Time to re-validate: close and re-open */
         UnmapViewOfFile(ctx->OutputMemPtr); ctx->OutputMemPtr = NULL;
         CloseHandle(ctx->OutputMemHandle);  ctx->OutputMemHandle = NULL;
         ctx->OutputWriteCount = 0;
@@ -505,7 +505,7 @@ NTSTATUS CompanionDeviceAdd(_In_ WDFDRIVER Driver, _Inout_ PWDFDEVICE_INIT Devic
      * sees cVar3=true AND interface==XUSB {ec87f1e3}, and dispatches via the
      * XUSB path (LAB_18005f241). Publishing additional interfaces (WinExInput,
      * speculative WGI_UNK1) produces extra PnpDevice arrivals that confuse WGI
-     * into classifying our one logical controller as multiple WGI entities —
+     * into classifying our one logical controller as multiple WGI entities
      * the known hang mode documented in
      * memory:feedback-one-wgi-device-per-controller.md. */
     WdfDeviceCreateDeviceInterface(device, (LPGUID)&XUSB_GUID, NULL);
@@ -571,7 +571,7 @@ static VOID DecodeGipToXInput(
     *outValid = TRUE;
 }
 
-/* 29-byte IOCTL_XUSB_GET_STATE response layout — this is what xinput1_4
+/* 29-byte IOCTL_XUSB_GET_STATE response layout: this is what xinput1_4
  * parses. Empirically verified: buttons at state[0x0B], triggers at
  * state[0x0D]/[0x0E], sticks at state[0x0F..0x16]. DO NOT rearrange without
  * re-verifying XInput/DirectInput/HIDAPI. */
@@ -599,14 +599,14 @@ static VOID BuildXusbStateForGetState(PCOMPANION_CTX ctx, UCHAR state[29])
     *(SHORT*)&state[0x15] = ry;
 }
 
-/* 29-byte IOCTL_XUSB_WAIT_FOR_INPUT response layout — WGI's expected format.
+/* 29-byte IOCTL_XUSB_WAIT_FOR_INPUT response layout: WGI's expected format.
  * Derived from Ghidra decomp of XusbDevice::ProcessInput (all-xusb.c:~9551):
  *   - state[2]  (this+0x28a): state indicator. 3 = RESUMED (triggers
  *     LAB_18006aac2 which toggles this+0x2c8 to 1, enabling subsequent
  *     UpdateInputSinks calls to dispatch OnInputResumed on newly-registered
- *     sinks — clearing Gamepad::flag_0x184).
+ *     sinks: clearing Gamepad::flag_0x184).
  *   - state[9]  (this+0x291): reportId passed to sink.OnInputReceived.
- *   - state[10] (this+0x292): gate — if zero, dispatch is SKIPPED at
+ *   - state[10] (this+0x292): gate: if zero, dispatch is SKIPPED at
  *     all-xusb.c:9647. Real xusb22 puts the payload-size marker (0x14) here
  *     as the first byte of the 0x13-byte payload that is handed to
  *     sink.OnInputReceived(eventId, reportId=state[9], size=0x13,
@@ -629,7 +629,7 @@ static VOID BuildXusbStateForWaitInput(PCOMPANION_CTX ctx, UCHAR state[29])
      *   convention this byte is the XINPUT_STATE packet-type marker (0x14
      *   = XINPUT packet). The XusbInputParser expects the remaining payload
      *   (wButtons, triggers, sticks) at data[1..] = state[11..22]. */
-    /* state[9] = reportId. XusbInputParser template expects 0 — confirmed
+    /* state[9] = reportId. XusbInputParser template expects 0: confirmed
      * empirically 2026-04-23 via diagnostic fingerprint: setting 0 makes
      * GetCurrentReading return actual parsed values; setting 0x14 produced
      * all-zero readings. */
@@ -744,21 +744,21 @@ void CompanionIoControl(
     switch (IoControlCode)
     {
     case IOCTL_XUSB_GET_INFORMATION: {
-        /* OutDeviceInfos_t — 12 bytes (matches driver.c format exactly) */
+        /* OutDeviceInfos_t: 12 bytes (matches driver.c format exactly) */
         UCHAR info[12];
         RtlZeroMemory(info, sizeof(info));
-        *(USHORT*)&info[0] = 0x0103;  /* XUSBVersion 0x0103. 2026-04-23 empirical: 0x0101 lets WGI poll state but not dispatch put_Vibration; 0x0103 matches physical Xbox 360 USB and HIDMaestro BT (both work) — flip to unblock SET_STATE dispatch. */
-        info[2] = 0x01; /* device count — always 1 (each companion hosts one controller) */
-        /* Revert to 0 — pre-regression value (before commit a19861b). Setting
+        *(USHORT*)&info[0] = 0x0103;  /* XUSBVersion 0x0103. 2026-04-23 empirical: 0x0101 lets WGI poll state but not dispatch put_Vibration; 0x0103 matches physical Xbox 360 USB and HIDMaestro BT (both work): flip to unblock SET_STATE dispatch. */
+        info[2] = 0x01; /* device count: always 1 (each companion hosts one controller) */
+        /* Revert to 0: pre-regression value (before commit a19861b). Setting
          * this to 0x01 during the WGI vibration work was my speculative change
          * ("may read it as 'device is usable' flag"), and empirical testing
          * 2026-04-23 showed it didn't actually affect vibration dispatch while
          * it DID coincide with the 4-player XInput slot-1 regression.
-         * Per-instance uniqueness tested (ControllerIndex+1) — no effect.
-         * Out-of-range value tested (0x09) — no effect. Testing the straight
+         * Per-instance uniqueness tested (ControllerIndex+1): no effect.
+         * Out-of-range value tested (0x09): no effect. Testing the straight
          * revert to 0x00 to confirm this single byte is the regression. */
         info[3] = 0x00;
-        info[4] = 0x00;                /* unk2 — bit 7 clear = don't skip */
+        info[4] = 0x00;                /* unk2: bit 7 clear = don't skip */
         *(USHORT*)&info[8] = ctx->VendorId;
         *(USHORT*)&info[10] = ctx->ProductId;
         CopyToRequest(Request, info, 12);
@@ -766,7 +766,7 @@ void CompanionIoControl(
     }
 
     case IOCTL_XUSB_GET_CAPABILITIES: {
-        /* GamepadCapabilities0101 — 24-byte wire: [0-1]Version, then the
+        /* GamepadCapabilities0101: 24-byte wire: [0-1]Version, then the
          * XINPUT_CAPABILITIES struct starting at [2]:
          *   [2]Type [3]SubType [4-5]Flags [6-7]wButtons [8]LT [9]RT
          *   [10-17]sThumbLX/LY/RX/RY (4xi16) [18-19]wLeftMotorSpeed
@@ -849,7 +849,7 @@ void CompanionIoControl(
          * and the companion persists as a phantom still serving IOCTLs.
          * xinput1_4 / GameInputSvc keep sending IOCTL_XUSB_SET_STATE here;
          * without this gate we publish Source=XInput to the SAME shared
-         * output section that the new DS4 is reading from — so the user's
+         * output section that the new DS4 is reading from: so the user's
          * DS4 SDK surfaces phantom XInput rumble packets. Fix: re-read the
          * CURRENT registry VendorId for this ControllerIndex every IOCTL.
          * If the index has been re-profiled to a non-Xbox controller, the
@@ -931,9 +931,9 @@ void CompanionIoControl(
     case IOCTL_XUSB_GET_INFORMATION_EX: {
         UCHAR infoEx[64];
         RtlZeroMemory(infoEx, sizeof(infoEx));
-        *(USHORT*)&infoEx[0] = 0x0103;      /* Version 0x0103 — match GET_INFORMATION. */
+        *(USHORT*)&infoEx[0] = 0x0103;      /* Version 0x0103: match GET_INFORMATION. */
         infoEx[2] = 0x01;
-        infoEx[3] = 0x01;  /* slot/capability marker — mirror GET_INFORMATION */
+        infoEx[3] = 0x01;  /* slot/capability marker: mirror GET_INFORMATION */
         *(USHORT*)&infoEx[8] = ctx->VendorId;
         *(USHORT*)&infoEx[10] = ctx->ProductId;
         ULONG outLen = OutputBufferLength < 64 ? (ULONG)OutputBufferLength : 64;

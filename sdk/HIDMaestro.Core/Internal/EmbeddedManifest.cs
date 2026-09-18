@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -19,8 +19,8 @@ namespace HIDMaestro.Internal;
 /// <para>Cost: SHA-256 over ~6 MB at first access, ~30 ms on a fast box,
 /// ~150 ms on Atom. Cached as a static field, so subsequent calls are
 /// free. Hashed-into set is the canonical install payload (not the SDK
-/// resource manifest as a whole) so changes to e.g. signtool.exe — which
-/// affects HOW we install but not WHAT we install — don't invalidate
+/// resource manifest as a whole) so changes to e.g. signtool.exe: which
+/// affects HOW we install but not WHAT we install: don't invalidate
 /// the cache.</para>
 /// </summary>
 internal static class EmbeddedManifest
@@ -72,7 +72,7 @@ internal static class EmbeddedManifest
             using var s = asm.GetManifestResourceStream(name);
             if (s == null)
             {
-                // Resource missing — produce a distinct hash so the
+                // Resource missing: produce a distinct hash so the
                 // mismatch forces FullDeploy. Hash a marker rather than
                 // throwing; missing-resource diagnostics happen later
                 // in the pipeline at extraction time.

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace HIDMaestro.Internal;
@@ -10,7 +10,7 @@ namespace HIDMaestro.Internal;
 /// FFB enumeration on profiles whose firmware uses non-canonical Report
 /// IDs (e.g. Microsoft SideWinder Force Feedback 2 puts Pool at Feature
 /// RID 0x03, Block Load at Feature RID 0x02, Set Effect at Output RID
-/// 0x01 — all far from the canonical 0x13 / 0x12 / 0x11).
+/// 0x01: all far from the canonical 0x13 / 0x12 / 0x11).
 ///
 /// Detection key: each PID 1.0 report wraps its value items in a
 /// Logical Collection (0xA1 0x02) whose Usage is a fixed PID Page
@@ -34,7 +34,7 @@ namespace HIDMaestro.Internal;
 /// We consume only the six the driver dispatches against (Pool, State,
 /// Block Load, Create New Effect, Block Free, Device Control). Returns
 /// canonical defaults (0x13/0x14/0x12/0x11/0x1B/0x1C) when a report
-/// kind isn't found in the descriptor — back-compat for builder-emitted
+/// kind isn't found in the descriptor: back-compat for builder-emitted
 /// AddPidFfbBlock descriptors that already use the canonical IDs.
 ///
 /// Background: pre-v1.3.7 the driver hardcoded the canonical IDs in
@@ -56,7 +56,7 @@ public static class PidReportIdExtractor
         public byte DeviceControlReportId   = 0x1C;
 
         /// <summary>True when the descriptor declared at least one PID 1.0
-        /// report at a non-canonical Report ID. Pure diagnostic — driver
+        /// report at a non-canonical Report ID. Pure diagnostic: driver
         /// behavior is identical regardless because zero defaults to
         /// canonical and a found mapping overrides.</summary>
         public bool AnyOverride;
@@ -167,7 +167,7 @@ public static class PidReportIdExtractor
                     {
                         case 0: usages.Add((ushort)value); break;
                         // Usage Min / Usage Max etc. don't matter for LC
-                        // identification — we only key on the first usage
+                        // identification: we only key on the first usage
                         // that becomes the Collection or Main item's usage.
                     }
                     break;
@@ -215,19 +215,19 @@ public static class PidReportIdExtractor
         Dictionary<(byte lcUsage, Direction dir), byte> found,
         PidReportIds ids)
     {
-        // Pool — Feature, LC Usage 0x7F.
+        // Pool: Feature, LC Usage 0x7F.
         if (found.TryGetValue((0x7F, Direction.Feature), out var poolRid))
         { ids.PoolReportId = poolRid; ids.AnyOverride |= poolRid != 0x13; }
 
-        // State — Feature, LC Usage 0x92.
+        // State: Feature, LC Usage 0x92.
         if (found.TryGetValue((0x92, Direction.Feature), out var stateRid))
         { ids.StateReportId = stateRid; ids.AnyOverride |= stateRid != 0x14; }
 
-        // Block Load — Feature, LC Usage 0x89.
+        // Block Load: Feature, LC Usage 0x89.
         if (found.TryGetValue((0x89, Direction.Feature), out var blRid))
         { ids.BlockLoadReportId = blRid; ids.AnyOverride |= blRid != 0x12; }
 
-        // Create New Effect — Feature is the canonical direction (the
+        // Create New Effect: Feature is the canonical direction (the
         // host SETs it, dinput8 dispatches via HidD_SetFeature). LC
         // Usage 0x88 in the canonical PID descriptor; some firmwares
         // use Output LC 0x21 (Set Effect Report) as the create trigger
@@ -237,11 +237,11 @@ public static class PidReportIdExtractor
         else if (found.TryGetValue((0x21, Direction.Output), out var newOut))
         { ids.CreateNewEffectReportId = newOut; ids.AnyOverride |= newOut != 0x11; }
 
-        // Block Free — Output, LC Usage 0x90.
+        // Block Free: Output, LC Usage 0x90.
         if (found.TryGetValue((0x90, Direction.Output), out var bfRid))
         { ids.BlockFreeReportId = bfRid; ids.AnyOverride |= bfRid != 0x1B; }
 
-        // Device Control — Output, LC Usage 0x96.
+        // Device Control: Output, LC Usage 0x96.
         if (found.TryGetValue((0x96, Direction.Output), out var dcRid))
         { ids.DeviceControlReportId = dcRid; ids.AnyOverride |= dcRid != 0x1C; }
     }
