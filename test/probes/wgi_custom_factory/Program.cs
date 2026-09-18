@@ -19,7 +19,7 @@ internal sealed class MyFactory : ICustomGameControllerFactory
         // report immediately. If SDK's OutputReceived sees this, we have a working
         // user-mode dispatch path through WGI's Custom namespace.
         if (provider is HidGameControllerProvider hid) {
-            // Parameter sweep per Opus: rule out the API surface before CsWinRT build
+            // Parameter sweep: rule out the API surface before the CsWinRT build
             var attempts = new (byte id, byte[] buf, string note)[] {
                 (0x0F, new byte[] { 0x00, 0x00, 0x7F, 0x7F, 0xFF, 0x00, 0xEB }, "id=0x0F 7B canonical"),
                 (0x00, new byte[] { 0x00, 0x00, 0x7F, 0x7F, 0xFF, 0x00, 0xEB }, "id=0x00 7B"),
@@ -79,7 +79,7 @@ internal static class P
         }
         catch (Exception ex) { Console.WriteLine("Register2 ERR: " + ex); }
 
-        // Gate test per Opus: what does Gamepad.Gamepads[0] actually return?
+        // Gate test: what does Gamepad.Gamepads[0] actually return?
         // If it's my MyController, custom override is viable. If it's built-in
         // Gamepad, overrides never fire for consumers: the whole plan is dead.
         Thread.Sleep(800);

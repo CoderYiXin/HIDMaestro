@@ -851,8 +851,8 @@ partial class Program
                            ?? c.Profile.Id;
             string decoded = DecodeOutputPacket(c.Profile, pkt);
             // Raw-byte dump in addition to decoded line, so the on-wire layout
-            // is inspectable directly instead of trusting the decode. Per Opus
-            // 2026-04-18: "the driver-side log is load-bearing for every
+            // is inspectable directly instead of trusting the decode. From the
+            // 2026-04-18 review: "the driver-side log is load-bearing for every
             // hypothesis; if it's not trusted and double-checked with raw-byte
             // dumps early, every hypothesis built on top of it inherits the
             // uncertainty."

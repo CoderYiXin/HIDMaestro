@@ -29,7 +29,7 @@ This investigation produced multiple premature conclusions before landing on the
 
 ### The three standing rules that emerged
 
-These are transferable beyond this investigation. They are now recorded in the author's global `~/.claude/CLAUDE.md` as permanent practice.
+These are transferable beyond this investigation. They are now recorded in the author's global instructions as permanent practice.
 
 1. **Anomalies in driver-side data get a 30-second confirmation test before any narrative explanation.** The parser-bug symptom ("hi stuck at 0x02") had an obvious check, moving one slider and watching the byte, that would have ruled out the "user's slider was at 0.78%" story in under a minute. When an anomaly appears, the first move is "what test would distinguish the explanations?" not "what explanation fits?"
 

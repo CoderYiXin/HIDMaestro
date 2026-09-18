@@ -32,7 +32,7 @@ Hypotheses tested and falsified by driver-side log observation:
 ### Second "silent sink" conclusion: RETRACTED
 
 - After a clean baseline run (Edge closed, 10s, 0 bytes) and a test run (Edge + playEffect, 0 bytes at SDK `[out0]` layer), author concluded "Chromium dispatches zero bytes to our virtual across all three instrumented paths."
-- Opus (external oversight) flagged: driver reception layer was not verified directly; the "silent" claim was inferred from SDK-level parser output. A parser bug could produce apparent silence. Request: raw-byte dump at all three driver instrumentation layers, filtered by click-window timestamp, independent of parser interpretation.
+- External review flagged: the driver reception layer was not verified directly; the "silent" claim was inferred from SDK-level parser output. A parser bug could produce apparent silence. Request: raw-byte dump at all three driver instrumentation layers, filtered by click-window timestamp, independent of parser interpretation.
 - Required a new instrumentation pass and Chromium retrial.
 
 ### Process-context experiments (brief 5: all falsified)
@@ -51,7 +51,7 @@ With SDK `[out0]` instrumentation still under suspicion, author tested hypothese
 
 ### Focus-gate discovery (partial, then retracted)
 
-- Opus flagged Microsoft docs: "SetRumbleState will only be applied to the device while the application is in focus."
+- External review flagged Microsoft docs: "SetRumbleState will only be applied to the device while the application is in focus."
 - Author built `focus_test.exe`: real Win32 window, GetForegroundWindow gating.
 - With focus satisfied: GameInput SetRumbleState rumbles physical 360 and Series BT.
 - User then tested targeting our virtual with focused GameInput. Physical rumbles (expected, bytes go to xusb22.sys on USB parent). Virtual showed no bytes at the SDK `[out0]` layer.
@@ -61,7 +61,7 @@ With SDK `[out0]` instrumentation still under suspicion, author tested hypothese
 
 - Author began drafting Option 3 (document limitation) based on the focus-gate finding plus cumulative evidence.
 - Then user ran XInputTester and reported "hi stuck at 0x02 across entire sweep." Author explained this as "user's right slider at 0.78% intensity."
-- Opus flagged (third time): same failure pattern. Narrative explanation instead of confirmation test. Quote: "Third time this investigation. The 30-second slider-isolation test resolves this; run it."
+- External review flagged it a third time: same failure pattern, a narrative explanation instead of a confirmation test. The note: "Third time this investigation. The 30-second slider-isolation test resolves this; run it."
 - User ran the test: right slider 0→max→0 with left pinned → `byte[3]` varied 0→0x7D→0 in the log. Left slider hypothesis dead. byte[3] confirmed as RIGHT motor position; `byte[4] = 0x02` is packet trailer.
 
 ### Parser bug found and fixed (branch-local regression)
@@ -98,7 +98,7 @@ Hypotheses falsified empirically across the investigation:
 
 ## External oversight
 
-The investigation was conducted under rotating oversight review between the author (in-session) and Opus 4.7 via Claude Online, with each substantive brief reviewed before the next experimental step. The three retractions were all driven by Opus's pushback on premature conclusions. The methodology-debt rules in [finding.md](finding.md#the-three-standing-rules-that-emerged) are recorded because this review cycle surfaced a failure pattern the author would not have caught unaided.
+The investigation was conducted under rotating oversight review, with each substantive brief reviewed before the next experimental step. The three retractions were all driven by that review's pushback on premature conclusions. The methodology-debt rules in [finding.md](finding.md#the-three-standing-rules-that-emerged) are recorded because this review cycle surfaced a failure pattern the author would not have caught unaided.
 
 ## Related memory files
 
