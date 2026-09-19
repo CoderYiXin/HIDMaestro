@@ -31,7 +31,7 @@ HIDMaestro creates virtual controllers that present the exact identity of real h
 
 It runs entirely in user mode (UMDF2), signed with a locally trusted self-signed certificate. No EV certificate, no `testsigning` boot mode, no kernel driver that can blue-screen the machine.
 
-<p align="center"><b>231</b> device profiles · <b>32</b> vendors · <b>~35 µs</b> median single-press · <b>0</b> kernel drivers</p>
+<p align="center"><b>231</b> device profiles · <b>20+</b> projects shipping it · <b>~35 µs</b> median single-press · <b>0</b> kernel drivers</p>
 
 ```csharp
 using var ctx = new HMContext();
@@ -78,6 +78,35 @@ The test app is self-contained. First run creates a locally trusted certificate,
 During emulation you can `remove 2` to dispose one controller, `2 dualsense` to live-swap controller 2, or `quit` to shut down cleanly.
 
 If you want to use HIDMaestro through a UI instead of code, install [PadForge](https://padforge.org/). It wraps this SDK with a full input-mapping app.
+
+---
+
+## Who ships it.
+
+Twenty-plus independent open-source projects have adopted HIDMaestro, across six languages, for a combined installed base of about 574,000 downloads. Roughly 27,700 of those builds ship or fetch the runtime directly.
+
+### PadForge
+
+[PadForge](https://padforge.org/) is the flagship implementation. It is built on this SDK end to end and drives more of the surface than any other consumer: every profile family, live profile swapping, multi-controller slots, force feedback, controller audio and haptics, the Valve personas, and the virtual VR controllers. Its Softpedia listing is an Editor's Pick at 5.0 out of 5.
+
+To watch the SDK work without writing any code, install PadForge. If you are building your own app, it is the worked example of what this SDK does at full stretch.
+
+### Everyone else
+
+| Project | What it does with HIDMaestro |
+|--|--|
+| [foundation-sunshine](https://github.com/AlkaidLab/foundation-sunshine) | Sunshine fork. Its DualSense support is built on HIDMaestro |
+| [JoystickGremlinEx](https://github.com/muchimi/JoystickGremlinEx) | Flight-sim remapper. Drives the SDK from Python over pythonnet |
+| [Nearcade](https://github.com/TheRealFame/Nearcade) | Remote-play bridge. Pins the SDK as a submodule |
+| [dualsense-command](https://github.com/shiftedx/dualsense-command) | Bundles the runtime in its bridge installers |
+| [DirectXInput](https://github.com/dumbie/DirectXInput) | Ships the runtime with its controller tooling |
+| [FlexInput](https://github.com/x-iso/FlexInput) | Uses HIDMaestro as its default virtual-device backend |
+
+LizardByte's [libvirtualhid](https://github.com/LizardByte/libvirtualhid), from the organization behind Sunshine, reuses this project's force-feedback descriptor byte for byte and says so in its own source:
+
+> HIDMaestro's MIT-licensed `MinimumViablePidFfbBlock`, byte-for-byte. The complete Output report set is required for DirectInput to enumerate the device as PID force-feedback capable.
+
+Their header also describes the layout as "the constant-force and sine-periodic subset of the PID descriptor proven by HIDMaestro", and their alternatives table lists HIDMaestro beside ViGEmBus, inputtino and WinUHid.
 
 ---
 
