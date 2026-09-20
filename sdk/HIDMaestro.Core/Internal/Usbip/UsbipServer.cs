@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
@@ -13,7 +13,7 @@ namespace HIDMaestro.Internal.Usbip;
 /// busid. usbip-win2's vhci driver connects here (kernel WSK, one TCP
 /// connection per attached device), performs the OP_REQ_IMPORT handshake,
 /// and then streams CMD_SUBMIT / CMD_UNLINK, which this server answers
-/// per the 0.9.7.7 wire contract read at source (see
+/// per the 0.9.7.5 wire contract read at source (see
 /// <see cref="UsbipProtocol"/>).
 ///
 /// <para>The listen port is fixed-range rather than ephemeral
@@ -340,7 +340,7 @@ internal sealed class UsbipServer : IDisposable
         /// descriptors, offsets echoing the submit, actual_length the sum
         /// of per-packet actuals. OUT: descriptors only, actual_length
         /// echoing the transfer buffer length. Wire rules from usbip-win2
-        /// 0.9.7.7 wsk_receive.cpp fill_isoc_data / prepare_wsk_mdl.</summary>
+        /// 0.9.7.5 wsk_receive.cpp fill_isoc_data / prepare_wsk_mdl.</summary>
         public void SendRetSubmitIso(UsbAudioEngine.PendingIso p, byte[]? inCompacted, int perPacketActual)
         {
             int n = p.Packets.Length;

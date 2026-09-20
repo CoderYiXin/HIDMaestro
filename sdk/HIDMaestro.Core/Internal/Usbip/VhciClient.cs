@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -8,7 +8,7 @@ namespace HIDMaestro.Internal.Usbip;
 
 /// <summary>Talks to usbip-win2's vhci host controller through its public
 /// device-interface ioctl API (issue #39). Grounded in the pinned
-/// 0.9.7.7 sources: the interface GUID and every struct layout are
+/// 0.9.7.5 sources: the interface GUID and every struct layout are
 /// <c>include/usbip/vhci.h</c>, which the driver documents as a public
 /// API whose input/output data stay stable for the lifetime of each
 /// IOCTL code.

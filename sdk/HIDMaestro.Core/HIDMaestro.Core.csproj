@@ -84,7 +84,7 @@
     <Copy SourceFiles="@(_HMSigntool)"   DestinationFolder="$(MSBuildThisFileDirectory)Resources\" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_HMInf2cat)"    DestinationFolder="$(MSBuildThisFileDirectory)Resources\" SkipUnchangedFiles="true" />
 
-    <!-- usbip-win2 0.9.7.7 installer, bundled (issue #39). Composite USB
+    <!-- usbip-win2 0.9.7.5 installer, bundled (issue #39). Composite USB
          personas need a driver-backed USB device for their audio
          endpoints, so the SDK ships the transport rather than asking a
          user to go install one: HIDMaestro deploys it on demand, the
@@ -98,15 +98,16 @@
          that asset. A hash mismatch FAILS the build rather than
          embedding an unverified binary. -->
     <PropertyGroup>
-      <HMUsbipVersion>0.9.7.7</HMUsbipVersion>
-      <HMUsbipSha256>51620fa5f9f8be5932bc9d786deee557ce06d5407a99cab490dcfac71f185fea</HMUsbipSha256>
-      <HMUsbipFile>$(MSBuildThisFileDirectory)Resources\USBip-$(HMUsbipVersion)-x64.exe</HMUsbipFile>
-      <HMUsbipUrl>https://github.com/vadimgrn/usbip-win2/releases/download/v.$(HMUsbipVersion)/USBip-$(HMUsbipVersion)-x64.exe</HMUsbipUrl>
+      <HMUsbipVersion>0.9.7.5</HMUsbipVersion>
+      <HMUsbipAsset>USBip-$(HMUsbipVersion)-x64-release.exe</HMUsbipAsset>
+      <HMUsbipSha256>6f429dd47cfe371dbd275ced5fc512494918683b07853cbdf2d8c25e4274fd74</HMUsbipSha256>
+      <HMUsbipFile>$(MSBuildThisFileDirectory)Resources\$(HMUsbipAsset)</HMUsbipFile>
+      <HMUsbipUrl>https://github.com/vadimgrn/usbip-win2/releases/download/v.$(HMUsbipVersion)/$(HMUsbipAsset)</HMUsbipUrl>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="$(HMUsbipUrl)"
                   DestinationFolder="$(MSBuildThisFileDirectory)Resources"
-                  DestinationFileName="USBip-$(HMUsbipVersion)-x64.exe"
+                  DestinationFileName="$(HMUsbipAsset)"
                   SkipUnchangedFiles="true"
                   Condition="!Exists('$(HMUsbipFile)')" />
 

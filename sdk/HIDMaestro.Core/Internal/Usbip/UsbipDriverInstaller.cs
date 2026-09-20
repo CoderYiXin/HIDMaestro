@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -32,17 +32,17 @@ namespace HIDMaestro.Internal.Usbip;
 /// machine, on the first composite controller ever created.</para></summary>
 internal static class UsbipDriverInstaller
 {
-    public const string Version = "0.9.7.7";
-    private const string InstallerFile = "USBip-" + Version + "-x64.exe";
+    public const string Version = "0.9.7.5";
+    private const string InstallerFile = "USBip-" + Version + "-x64-release.exe";
     private const string NoticeFile = "THIRD-PARTY-NOTICES.txt";
 
     /// <summary>SHA256 of the upstream release asset, as published by the
-    /// GitHub release API for v.0.9.7.7. The MSBuild PackResources target
+    /// GitHub release API for v.0.9.7.5. The MSBuild PackResources target
     /// verifies the same digest at build time, so a corrupted or
     /// substituted binary fails the build; this is the runtime half of
     /// that check, covering the extracted copy.</summary>
     private const string InstallerSha256 =
-        "51620fa5f9f8be5932bc9d786deee557ce06d5407a99cab490dcfac71f185fea";
+        "6f429dd47cfe371dbd275ced5fc512494918683b07853cbdf2d8c25e4274fd74";
 
     private static readonly object s_lock = new();
     private static bool s_verifiedThisProcess;
