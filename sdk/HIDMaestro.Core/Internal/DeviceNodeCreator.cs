@@ -161,11 +161,43 @@ internal static class DeviceNodeCreator
             try
             {
                 // Without DICD_GENERATE_ID the name is the full instance id.
-                if (!SetupDiCreateDeviceInfoW(dis, instId, ref classGuid, desc,
-                        IntPtr.Zero, 0, devInfoHandle.AddrOfPinnedObject()))
+                bool created = SetupDiCreateDeviceInfoW(dis, instId, ref classGuid, desc,
+                        IntPtr.Zero, 0, devInfoHandle.AddrOfPinnedObject());
+                int createErr = created ? 0 : Marshal.GetLastWin32Error();
+
+                // A create that died between SetupDiCreateDeviceInfo and
+                // DIF_REGISTERDEVICE leaves the instance key behind, marked
+                // Phantom, with no devnode for CM_Locate to find. Because the
+                // name is the identity's and never changes, that one orphan
+                // would refuse this controller forever with
+                // ERROR_DEVINST_ALREADY_EXISTS. Seen on 26200 after a create
+                // was killed while PnP was blocked. The key is ours to clear
+                // when its hardware ids say so and nothing answers to it.
+                if (!created && createErr == ERROR_DEVINST_ALREADY_EXISTS
+                    && CM_Locate_DevNodeW(out _, instId, 0) != 0
+                    && CM_Locate_DevNodeW(out _, instId, 1) != 0
+                    && DeviceManager.IsHidMaestroOwned(instId))
+                {
+                    DeviceOrchestrator.LogDiag($"      {instId} is an orphan instance key with no devnode; clearing it and retrying");
+                    try
+                    {
+                        using var enumKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                            $@"SYSTEM\CurrentControlSet\Enum\ROOT\{enumerator}", writable: true);
+                        enumKey?.DeleteSubKeyTree(identity.Token, throwOnMissingSubKey: false);
+                    }
+                    catch (Exception ex)
+                    {
+                        DeviceOrchestrator.LogDiag($"      orphan key delete FAILED: {ex.GetType().Name}");
+                    }
+                    created = SetupDiCreateDeviceInfoW(dis, instId, ref classGuid, desc,
+                            IntPtr.Zero, 0, devInfoHandle.AddrOfPinnedObject());
+                    createErr = created ? 0 : Marshal.GetLastWin32Error();
+                }
+
+                if (!created)
                 {
                     DeviceOrchestrator.LogDiag(
-                        $"      SetupDiCreateDeviceInfoW({instId}) FAILED (Win32={Marshal.GetLastWin32Error()})");
+                        $"      SetupDiCreateDeviceInfoW({instId}) FAILED (Win32={createErr})");
                     return new Result(false, null);
                 }
 
@@ -435,6 +467,8 @@ internal static class DeviceNodeCreator
 
     [DllImport("SetupAPI.dll", SetLastError = true)]
     private static extern bool SetupDiDestroyDeviceInfoList(IntPtr DeviceInfoSet);
+
+    private const int ERROR_DEVINST_ALREADY_EXISTS = unchecked((int)0xE0000207);
 
     [DllImport("newdev.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern bool UpdateDriverForPlugAndPlayDevicesW(IntPtr hwndParent, string HardwareId,
