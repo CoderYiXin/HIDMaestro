@@ -1,4 +1,4 @@
-// The Triton raw path lands on the controller report, not the lizard mouse
+﻿// The Triton raw path lands on the controller report, not the lizard mouse
 // (issue #58).
 //
 // The reported symptom was a virtual steam-controller-2 tearing the host's
@@ -171,9 +171,15 @@ static class ValveRawPathCheck
 
         public bool Opened => _h != INVALID;
         public void Reset() { lock (_frames) _frames.Clear(); }
-        public byte[]? FirstFrame()
+
+        /// <summary>The first frame carrying this submission's sentinel
+        /// byte. The persona streams idle frames the whole time it is
+        /// alive, so taking whatever arrived first reads an idle frame
+        /// about half the time and reports its rolling byte as the
+        /// submitted one.</summary>
+        public byte[]? FirstFrameWith(byte seq)
         {
-            lock (_frames) return _frames.FirstOrDefault(f => f.Length > 1);
+            lock (_frames) return _frames.FirstOrDefault(f => f.Length > 1 && f[1] == seq);
         }
         public byte[] AllReportIds()
         {
@@ -196,14 +202,20 @@ static class ValveRawPathCheck
         return f;
     }
 
-    /// <summary>Submit for a while, then hand back the first real frame the
-    /// host read.</summary>
-    static byte[]? DriveAndRead(Listener l, Action submit)
+    /// <summary>Submit for a while, then hand back the frame carrying this
+    /// submission's sentinel. Idle frames share the wire, so the sentinel
+    /// is what tells the submitted frame apart from them.</summary>
+    static byte[]? DriveAndRead(Listener l, byte seq, Action submit)
     {
         l.Reset();
         for (int i = 0; i < 40; i++) { submit(); Thread.Sleep(5); }
-        Thread.Sleep(200);
-        return l.FirstFrame();
+        for (int i = 0; i < 20; i++)
+        {
+            var hit = l.FirstFrameWith(seq);
+            if (hit != null) return hit;
+            Thread.Sleep(50);
+        }
+        return null;
     }
 
     static int Main()
@@ -257,7 +269,7 @@ static class ValveRawPathCheck
 
             // 1. Data-only, the contract SubmitRawReport documents.
             var frame = BuildFrame(0x11);
-            var got = DriveAndRead(listener, () => c.SubmitRawReport(frame.AsSpan(1)));
+            var got = DriveAndRead(listener, 0x11, () => c.SubmitRawReport(frame.AsSpan(1)));
             Check("data-only SubmitRawReport reaches the host", got != null,
                   got != null ? $"len={got.Length}" : "no frame");
             if (got != null)
@@ -270,14 +282,14 @@ static class ValveRawPathCheck
 
             // 2. Full frame, report id already present.
             frame = BuildFrame(0x22);
-            got = DriveAndRead(listener, () => c.SubmitRawReport(frame));
+            got = DriveAndRead(listener, 0x22, () => c.SubmitRawReport(frame));
             Check("a full frame arrives unshifted",
                   got is { Length: > 1 } && got[0] == StateReport && got[1] == 0x22,
                   got is { Length: > 1 } ? $"id=0x{got[0]:X2} byte1=0x{got[1]:X2}" : "no frame");
 
             // 3. The explicit always-verbatim entry point.
             frame = BuildFrame(0x33);
-            got = DriveAndRead(listener, () => c.SubmitRawExtendedReport(frame));
+            got = DriveAndRead(listener, 0x33, () => c.SubmitRawExtendedReport(frame));
             Check("SubmitRawExtendedReport arrives verbatim",
                   got is { Length: > 1 } && got[0] == StateReport && got[1] == 0x33,
                   got is { Length: > 1 } ? $"id=0x{got[0]:X2} byte1=0x{got[1]:X2}" : "no frame");

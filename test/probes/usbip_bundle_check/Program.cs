@@ -1,4 +1,4 @@
-// Bundled-transport deploy check (issue #39).
+﻿// Bundled-transport deploy check (issue #39).
 //
 // Composite USB personas must work with nothing for a user to install,
 // which means the USB transport ships inside HIDMaestro.Core.dll and
@@ -41,9 +41,12 @@ internal static class Program
         Console.WriteLine($"  [{(cond ? "PASS" : "FAIL")}] {name}{(detail.Length > 0 ? "  " + detail : "")}");
     }
 
-    const string ExpectedSha =
-        "51620fa5f9f8be5932bc9d786deee557ce06d5407a99cab490dcfac71f185fea";
-    const string InstallerRes = "HIDMaestro.Resources.USBip-0.9.7.7-x64.exe";
+    // Read the pin from the code under test rather than repeating it.
+    // A probe that carries its own copy of the version, the file name and
+    // the digest goes stale the moment the pin moves, and then it reports
+    // a missing bundle when the bundle is fine.
+    static string ExpectedSha => UsbipDriverInstaller.InstallerSha256;
+    static string InstallerRes => "HIDMaestro.Resources." + UsbipDriverInstaller.InstallerFile;
     const string NoticeRes = "HIDMaestro.Resources.THIRD-PARTY-NOTICES.txt";
 
     static int Main()
@@ -69,13 +72,16 @@ internal static class Program
         }
         Check("embedded installer is the upstream release byte-for-byte",
               embeddedHash == ExpectedSha, embeddedHash);
-        Check("embedded installer is the expected size", embeddedSize == 33_226_344,
+        // The digest above already pins the bytes exactly. This asserts
+        // the resource is a whole installer rather than a stub.
+        Check("embedded installer is a full binary", embeddedSize > 10_000_000,
               $"{embeddedSize:N0} bytes");
 
         // ── Extraction ───────────────────────────────────────────────────
         Console.WriteLine("\n-- Deploy: extraction and verification --");
-        string dir = Path.Combine(Path.GetTempPath(), "HIDMaestro_usbip_0.9.7.7");
-        string exe = Path.Combine(dir, "USBip-0.9.7.7-x64.exe");
+        string dir = Path.Combine(Path.GetTempPath(),
+                                  "HIDMaestro_usbip_" + UsbipDriverInstaller.Version);
+        string exe = Path.Combine(dir, UsbipDriverInstaller.InstallerFile);
         string notice = Path.Combine(dir, "THIRD-PARTY-NOTICES.txt");
 
         // Start from nothing so extraction actually runs.

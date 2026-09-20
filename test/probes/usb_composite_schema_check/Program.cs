@@ -1,4 +1,4 @@
-// Composite USB persona schema check (issue #39).
+﻿// Composite USB persona schema check (issue #39).
 //
 // Originally guarded the additive data-plumbing stage; now that the
 // USB/IP backend exists, this probe asserts the shipped end-state:
@@ -111,7 +111,10 @@ internal static class Program
         // with the license notice redistribution requires.
         Console.WriteLine("\n-- Bundled transport --");
         var asm = typeof(HMProfile).Assembly;
-        const string installerRes = "HIDMaestro.Resources.USBip-0.9.7.7-x64.exe";
+        // The name and the digest come from the code under test, so the
+        // probe tracks the pin instead of going stale behind it.
+        string installerRes =
+            "HIDMaestro.Resources." + UsbipDriverInstaller.InstallerFile;
         const string noticeRes = "HIDMaestro.Resources.THIRD-PARTY-NOTICES.txt";
         var resNames = asm.GetManifestResourceNames();
 
@@ -125,7 +128,7 @@ internal static class Program
                 string hex = Convert.ToHexString(
                     System.Security.Cryptography.SHA256.HashData(s)).ToLowerInvariant();
                 Check("embedded installer matches the upstream release SHA256",
-                      hex == "51620fa5f9f8be5932bc9d786deee557ce06d5407a99cab490dcfac71f185fea", hex);
+                      hex == UsbipDriverInstaller.InstallerSha256, hex);
             }
         }
         Check("BSD-2-Clause notice ships with it (license requirement)", resNames.Contains(noticeRes));
