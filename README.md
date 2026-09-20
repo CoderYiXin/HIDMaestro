@@ -45,10 +45,10 @@ ctrl.SubmitState(new HMGamepadState { Buttons = HMButton.A });
 
 ## Quick start
 
-Requirements: Visual Studio 2022+, Windows SDK/WDK 10.0.26100.0, .NET 10.
+Requirements: Visual Studio 2022+ with the MSVC x64 and ARM64 build tools, Windows SDK/WDK 10.0.26100.0, .NET 10. Runs on x64 and ARM64 Windows. `HIDMaestro.Core.dll` is one AnyCPU assembly that carries a driver payload for each and picks the one matching the machine it is on.
 
 ```bash
-# Build the native driver + companion + SDK together (idempotent).
+# Build the native driver + companion for x64 and ARM64, then the SDK (idempotent).
 scripts\build_all.cmd
 
 # Minimal SDK consumer
@@ -263,9 +263,9 @@ ctrl.UsbAudio!.Output.FramesReceived += (out_, pcm) => { /* speaker + haptic PCM
 ctrl.UsbAudio.Microphone.Submit(micPcm);
 ```
 
-That is the whole setup. Composite personas create like any other profile, because the USB transport they need ships **inside `HIDMaestro.Core.dll`** and installs itself the first time one is created, exactly the way the UMDF2 driver already does. No second package, no separate download, nothing for a user to go find. The bundled component is [usbip-win2](https://github.com/vadimgrn/usbip-win2) 0.9.7.7, BSD-2-Clause and WHLK-certified, redistributed unmodified with its notice, and verified against the upstream release's published SHA256 both when the SDK is built and again before it is ever executed. Windows re-enumerates the USB root hubs once during that one-time install, so devices blink for a moment on the very first composite controller a machine ever creates.
+That is the whole setup. Composite personas create like any other profile, because the USB transport they need ships **inside `HIDMaestro.Core.dll`** and installs itself the first time one is created, exactly the way the UMDF2 driver already does. No second package, no separate download, nothing for a user to go find. The bundled component is [usbip-win2](https://github.com/vadimgrn/usbip-win2) 0.9.7.5, BSD-2-Clause, Microsoft-signed for x64 and ARM64, redistributed unmodified with its notice, and verified against the upstream release's published SHA256 both when the SDK is built and again before it is ever executed. A machine that already has a working usbip-win2 keeps the one it has: the SDK installs its own copy only where none answers. Windows re-enumerates the USB root hubs once during that one-time install, so devices blink for a moment on the very first composite controller a machine ever creates.
 
-Every device behavior stays in HIDMaestro's own user-mode code: the SDK runs an in-process USB/IP device server on loopback, including the 1 ms isochronous audio pacing. The version pin is deliberate, since 0.9.7.8 has two open kernel-pool-corruption reports ([usbip-win2#180](https://github.com/vadimgrn/usbip-win2/issues/180), [usbip-win2#181](https://github.com/vadimgrn/usbip-win2/issues/181)).
+Every device behavior stays in HIDMaestro's own user-mode code: the SDK runs an in-process USB/IP device server on loopback, including the 1 ms isochronous audio pacing. The version pin is deliberate. 0.9.7.5 is the last release to publish an ARM64 build before 0.9.8.0, 0.9.7.8 has two open kernel-pool-corruption reports ([usbip-win2#180](https://github.com/vadimgrn/usbip-win2/issues/180), [usbip-win2#181](https://github.com/vadimgrn/usbip-win2/issues/181)), and nothing between 0.9.7.5 and 0.9.7.7 touches the interface HIDMaestro uses.
 
 Measured on the Atom Z8350 floor machine: full 4-channel render and live microphone capture through `usbaudio.sys` with no frame starvation, attach in ~316 ms, and idle cost with the transport installed but no device attached indistinguishable from baseline (0.35% vs 0.24% CPU). The composite path runs as scenario S45 of the battery, so a broken persona fails the release gate like anything else.
 

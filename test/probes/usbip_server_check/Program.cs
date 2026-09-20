@@ -1,8 +1,8 @@
-// USB/IP server protocol check (issue #39).
+﻿// USB/IP server protocol check (issue #39).
 //
 // Plays usbip-win2's role over loopback TCP against the real in-process
 // server + emulated composite device, no kernel driver involved. Every
-// wire expectation below is the 0.9.7.7 receive path's, read at source
+// wire expectation below is the 0.9.7.5 receive path's, read at source
 // (drivers/ude/wsk_receive.cpp, vhci_ioctl.cpp, include/usbip/proto*.h):
 //
 //   - import handshake: op_common(0x0111, OP_REP_IMPORT, ST_OK) + the

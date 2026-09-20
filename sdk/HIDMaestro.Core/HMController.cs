@@ -33,7 +33,8 @@ public sealed class HMController : IDisposable
     /// devnode instance id, the container id and, for USB/IP personas, the
     /// USB serial derive from it, so creating a controller with the same
     /// key again brings back the same device paths (issue #60). A caller
-    /// that passed no key sees <c>index:&lt;N&gt;</c> here.</summary>
+    /// that passed no key sees <c>index:&lt;N&gt;</c> here, and passing that
+    /// string back in recreates the same default identity.</summary>
     public string IdentityKey { get; }
     public HMProfile Profile { get; }
 

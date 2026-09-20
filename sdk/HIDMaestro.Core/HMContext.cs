@@ -345,7 +345,9 @@ public sealed class HMContext : IDisposable
     /// keep it across those lives.
     ///
     /// <para>A null or empty key uses the controller index, which is what
-    /// <see cref="CreateController(HMProfile)"/> does. Two live controllers
+    /// <see cref="CreateController(HMProfile)"/> does. The form
+    /// <c>index:&lt;N&gt;</c> is reserved for that default: it names the
+    /// identity of index N wherever it is passed. Two live controllers
     /// in one context cannot share a key; dispose the first before creating
     /// the second. A different profile at the same key keeps the identity
     /// and refreshes the descriptor.</para></summary>
