@@ -33,7 +33,13 @@ namespace HIDMaestro.Internal.Usbip;
 internal static class UsbipDriverInstaller
 {
     public const string Version = "0.9.7.5";
-    private const string InstallerFile = "USBip-" + Version + "-x64-release.exe";
+    /// <summary>The installer matching this OS. 0.9.7.5 publishes both
+    /// architectures, so one AnyCPU assembly carries both and picks here.</summary>
+    private static string InstallerFile =>
+        RuntimeInformation.OSArchitecture == Architecture.Arm64
+            ? "USBip-" + Version + "-arm64-release.exe"
+            : "USBip-" + Version + "-x64-release.exe";
+
     private const string NoticeFile = "THIRD-PARTY-NOTICES.txt";
 
     /// <summary>SHA256 of the upstream release asset, as published by the
@@ -41,8 +47,10 @@ internal static class UsbipDriverInstaller
     /// verifies the same digest at build time, so a corrupted or
     /// substituted binary fails the build; this is the runtime half of
     /// that check, covering the extracted copy.</summary>
-    private const string InstallerSha256 =
-        "6f429dd47cfe371dbd275ced5fc512494918683b07853cbdf2d8c25e4274fd74";
+    private static string InstallerSha256 =>
+        RuntimeInformation.OSArchitecture == Architecture.Arm64
+            ? "0dc47a895ab6dddcfa5ef4cd12014f9f3515770bec706773c9e9f5f876ebccb5"
+            : "6f429dd47cfe371dbd275ced5fc512494918683b07853cbdf2d8c25e4274fd74";
 
     private static readonly object s_lock = new();
     private static bool s_verifiedThisProcess;

@@ -366,7 +366,7 @@ internal static class SwdDeviceFactory
                 Directory.CreateDirectory(targetDir);
 
                 var asm = typeof(SwdDeviceFactory).Assembly;
-                using var s = asm.GetManifestResourceStream("HIDMaestro.Resources.hmswd.exe");
+                using var s = asm.GetManifestResourceStream(DriverBuilder.NativePrefix + "hmswd.exe");
                 if (s == null) return null;
 
                 // Only re-extract if missing or different length (cheap check).

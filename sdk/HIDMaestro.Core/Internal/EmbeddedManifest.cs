@@ -27,14 +27,18 @@ internal static class EmbeddedManifest
 {
     /// <summary>Resources whose bytes determine "is the installed driver
     /// equivalent to what's embedded in this assembly?" Order is fixed
-    /// so the hash is stable across builds with identical inputs.</summary>
-    private static readonly string[] HashedResources = new[]
+    /// so the hash is stable across builds with identical inputs.
+    /// <para>The names carry this machine's architecture, so an x64 host
+    /// and an ARM64 host hash differently even when nothing else changed.
+    /// That is the behavior we want: an installed driver is equivalent to
+    /// the embedded one only when the architectures match.</para></summary>
+    private static string[] HashedResources => new[]
     {
-        "HIDMaestro.Resources.HIDMaestro.dll",
-        "HIDMaestro.Resources.HMXInput.dll",
-        "HIDMaestro.Resources.hidmaestro.inf",
-        "HIDMaestro.Resources.hidmaestro_xusb.inf",
-        "HIDMaestro.Resources.hmswd.exe",
+        DriverBuilder.NativePrefix + "HIDMaestro.dll",
+        DriverBuilder.NativePrefix + "HMXInput.dll",
+        DriverBuilder.NativePrefix + "hidmaestro.inf",
+        DriverBuilder.NativePrefix + "hidmaestro_xusb.inf",
+        DriverBuilder.NativePrefix + "hmswd.exe",
     };
 
     private static string? s_cachedHash;

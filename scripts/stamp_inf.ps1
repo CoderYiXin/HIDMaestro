@@ -1,4 +1,4 @@
-# Read a source INF, update its DriverVer line with today's date and a
+﻿# Read a source INF, update its DriverVer line with today's date and a
 # build-unique 4th version component, and write the result to the
 # destination path.
 #
@@ -23,7 +23,8 @@
 
 param(
     [Parameter(Mandatory=$true)][string]$Source,
-    [Parameter(Mandatory=$true)][string]$Dest
+    [Parameter(Mandatory=$true)][string]$Dest,
+    [ValidateSet('x64', 'arm64')][string]$Architecture = 'x64'
 )
 
 if (!(Test-Path -LiteralPath $Source)) {
@@ -31,9 +32,23 @@ if (!(Test-Path -LiteralPath $Source)) {
     exit 1
 }
 
-$content = Get-Content -Raw -LiteralPath $Source
+$content = Get-Content -Raw -LiteralPath $Source -Encoding UTF8
+
+# Decorate the model sections for the target. The committed sources name
+# a real architecture so they stay reviewable and installable as-is, so
+# both forms are handled: the NT$ARCH$ placeholder and the literal
+# NTamd64 the x64 sources carry.
+$infArchitecture = if ($Architecture -eq 'arm64') { 'ARM64' } else { 'amd64' }
+$content = $content.Replace('NT$ARCH$', "NT$infArchitecture")
+if ($Architecture -eq 'arm64') {
+    $content = [regex]::Replace($content, 'NTamd64', 'NTARM64', 'IgnoreCase')
+}
+if ($content -notmatch "NT$infArchitecture") {
+    Write-Error "stamp_inf: $Source carries no NT$infArchitecture model section after stamping"
+    exit 1
+}
 $now   = Get-Date
-$date  = $now.ToString('MM/dd/yyyy')
+$date  = $now.ToString('MM/dd/yyyy', [Globalization.CultureInfo]::InvariantCulture)
 $build = [int]$now.ToString('HHmm')   # int-cast drops a leading zero (0930 -> 930)
 
 # Match: DriverVer [ws] = [ws] MM/dd/yyyy,N.N.N.N  (any 4-part version)

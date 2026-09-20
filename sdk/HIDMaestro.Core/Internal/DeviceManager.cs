@@ -715,10 +715,11 @@ public static class DeviceManager
     }
 
     /// <summary>Locate devcon.exe under the installed WDK. Returns the first
-    /// match under C:\Program Files (x86)\Windows Kits\10\Tools\*\x64\, or
-    /// null if no WDK Tools directory is found. Result is cached for the
-    /// lifetime of the process: a missing devcon won't re-probe on every
-    /// fallback invocation.</summary>
+    /// match under C:\Program Files (x86)\Windows Kits\10\Tools\*\&lt;arch&gt;\,
+    /// where arch is the one this machine runs, or null if no WDK Tools
+    /// directory is found. Result is cached for the lifetime of the
+    /// process: a missing devcon won't re-probe on every fallback
+    /// invocation.</summary>
     private static string? s_devconPath;
     private static bool s_devconProbed;
     private static string? TryLocateDevcon()
@@ -729,9 +730,13 @@ public static class DeviceManager
         {
             string root = @"C:\Program Files (x86)\Windows Kits\10\Tools";
             if (!System.IO.Directory.Exists(root)) return null;
+            string arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture
+                          == System.Runtime.InteropServices.Architecture.Arm64
+                ? "arm64"
+                : "x64";
             foreach (var dir in System.IO.Directory.EnumerateDirectories(root))
             {
-                string candidate = System.IO.Path.Combine(dir, "x64", "devcon.exe");
+                string candidate = System.IO.Path.Combine(dir, arch, "devcon.exe");
                 if (System.IO.File.Exists(candidate))
                 {
                     s_devconPath = candidate;

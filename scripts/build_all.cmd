@@ -1,79 +1,22 @@
-﻿@echo off
-setlocal enabledelayedexpansion
-
-:: ==========================================================================
-:: build_all.cmd - One-shot build for a fresh clone.
-::
-:: HIDMaestro has native driver components (HIDMaestro.dll + HMXInput.dll)
-:: that MUST exist in build\ before the .NET SDK is compiled. The SDK's
-:: PackResources pre-build target copies those binaries into Resources/
-:: to embed them into HIDMaestro.Core.dll, but the pre-build is evaluated
-:: AFTER MSBuild's item-evaluation phase - if build\ is empty on a fresh
-:: clone, the embedded-resource glob emits zero items and the assembly
-:: compiles with NO driver embedded.
-::
-:: This script performs the correct build order in one pass:
-::   1. scripts\build.cmd           - driver.c -> build\HIDMaestro.dll
-::                                    (also stamps INFs)
-::   2. scripts\build_companion.cmd - companion.c -> build\HMXInput.dll
-::   3. dotnet build                - first SDK build populates Resources/
-::   4. dotnet build (again)        - second SDK build embeds fresh bytes
-::
-:: After this completes, `dotnet run --project example\SdkDemo` works
-:: and `HIDMaestroTest.exe` in test\bin\... can deploy virtual controllers.
-:: ==========================================================================
-
-echo.
-echo ==========================================================================
-echo   HIDMaestro full build (driver + companion + SDK, two-phase)
-echo ==========================================================================
-
-call "%~dp0build.cmd"
-if errorlevel 1 (
-    echo.
-    echo ERROR: scripts\build.cmd failed. See output above.
-    exit /b 1
+@echo off
+setlocal
+:: Build both native OS payloads before the universal managed SDK.
+for %%A in (x64 arm64) do (
+    call "%~dp0build.cmd" %%A
+    if errorlevel 1 exit /b 1
+    call "%~dp0build_companion.cmd" %%A
+    if errorlevel 1 exit /b 1
 )
-
-call "%~dp0build_companion.cmd"
-if errorlevel 1 (
-    echo.
-    echo ERROR: scripts\build_companion.cmd failed. See output above.
-    exit /b 1
-)
-
 call "%~dp0build_openvr.cmd"
-if errorlevel 1 (
-    echo.
-    echo ERROR: scriptsuild_openvr.cmd failed. See output above.
-    exit /b 1
-)
+if errorlevel 1 exit /b 1
 
-echo.
-echo ---- SDK phase 1 (populates Resources/ from build/) ----
+:: Two passes, and both are required. The EmbeddedResource globs are
+:: evaluated before PackResources runs, so the first pass only stages
+:: Resources\ and the second is what embeds the staged bytes. A single
+:: pass on a clean tree produces a small assembly with no driver in it.
 dotnet build "%~dp0..\sdk\HIDMaestro.Core\HIDMaestro.Core.csproj" -nologo -v minimal
-if errorlevel 1 (
-    echo.
-    echo ERROR: SDK build phase 1 failed. See output above.
-    exit /b 1
-)
-
-echo.
-echo ---- SDK phase 2 (embeds fresh driver binaries) ----
+if errorlevel 1 exit /b 1
 dotnet build "%~dp0..\sdk\HIDMaestro.Core\HIDMaestro.Core.csproj" -nologo -v minimal
-if errorlevel 1 (
-    echo.
-    echo ERROR: SDK build phase 2 failed. See output above.
-    exit /b 1
-)
-
-echo.
-echo ==========================================================================
-echo   BUILD SUCCEEDED
-echo ==========================================================================
-echo.
-echo   You can now run:
-echo     dotnet run --project example\SdkDemo
-echo     dotnet build test\HIDMaestroTest.csproj
-echo.
-endlocal
+if errorlevel 1 exit /b 1
+echo BUILD SUCCEEDED: x64 and ARM64 native payloads, universal HIDMaestro.Core.dll
+exit /b 0

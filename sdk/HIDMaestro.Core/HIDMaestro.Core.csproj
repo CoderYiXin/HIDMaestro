@@ -2,8 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <!-- AnyCPU on purpose. The assembly carries a driver payload for
+         each architecture and picks at extraction time, so one DLL
+         runs on x64 and ARM64 Windows alike. Pinning a platform here
+         would make the ARM64 half unreachable. -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
@@ -33,14 +37,14 @@
 
     <ItemGroup>
       <!-- Driver binaries + INFs from build/ -->
-      <_HMDriverFiles Include="$(HMBuildDir)HIDMaestro.dll" />
-      <_HMDriverFiles Include="$(HMBuildDir)HMXInput.dll" />
-      <_HMDriverFiles Include="$(HMBuildDir)hidmaestro.inf" />
-      <_HMDriverFiles Include="$(HMBuildDir)hidmaestro_xusb.inf" />
+      <_HMDriverName Include="HIDMaestro.dll" />
+      <_HMDriverName Include="HMXInput.dll" />
+      <_HMDriverName Include="hidmaestro.inf" />
+      <_HMDriverName Include="hidmaestro_xusb.inf" />
       <!-- hmswd.exe: SWD device creation helper, shelled out to by
            SwdDeviceFactory for the ROOT\ → SWD\ migration (slot-1-skip fix).
            Embedded here so single-file deployment still has it. -->
-      <_HMDriverFiles Include="$(HMBuildDir)hmswd.exe" Condition="Exists('$(HMBuildDir)hmswd.exe')" />
+      <_HMDriverName Include="hmswd.exe" />
 
       <!-- OpenVR driver package (issue #32): the entire SteamVR driver
            folder from build\openvr\hidmaestro, embedded with its layout
@@ -51,19 +55,19 @@
                   Exclude="$(HMBuildDir)openvr\hidmaestro\**\*.lib;$(HMBuildDir)openvr\hidmaestro\**\*.exp;$(HMBuildDir)openvr\hidmaestro\**\*.pdb" />
 
       <!-- signtool.exe + its SXS dep tree (from WDK x64) -->
-      <_HMSigntool Include="$(HMWdkBin)x64\signtool.exe" />
-      <_HMSigntool Include="$(HMWdkBin)x64\signtool.exe.manifest" />
-      <_HMSigntool Include="$(HMWdkBin)x64\mssign32.dll" />
-      <_HMSigntool Include="$(HMWdkBin)x64\Microsoft.Windows.Build.Signing.mssign32.dll.manifest" />
-      <_HMSigntool Include="$(HMWdkBin)x64\wintrust.dll" />
-      <_HMSigntool Include="$(HMWdkBin)x64\wintrust.dll.ini" />
-      <_HMSigntool Include="$(HMWdkBin)x64\Microsoft.Windows.Build.Signing.wintrust.dll.manifest" />
-      <_HMSigntool Include="$(HMWdkBin)x64\appxsip.dll" />
-      <_HMSigntool Include="$(HMWdkBin)x64\Microsoft.Windows.Build.Appx.AppxSip.dll.manifest" />
-      <_HMSigntool Include="$(HMWdkBin)x64\appxpackaging.dll" />
-      <_HMSigntool Include="$(HMWdkBin)x64\Microsoft.Windows.Build.Appx.AppxPackaging.dll.manifest" />
-      <_HMSigntool Include="$(HMWdkBin)x64\opcservices.dll" />
-      <_HMSigntool Include="$(HMWdkBin)x64\Microsoft.Windows.Build.Appx.OpcServices.dll.manifest" />
+      <_HMSignName Include="signtool.exe" />
+      <_HMSignName Include="signtool.exe.manifest" />
+      <_HMSignName Include="mssign32.dll" />
+      <_HMSignName Include="Microsoft.Windows.Build.Signing.mssign32.dll.manifest" />
+      <_HMSignName Include="wintrust.dll" />
+      <_HMSignName Include="wintrust.dll.ini" />
+      <_HMSignName Include="Microsoft.Windows.Build.Signing.wintrust.dll.manifest" />
+      <_HMSignName Include="appxsip.dll" />
+      <_HMSignName Include="Microsoft.Windows.Build.Appx.AppxSip.dll.manifest" />
+      <_HMSignName Include="appxpackaging.dll" />
+      <_HMSignName Include="Microsoft.Windows.Build.Appx.AppxPackaging.dll.manifest" />
+      <_HMSignName Include="opcservices.dll" />
+      <_HMSignName Include="Microsoft.Windows.Build.Appx.OpcServices.dll.manifest" />
 
       <!-- inf2cat.exe + its minimum dep set (from WDK x86).
            apivalidator.exe / microsoft.kits.drivers.apivalidator.dll /
@@ -77,11 +81,22 @@
       <_HMInf2cat Include="$(HMWdkBin)x86\Microsoft.UniversalStore.HardwareWorkflow.InfReader.dll" />
       <_HMInf2cat Include="$(HMWdkBin)x86\Microsoft.UniversalStore.HardwareWorkflow.SubmissionBuilder.dll" />
       <_HMInf2cat Include="$(HMWdkBin)x86\Microsoft.Kits.Logger.dll" />
+      <!-- One payload set per target architecture. Driver, XUSB
+           companion, SWD helper, both stamped INFs and the signing
+           tool tree all differ by architecture, and the machine that
+           installs them is the one that runs them. -->
+      <_HMX64File Include="@(_HMDriverName-&gt;'$(HMBuildDir)%(Identity)');@(_HMSignName-&gt;'$(HMWdkBin)x64\%(Identity)')" />
+      <_HMArm64File Include="@(_HMDriverName-&gt;'$(HMBuildDir)arm64\%(Identity)');@(_HMSignName-&gt;'$(HMWdkBin)arm64\%(Identity)')" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_HMDriverFiles)" DestinationFolder="$(MSBuildThisFileDirectory)Resources\" SkipUnchangedFiles="true" />
+    <Error Condition="!Exists('$(HMBuildDir)HIDMaestro.dll')"
+           Text="No x64 driver in $(HMBuildDir). Run scripts\build_all.cmd, which builds both architectures before this project." />
+    <Error Condition="!Exists('$(HMBuildDir)arm64\HIDMaestro.dll')"
+           Text="No ARM64 driver in $(HMBuildDir)arm64\. Run scripts\build_all.cmd, which builds both architectures before this project." />
+
+    <Copy SourceFiles="@(_HMX64File)" DestinationFolder="$(MSBuildThisFileDirectory)Resources\x64\" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_HMArm64File)" DestinationFolder="$(MSBuildThisFileDirectory)Resources\arm64\" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_HMVrFiles)" DestinationFiles="@(_HMVrFiles->'$(MSBuildThisFileDirectory)Resources\vr\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(_HMVrFiles)' != ''" />
-    <Copy SourceFiles="@(_HMSigntool)"   DestinationFolder="$(MSBuildThisFileDirectory)Resources\" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_HMInf2cat)"    DestinationFolder="$(MSBuildThisFileDirectory)Resources\" SkipUnchangedFiles="true" />
 
     <!-- usbip-win2 0.9.7.5 installer, bundled (issue #39). Composite USB
@@ -103,6 +118,10 @@
       <HMUsbipSha256>6f429dd47cfe371dbd275ced5fc512494918683b07853cbdf2d8c25e4274fd74</HMUsbipSha256>
       <HMUsbipFile>$(MSBuildThisFileDirectory)Resources\$(HMUsbipAsset)</HMUsbipFile>
       <HMUsbipUrl>https://github.com/vadimgrn/usbip-win2/releases/download/v.$(HMUsbipVersion)/$(HMUsbipAsset)</HMUsbipUrl>
+      <HMUsbipArmAsset>USBip-$(HMUsbipVersion)-arm64-release.exe</HMUsbipArmAsset>
+      <HMUsbipArmSha256>0dc47a895ab6dddcfa5ef4cd12014f9f3515770bec706773c9e9f5f876ebccb5</HMUsbipArmSha256>
+      <HMUsbipArmFile>$(MSBuildThisFileDirectory)Resources\$(HMUsbipArmAsset)</HMUsbipArmFile>
+      <HMUsbipArmUrl>https://github.com/vadimgrn/usbip-win2/releases/download/v.$(HMUsbipVersion)/$(HMUsbipArmAsset)</HMUsbipArmUrl>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="$(HMUsbipUrl)"
@@ -116,6 +135,20 @@
     </GetFileHash>
     <Error Condition="'$(_HMUsbipActualHash.ToLowerInvariant())' != '$(HMUsbipSha256)'"
            Text="usbip-win2 installer hash mismatch. Expected $(HMUsbipSha256), got $(_HMUsbipActualHash). Delete $(HMUsbipFile) and rebuild to re-fetch." />
+
+    <!-- ARM64 transport. 0.9.7.5 is the last release to publish one, which
+         is why the pin sits here rather than on a later version. -->
+    <DownloadFile SourceUrl="$(HMUsbipArmUrl)"
+                  DestinationFolder="$(MSBuildThisFileDirectory)Resources"
+                  DestinationFileName="$(HMUsbipArmAsset)"
+                  SkipUnchangedFiles="true"
+                  Condition="!Exists('$(HMUsbipArmFile)')" />
+
+    <GetFileHash Files="$(HMUsbipArmFile)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="_HMUsbipArmActualHash" />
+    </GetFileHash>
+    <Error Condition="'$(_HMUsbipArmActualHash.ToLowerInvariant())' != '$(HMUsbipArmSha256)'"
+           Text="usbip-win2 ARM64 installer hash mismatch. Expected $(HMUsbipArmSha256), got $(_HMUsbipArmActualHash). Delete $(HMUsbipArmFile) and rebuild to re-fetch." />
 
     <Copy SourceFiles="$(MSBuildThisFileDirectory)THIRD-PARTY-NOTICES.txt"
           DestinationFolder="$(MSBuildThisFileDirectory)Resources\" SkipUnchangedFiles="true" />
@@ -132,12 +165,26 @@
          throws at runtime. And when Resources/ has STALE bytes from a prior
          build, they get silently embedded before the current PackResources
          overwrites them. The canonical fix is `scripts/build_all.cmd`:
-         first build driver + companion → build/, then run `dotnet build`
-         ONCE to populate Resources/ (which will emit a warning-size DLL),
-         then run `dotnet build` AGAIN to embed the fresh bytes. CI and
-         the release recipe both do this two-phase build. -->
-    <EmbeddedResource Include="Resources\**\*" Exclude="Resources\vr\**\*">
+         first build driver + companion for both architectures, then run
+         `dotnet build` ONCE to populate Resources/ (which will emit a
+         warning-size DLL), then run `dotnet build` AGAIN to embed the
+         fresh bytes. The release recipe does this two-phase build.
+
+         This glob is flat on purpose. It takes the architecture-neutral
+         payload only, and the two globs below take the per-architecture
+         sets out of Resources\x64 and Resources\arm64. -->
+    <EmbeddedResource Include="Resources\*">
       <LogicalName>HIDMaestro.Resources.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+
+    <!-- Architecture-specific payload. DriverBuilder picks the
+         namespace matching the OS it runs on, so one AnyCPU assembly
+         serves both x64 and ARM64 Windows. -->
+    <EmbeddedResource Include="Resources\x64\*">
+      <LogicalName>HIDMaestro.Native.x64.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\arm64\*">
+      <LogicalName>HIDMaestro.Native.arm64.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
 
     <!-- OpenVR driver package (issue #32). Nested logical names preserve

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -73,9 +74,20 @@ public static class DriverBuilder
 
     // ── Extraction ──────────────────────────────────────────────────────────
 
-    /// <summary>The full set of files we extract from embedded resources.
-    /// Names match the LogicalName suffix used in the csproj
-    /// (HIDMaestro.Resources.{Filename}{Extension}).</summary>
+    /// <summary>Logical-name prefix for the payload built for this
+    /// machine's architecture. The assembly is AnyCPU and carries both
+    /// sets, so the choice is made at extraction time rather than at
+    /// build time. Every lookup of a driver, INF, helper or signing tool
+    /// goes through here, including SwdDeviceFactory's and
+    /// EmbeddedManifest's.</summary>
+    internal static string NativePrefix =>
+        RuntimeInformation.OSArchitecture == Architecture.Arm64
+            ? "HIDMaestro.Native.arm64."
+            : "HIDMaestro.Native.x64.";
+
+    /// <summary>Architecture-specific payload: the driver, the XUSB
+    /// companion, the SWD helper, both stamped INFs and the signing tool
+    /// tree. The machine that installs these is the one that runs them.</summary>
     static readonly string[] EmbeddedFiles = new[]
     {
         // Drivers + INFs
@@ -99,6 +111,13 @@ public static class DriverBuilder
         "opcservices.dll",
         "Microsoft.Windows.Build.Appx.OpcServices.dll.manifest",
 
+    };
+
+    /// <summary>Architecture-neutral payload. inf2cat and its dependencies
+    /// are x86 and run under emulation on ARM64 Windows, so one copy
+    /// serves both targets.</summary>
+    static readonly string[] NeutralFiles = new[]
+    {
         // inf2cat.exe + minimum deps (x86)
         "Inf2Cat.exe",
         "inf2cat.exe.manifest",
@@ -109,6 +128,14 @@ public static class DriverBuilder
         "Microsoft.UniversalStore.HardwareWorkflow.SubmissionBuilder.dll",
         "Microsoft.Kits.Logger.dll",
     };
+
+    /// <summary>Every file the staging directory must hold, paired with
+    /// the manifest resource name it comes from.</summary>
+    private static IEnumerable<(string File, string Logical)> AllPayload()
+    {
+        foreach (string f in EmbeddedFiles) yield return (f, NativePrefix + f);
+        foreach (string f in NeutralFiles) yield return (f, "HIDMaestro.Resources." + f);
+    }
 
     /// <summary>Lazily extracts the embedded payload to a deterministic
     /// per-manifest-hash directory under %TEMP% and returns the path.
@@ -164,9 +191,8 @@ public static class DriverBuilder
             foreach (string name in asm.GetManifestResourceNames())
                 available[name] = name;
 
-            foreach (string file in EmbeddedFiles)
+            foreach (var (file, logical) in AllPayload())
             {
-                string logical = "HIDMaestro.Resources." + file;
                 if (!available.TryGetValue(logical, out var actual))
                     throw new InvalidOperationException(
                         $"Embedded resource '{logical}' not found in HIDMaestro.Core.dll. " +
@@ -193,12 +219,12 @@ public static class DriverBuilder
         try
         {
             var asm = typeof(DriverBuilder).Assembly;
-            foreach (string file in EmbeddedFiles)
+            foreach (var (file, logical) in AllPayload())
             {
                 string outPath = Path.Combine(dir, file);
                 if (!File.Exists(outPath)) return false;
 
-                using var stream = asm.GetManifestResourceStream("HIDMaestro.Resources." + file);
+                using var stream = asm.GetManifestResourceStream(logical);
                 if (stream == null) return false;
                 long expected = stream.Length;
                 long actual = new FileInfo(outPath).Length;
@@ -298,7 +324,11 @@ public static class DriverBuilder
             try { File.Delete(cat); } catch { }
         }
 
-        var (rc, output) = Run(inf2cat, $"/driver:\"{dir}\" /os:10_X64", workingDir: dir);
+        // The catalog names the architecture the INF is decorated for.
+        string catalogOs = RuntimeInformation.OSArchitecture == Architecture.Arm64
+            ? "10_ARM64"
+            : "10_X64";
+        var (rc, output) = Run(inf2cat, $"/driver:\"{dir}\" /os:{catalogOs}", workingDir: dir);
         if (rc != 0)
             throw new InvalidOperationException($"inf2cat failed: {output}");
 
