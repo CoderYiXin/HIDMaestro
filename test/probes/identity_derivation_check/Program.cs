@@ -1,4 +1,4 @@
-// Identity derivation check (issue #60). No elevation, no device.
+﻿// Identity derivation check (issue #60). No elevation, no device.
 //
 // Every id a virtual controller carries derives from its identity key, so
 // this probe pins the derivation itself:
@@ -97,10 +97,29 @@ internal static class Program
         Check("Resolve(\"   \") is the index", DeviceIdentity.Resolve("   ", 2).IsDefault);
         Check("keys are trimmed", Same(DeviceIdentity.Resolve("  chaseplane:0  ", 0), DeviceIdentity.Resolve("chaseplane:0", 0)));
         Check("keys are case-sensitive", DeviceIdentity.Resolve("A", 0).Token != DeviceIdentity.Resolve("a", 0).Token);
-        Check("the literal default key resolves to the default identity",
-              Same(DeviceIdentity.Resolve("index:4", 4), DeviceIdentity.ForIndex(4)) == false
-              && DeviceIdentity.Resolve("index:4", 4).Key == DeviceIdentity.ForIndex(4).Key,
-              "same key string, keyed derivation (documented: pass null for the index identity)");
+        // HMController.IdentityKey reports "index:N" for a keyless
+        // controller. Handing that back must give the identity it had, not
+        // a second token over the same hash: two parents on one
+        // ParentIdPrefix is bugcheck 0xCA and a machine that cannot boot.
+        Check("the literal default key IS the default identity",
+              Same(DeviceIdentity.Resolve("index:4", 4), DeviceIdentity.ForIndex(4)));
+        Check("and it is that index's identity wherever it is used",
+              Same(DeviceIdentity.Resolve("index:7", 0), DeviceIdentity.ForIndex(7)));
+        Check("a near miss stays a consumer key",
+              !DeviceIdentity.Resolve("index:007", 0).IsDefault && !DeviceIdentity.Resolve("Index:4", 0).IsDefault
+              && !DeviceIdentity.Resolve("index:-1", 0).IsDefault);
+
+        // The invariant behind it: a ParentIdPrefix belongs to one token.
+        {
+            var pool = new List<DeviceIdentity>();
+            for (int i = 0; i < 16; i++) { pool.Add(DeviceIdentity.ForIndex(i)); pool.Add(DeviceIdentity.Resolve($"index:{i}", (i + 5) % 16)); }
+            foreach (var k in new[] { "a", "A", "padforge:slot0", "padforge:slot1", "chaseplane:0", "index:007", "index", "index:" })
+                pool.Add(DeviceIdentity.Resolve(k, 0));
+            var byPrefix = pool.GroupBy(d => d.ParentIdPrefix, StringComparer.OrdinalIgnoreCase);
+            var shared = byPrefix.Where(g => g.Select(d => d.Token).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
+                                 .Select(g => g.Key + " <- " + string.Join(",", g.Select(d => d.Token).Distinct())).ToList();
+            Check("no two tokens share a ParentIdPrefix", shared.Count == 0, string.Join("; ", shared));
+        }
 
         // 4. USB serials through the descriptor store.
         using var ctx = new HMContext();

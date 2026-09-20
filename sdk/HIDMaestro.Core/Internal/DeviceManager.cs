@@ -435,6 +435,73 @@ public static class DeviceManager
     }
 
     /// <summary>
+    /// Clears every other parent under <paramref name="enumRoot"/>\<paramref name="enumerator"/>
+    /// that holds <paramref name="prefix"/> as its ParentIdPrefix, and says
+    /// whether the way is clear. Two parents of one enumerator with one
+    /// prefix make hidclass build the same HID child id twice, which PnP
+    /// answers with bugcheck 0xCA (duplicate PDO). A ROOT record is
+    /// re-enumerated at every boot, live or not, so it is removed either
+    /// way and a boot loop is what is at stake. An SWD record only
+    /// enumerates while its creator holds it, so only a live one counts.
+    /// False means a rival is still there and the caller must not create.
+    /// </summary>
+    internal static bool ClearParentIdPrefixRivals(string enumRoot, string enumerator, string token, string prefix)
+    {
+        string enumPath = $@"SYSTEM\CurrentControlSet\Enum\{enumRoot}\{enumerator}";
+        string[] names;
+        try
+        {
+            using var k = Registry.LocalMachine.OpenSubKey(enumPath);
+            names = k?.GetSubKeyNames() ?? Array.Empty<string>();
+        }
+        catch { names = Array.Empty<string>(); }
+
+        bool root = string.Equals(enumRoot, "ROOT", StringComparison.OrdinalIgnoreCase);
+        bool clear = true;
+        foreach (string name in names)
+        {
+            if (string.Equals(name, token, StringComparison.OrdinalIgnoreCase)) continue;
+            string? held;
+            try
+            {
+                using var ik = Registry.LocalMachine.OpenSubKey($@"{enumPath}\{name}");
+                held = ik?.GetValue("ParentIdPrefix") as string;
+            }
+            catch { continue; }
+            if (!string.Equals(held, prefix, StringComparison.OrdinalIgnoreCase)) continue;
+
+            string rival = $@"{enumRoot}\{enumerator}\{name}";
+            bool live = CM_Locate_DevNodeW(out _, rival, 0) == CR_SUCCESS;
+            if (!root && !live) continue;
+
+            if (!IsHidMaestroOwned(rival))
+            {
+                DeviceOrchestrator.LogDiag($"      {rival} holds ParentIdPrefix {prefix} and is not HIDMaestro-owned; refusing to create beside it");
+                clear = false;
+                continue;
+            }
+
+            DeviceOrchestrator.LogDiag($"      {rival} holds ParentIdPrefix {prefix}; removing it before create");
+            RemoveDevice(rival, timeoutMs: 120_000, forceFallbacks: true);
+
+            bool stillThere;
+            if (root)
+            {
+                try { using var ik = Registry.LocalMachine.OpenSubKey($@"{enumPath}\{name}"); stillThere = ik != null; }
+                catch { stillThere = true; }
+            }
+            else stillThere = CM_Locate_DevNodeW(out _, rival, 0) == CR_SUCCESS;
+
+            if (stillThere)
+            {
+                DeviceOrchestrator.LogDiag($"      {rival} survived removal; refusing to create a second parent on {prefix}");
+                clear = false;
+            }
+        }
+        return clear;
+    }
+
+    /// <summary>
     /// Removes a device and all its children, waits for removal to complete.
     /// Enumerates HID children first and removes them individually via DIF_REMOVE,
     /// then removes the parent. This prevents ghost HID children from surviving.

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
@@ -117,7 +117,34 @@ internal sealed class DeviceIdentity
     {
         if (string.IsNullOrWhiteSpace(key)) return ForIndex(index);
         key = key.Trim();
+
+        // A key in the default form IS the default identity of that index.
+        // HMController.IdentityKey reports "index:N" for a controller made
+        // without a key, and a consumer that hands it back (recreate with
+        // the old controller's key) must get the same identity it had.
+        // Before this, the same string derived a second token over the
+        // same hash: two parents named HM_0000 and HM_<hash> sharing one
+        // ParentIdPrefix. hidclass then built one HID child id under both,
+        // and PnP bugchecks 0xCA (duplicate PDO) on that. ROOT parents are
+        // re-enumerated at boot, so the machine could not start until one
+        // was removed in Safe Mode. Measured on 26200, 2026-09-20.
+        if (TryParseDefaultKey(key, out int defaultIndex)) return ForIndex(defaultIndex);
+
         return new DeviceIdentity(key, false, index, Hash(key));
+    }
+
+    /// <summary>True when <paramref name="key"/> is exactly what
+    /// <see cref="DefaultKey"/> produces for some index.</summary>
+    private static bool TryParseDefaultKey(string key, out int index)
+    {
+        index = -1;
+        const string lead = "index:";
+        if (!key.StartsWith(lead, StringComparison.Ordinal)) return false;
+        if (!int.TryParse(key.AsSpan(lead.Length), System.Globalization.NumberStyles.None,
+                          System.Globalization.CultureInfo.InvariantCulture, out int n)) return false;
+        if (DefaultKey(n) != key) return false;   // canonical form only: no "index:007"
+        index = n;
+        return true;
     }
 
     /// <summary>The identity for a create call: the consumer's key when it

@@ -141,6 +141,11 @@ internal static class DeviceNodeCreator
             DeviceManager.RemoveDevice(instId, timeoutMs: 120_000, forceFallbacks: true);
         }
 
+        // No second parent on this prefix, ever. See the helper for why a
+        // failure here has to stop the create rather than be logged past.
+        if (!DeviceManager.ClearParentIdPrefixRivals("ROOT", enumerator, identity.Token, identity.ParentIdPrefix))
+            return new Result(false, null);
+
         Guid classGuid = HIDClassGuid;
         IntPtr dis = SetupDiCreateDeviceInfoList(ref classGuid, IntPtr.Zero);
         if (dis == new IntPtr(-1)) return new Result(false, null);

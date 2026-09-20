@@ -958,6 +958,11 @@ internal static class DeviceOrchestrator
             string instanceSuffix = identity.Token;
             string companionDesc = profile.DeviceDescription ?? profile.ProductString ?? "HIDMaestro Gamepad";
 
+            // This parent has a HID child, so the one-parent-per-prefix
+            // rule applies to it exactly as it does to a ROOT parent.
+            if (!DeviceManager.ClearParentIdPrefixRivals("SWD", gpSwdEnumerator, identity.Token, identity.ParentIdPrefix))
+                return null;
+
             var result = SwdDeviceFactory.Create(
                 instanceSuffix,
                 hardwareIds,
