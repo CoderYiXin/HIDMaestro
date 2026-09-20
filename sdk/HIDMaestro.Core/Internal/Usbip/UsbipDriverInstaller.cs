@@ -71,6 +71,7 @@ internal static class UsbipDriverInstaller
     {
         if (IsInstalled)
         {
+            ReplaceLegacyTransportOnce(progress);
             s_verifiedThisProcess = true;
             StampOwnerHardwareId();
             return true;
@@ -130,6 +131,395 @@ internal static class UsbipDriverInstaller
                 "appear within the timeout. Check Device Manager for 'USBip 3.X Emulated Host " +
                 "Controller' and any pending-reboot state.");
         }
+    }
+
+    // ── Moving a machine off the transport earlier releases installed ────
+    //
+    // HIDMaestro through v1.8.1 installed usbip-win2 0.9.7.7. The pin is
+    // now 0.9.7.5, the version the battery runs on and the only one of
+    // the two with an ARM64 build, and a machine still carrying the old
+    // host controller is moved to it here with nothing for the user to do.
+    //
+    // This never runs the vendor installer. Run over an existing install
+    // it launches the previous version's uninstaller, which shows a
+    // window and deletes the extension INF bound to every USB root hub:
+    // the whole USB tree re-enumerates and the global PnP lock is held
+    // for tens of minutes. Measured on 26200, 2026-09-20. So the host
+    // controller's own INF, SYS and CAT ship inside the assembly, and the
+    // swap is one UpdateDriverForPlugAndPlayDevices call that forces the
+    // pinned INF onto the existing host controller devnode.
+    //
+    // Only the host controller driver (usbip2_ude) changes. The root-hub
+    // filter is left exactly as it is, and 0.9.7.5's host controller
+    // runs against 0.9.7.7's filter: that pairing passed the full battery
+    // twice before this shipped.
+    //
+    // It acts on one exact driver and nothing else. A host controller
+    // whose bytes are not 0.9.7.7's was put there by something other than
+    // HIDMaestro (VIIPER, DS4Windows, Handheld Companion) and may be what
+    // that program needs, so it is left alone.
+
+    /// <summary>SHA-256 of usbip2_ude.sys from the usbip-win2 0.9.7.7 x64
+    /// release, the transport HIDMaestro installed through v1.8.1.</summary>
+    private const string LegacyUdeSha256 =
+        "51db440065393e588a6b2585508c50eb3e1510b7b06d9afa6c5bde583751ea7d";
+
+    /// <summary>The build stamp in that release's usbip2_ude.inf DriverVer
+    /// (04/19/2026,21.14.27.907), which tells its package apart in
+    /// %windir%\INF.</summary>
+    private const string LegacyUdeDriverVer = "21.14.27.907";
+
+    private const string UdeHardwareId = "ROOT\\USBIP_WIN2\\UDE";
+    private static readonly string[] UdeFiles = { "usbip2_ude.inf", "usbip2_ude.sys", "usbip2_ude.cat" };
+
+    /// <summary>SHA-256 of each pinned host controller file for this
+    /// machine's architecture. The build checks the same values against
+    /// UsbipPackage.json before embedding the files.</summary>
+    private static string PinnedUdeHash(string file) =>
+        (RuntimeInformation.OSArchitecture == Architecture.Arm64, file) switch
+        {
+            (false, "usbip2_ude.inf") => "0c7d2aa9bda1fd88e69a8c15fcb38fcdf423cd8731bc7c2a999eb34aecca4fef",
+            (false, "usbip2_ude.sys") => "db9d6a97a043deab8e34122dcf429eaabb4af0d10279c8fea1248976a368c1d4",
+            (false, "usbip2_ude.cat") => "a25fd0c09d15cc0170f250958f4f8b222025729597ec7d376c3c639374856214",
+            (true, "usbip2_ude.inf") => "4ebaa77c54dba2fa27ea4aae5d4a3f288720623ace52742c99d0a0020494c604",
+            (true, "usbip2_ude.sys") => "2a969ba59b3ffe33227ca1de17759a189d085d51c4f4e0f34df0b244ee558ab8",
+            (true, "usbip2_ude.cat") => "49c6570d479379b7db5c19fe0c9ae31804f1b4964321c5b14f8bcad1c044614c",
+            _ => throw new ArgumentOutOfRangeException(nameof(file)),
+        };
+
+    private static bool s_legacyChecked;
+
+    private static void ReplaceLegacyTransportOnce(Action<string>? progress)
+    {
+        if (s_legacyChecked) return;
+        lock (s_lock)
+        {
+            if (s_legacyChecked) return;
+            s_legacyChecked = true;
+            try { ReplaceLegacyTransport(progress); }
+            catch (Exception ex)
+            {
+                // Nothing here removes the old driver before the new one is
+                // on the device, so a failure leaves the transport that was
+                // answering still answering.
+                DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: legacy replace stopped: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+    }
+
+    private static void ReplaceLegacyTransport(Action<string>? progress)
+    {
+        // 0.9.7.7 published no ARM64 build, so there is nothing to find there.
+        if (RuntimeInformation.OSArchitecture != Architecture.X64) return;
+
+        // A machine whose owner wants the transport left as it is, and the
+        // battery, which has to be able to run a composite on 0.9.7.7 first.
+        if (Environment.GetEnvironmentVariable("HIDMAESTRO_KEEP_TRANSPORT") == "1")
+        {
+            DeviceOrchestrator.LogDiag("UsbipDriverInstaller: HIDMAESTRO_KEEP_TRANSPORT=1; not replacing the host controller.");
+            return;
+        }
+
+        string? sys = InstalledUdeImagePath();
+        if (sys == null || !File.Exists(sys)) return;
+        string installed = Sha256Of(sys);
+        if (!installed.Equals(LegacyUdeSha256, StringComparison.OrdinalIgnoreCase))
+        {
+            DeviceOrchestrator.LogDiag(
+                installed.Equals(PinnedUdeHash("usbip2_ude.sys"), StringComparison.OrdinalIgnoreCase)
+                    ? $"UsbipDriverInstaller: host controller is the pinned {Version}."
+                    : $"UsbipDriverInstaller: host controller {installed[..16]} is neither {Version} nor 0.9.7.7; leaving it alone.");
+            return;
+        }
+
+        // Never change a driver under a device someone is using, ours or
+        // another program's. The next process start tries again.
+        int imports = VhciClient.GetImportedDevices().Count;
+        if (imports > 0)
+        {
+            DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: 0.9.7.7 host controller has {imports} attached device(s); not replacing it now.");
+            return;
+        }
+
+        // A host controller that has carried a device since Windows started
+        // does not answer PnP's query-remove. Measured on 26200, 2026-09-20:
+        // the forced update then sits in "Error 481: timed out waiting for
+        // this device to complete a PnP query-remove request" for four
+        // minutes, the old image stays loaded, the new package cannot
+        // start, and the transport is gone until Windows next starts. An
+        // unused controller lets go at once. Windows keeps the last arrival
+        // time of every device that ever attached through the controller,
+        // whoever attached it, so that is what decides. Any doubt means no.
+        if (HostControllerUsedSinceBoot(out string why))
+        {
+            DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: 0.9.7.7 host controller left alone for this session: {why}.");
+            return;
+        }
+
+        progress?.Invoke($"Updating the USB audio transport to usbip-win2 {Version}...");
+        DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: replacing the usbip-win2 0.9.7.7 host controller with {Version}.");
+
+        string inf = StageUdePackage();
+
+        // hmswd force-driver calls UpdateDriverForPlugAndPlayDevices with
+        // INSTALLFLAG_FORCE, which puts this INF on every device carrying
+        // the hardware id even though 0.9.7.7's DriverVer ranks above it.
+        // It is the call usbip-win2's own devnode.exe makes. It runs in the
+        // helper and not here because that call has no timeout: a host
+        // controller that will not let go of its driver would hold the
+        // calling thread forever, and that thread belongs to the consumer.
+        // Out of process it can be given up on, and the transport that was
+        // answering is still there to use.
+        string helper = SwdDeviceFactory.EnsureHelperExtracted()
+            ?? throw new InvalidOperationException("hmswd.exe is not available to run the driver update.");
+        var sw = Stopwatch.StartNew();
+        var psi = new ProcessStartInfo
+        {
+            FileName = helper,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+        };
+        psi.ArgumentList.Add("force-driver");
+        psi.ArgumentList.Add(inf);
+        psi.ArgumentList.Add(UdeHardwareId);
+        using (var p = Process.Start(psi) ?? throw new InvalidOperationException("Could not start hmswd.exe."))
+        {
+            if (!p.WaitForExit(TimeoutScale.Apply(90_000)))
+            {
+                try { p.Kill(entireProcessTree: true); } catch { }
+                throw new TimeoutException(
+                    $"The driver update for {UdeHardwareId} did not return in time; keeping the existing transport.");
+            }
+            if (p.ExitCode != 0 && p.ExitCode != 3010)
+                throw new InvalidOperationException(
+                    $"hmswd force-driver returned {p.ExitCode}: {p.StandardError.ReadToEnd().Trim()}");
+            DeviceOrchestrator.LogDiag($"UsbipDriverInstaller:   driver update returned {p.ExitCode} in {sw.ElapsedMilliseconds} ms.");
+        }
+
+        while (sw.ElapsedMilliseconds < TimeoutScale.Apply(60_000))
+        {
+            string? now = InstalledUdeImagePath();
+            if (VhciClient.IsAvailable() && now != null && File.Exists(now) &&
+                Sha256Of(now).Equals(PinnedUdeHash("usbip2_ude.sys"), StringComparison.OrdinalIgnoreCase))
+            {
+                // Only now is the old package unused, so a plain delete
+                // works and nothing has to be forced. Best effort: a
+                // package left behind is inert, it just ranks first again
+                // if the devnode is ever recreated.
+                foreach (string oem in LegacyUdePackages())
+                {
+                    int rc = RunPnputil($"/delete-driver {oem}");
+                    DeviceOrchestrator.LogDiag($"UsbipDriverInstaller:   pnputil /delete-driver {oem} -> {rc}");
+                }
+                DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: host controller is {Version} after {sw.ElapsedMilliseconds} ms.");
+                progress?.Invoke("USB audio transport ready.");
+                return;
+            }
+            Thread.Sleep(250);
+        }
+
+        throw new InvalidOperationException(
+            $"The usbip-win2 {Version} host controller did not come up within the timeout after the driver update.");
+    }
+
+    /// <summary>True when any device has arrived through a usbip host
+    /// controller since Windows started, or when that cannot be ruled
+    /// out.</summary>
+    private static bool HostControllerUsedSinceBoot(out string why)
+    {
+        try
+        {
+            DateTime bootUtc = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount64);
+
+            // The controller's one present child is its virtual root hub,
+            // and every attached device is a child of that hub.
+            var hubs = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int n = 0; n < 16; n++)
+            {
+                if (CM_Locate_DevNodeW(out uint devInst, $"ROOT\\USB\\{n:D4}", CM_LOCATE_DEVNODE_NORMAL) != CR_SUCCESS) continue;
+                bool isUde = false;
+                foreach (var id in GetMultiSz(devInst, CM_DRP_HARDWAREID))
+                    if (id.IndexOf("USBIP_WIN2", StringComparison.OrdinalIgnoreCase) >= 0) { isUde = true; break; }
+                if (!isUde) continue;
+                if (CM_Get_Child(out uint hub, devInst, 0) != CR_SUCCESS) { why = $"ROOT\\USB\\{n:D4} has no root hub to inspect"; return true; }
+                var buf = new char[512];
+                if (CM_Get_Device_IDW(hub, buf, buf.Length, 0) != CR_SUCCESS) { why = "root hub id unreadable"; return true; }
+                hubs.Add(new string(buf).TrimEnd('\0'));
+            }
+            if (hubs.Count == 0) { why = "no usbip root hub found"; return true; }
+
+            if (CM_Get_Device_ID_List_SizeW(out uint len, "USB", CM_GETIDLIST_FILTER_ENUMERATOR) != CR_SUCCESS) { why = "device list unreadable"; return true; }
+            var list = new char[len];
+            if (CM_Get_Device_ID_ListW("USB", list, len, CM_GETIDLIST_FILTER_ENUMERATOR) != CR_SUCCESS) { why = "device list unreadable"; return true; }
+
+            foreach (string id in new string(list).Split('\0', StringSplitOptions.RemoveEmptyEntries))
+            {
+                // Phantom lookup: a device that attached and left is what
+                // this is looking for.
+                if (CM_Locate_DevNodeW(out uint dev, id, CM_LOCATE_DEVNODE_PHANTOM) != CR_SUCCESS) continue;
+                string? parent = GetStringProperty(dev, DEVPKEY_Device_Parent);
+                if (parent == null || !hubs.Contains(parent)) continue;
+                DateTime? arrived = GetFileTimeProperty(dev, DEVPKEY_Device_LastArrivalDate);
+                if (arrived == null) { why = $"{id} has no arrival time"; return true; }
+                if (arrived.Value >= bootUtc) { why = $"{id} arrived at {arrived.Value:HH:mm:ss}Z, after Windows started"; return true; }
+            }
+            why = "";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            why = $"could not be determined ({ex.GetType().Name})";
+            return true;
+        }
+    }
+
+    private static string? GetStringProperty(uint devInst, DEVPROPKEY key)
+    {
+        uint size = 0;
+        CM_Get_DevNode_PropertyW(devInst, ref key, out _, null, ref size, 0);
+        if (size == 0) return null;
+        var buf = new byte[size];
+        if (CM_Get_DevNode_PropertyW(devInst, ref key, out uint type, buf, ref size, 0) != CR_SUCCESS || type != DEVPROP_TYPE_STRING) return null;
+        return System.Text.Encoding.Unicode.GetString(buf, 0, (int)size).TrimEnd('\0');
+    }
+
+    private static DateTime? GetFileTimeProperty(uint devInst, DEVPROPKEY key)
+    {
+        uint size = 8;
+        var buf = new byte[8];
+        if (CM_Get_DevNode_PropertyW(devInst, ref key, out uint type, buf, ref size, 0) != CR_SUCCESS || type != DEVPROP_TYPE_FILETIME) return null;
+        return DateTime.FromFileTimeUtc(BitConverter.ToInt64(buf, 0));
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DEVPROPKEY { public Guid fmtid; public uint pid; }
+
+    private static readonly DEVPROPKEY DEVPKEY_Device_Parent =
+        new() { fmtid = new Guid("4340a6c5-93fa-4706-972c-7b648008a5a7"), pid = 8 };
+    private static readonly DEVPROPKEY DEVPKEY_Device_LastArrivalDate =
+        new() { fmtid = new Guid("83da6326-97a6-4088-9453-a1923f573b29"), pid = 102 };
+    private const uint DEVPROP_TYPE_FILETIME = 0x10;
+    private const uint DEVPROP_TYPE_STRING = 0x12;
+    private const uint CM_LOCATE_DEVNODE_PHANTOM = 1;
+    private const uint CM_GETIDLIST_FILTER_ENUMERATOR = 1;
+
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+    private static extern int CM_Get_DevNode_PropertyW(uint dnDevInst, ref DEVPROPKEY propertyKey,
+        out uint propertyType, byte[]? buffer, ref uint bufferSize, uint flags);
+    [DllImport("cfgmgr32.dll")]
+    private static extern int CM_Get_Child(out uint child, uint parent, uint flags);
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+    private static extern int CM_Get_Device_IDW(uint dnDevInst, [Out] char[] buffer, int bufferLen, uint flags);
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+    private static extern int CM_Get_Device_ID_List_SizeW(out uint length, string? filter, uint flags);
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+    private static extern int CM_Get_Device_ID_ListW(string? filter, [Out] char[] buffer, uint length, uint flags);
+
+    /// <summary>Write the pinned host controller files to an
+    /// administrators-only directory, verify each against its pinned hash,
+    /// and return the INF's path.</summary>
+    private static string StageUdePackage()
+    {
+        string arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "arm64" : "x64";
+        string dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "HIDMaestro", "usbip", Version, arch);
+        Directory.CreateDirectory(dir);
+
+        var asm = typeof(UsbipDriverInstaller).Assembly;
+        foreach (string file in UdeFiles)
+        {
+            string path = Path.Combine(dir, file);
+            if (!(File.Exists(path) && Sha256Of(path).Equals(PinnedUdeHash(file), StringComparison.OrdinalIgnoreCase)))
+            {
+                string logical = $"HIDMaestro.Usbip.{arch}.{file}";
+                using var src = asm.GetManifestResourceStream(logical)
+                    ?? throw new InvalidOperationException($"Embedded resource '{logical}' is missing from HIDMaestro.Core.dll.");
+                using (var dst = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+                    src.CopyTo(dst);
+            }
+            if (!Sha256Of(path).Equals(PinnedUdeHash(file), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"{file} failed SHA256 verification after staging; refusing to install it.");
+        }
+        return Path.Combine(dir, "usbip2_ude.inf");
+    }
+
+    /// <summary>Full path of the usbip2_ude.sys the service is set to load,
+    /// or null when the service does not exist.</summary>
+    private static string? InstalledUdeImagePath()
+    {
+        try
+        {
+            using var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\usbip2_ude");
+            if (k?.GetValue("ImagePath") is not string image || image.Length == 0) return null;
+            string windir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            const string sysroot = @"\SystemRoot\";
+            if (image.StartsWith(sysroot, StringComparison.OrdinalIgnoreCase))
+                return Path.Combine(windir, image[sysroot.Length..]);
+            if (image.StartsWith(@"\??\", StringComparison.Ordinal))
+                return image[4..];
+            if (image.StartsWith("System32", StringComparison.OrdinalIgnoreCase))
+                return Path.Combine(windir, image);
+            return image;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>Published names (oemNN.inf) of every driver-store package
+    /// that is 0.9.7.7's usbip2_ude. Read from the INF files themselves, so
+    /// it does not depend on the language pnputil prints in.</summary>
+    private static System.Collections.Generic.List<string> LegacyUdePackages()
+    {
+        var found = new System.Collections.Generic.List<string>();
+        try
+        {
+            string infDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "INF");
+            foreach (string path in Directory.EnumerateFiles(infDir, "oem*.inf"))
+            {
+                string text;
+                try
+                {
+                    byte[] raw = File.ReadAllBytes(path);
+                    text = raw.Length >= 2 && raw[0] == 0xFF && raw[1] == 0xFE
+                        ? System.Text.Encoding.Unicode.GetString(raw)
+                        : System.Text.Encoding.UTF8.GetString(raw);
+                }
+                catch { continue; }
+                if (text.IndexOf("usbip2_ude", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                if (text.IndexOf(LegacyUdeDriverVer, StringComparison.Ordinal) < 0) continue;
+                found.Add(Path.GetFileName(path));
+            }
+        }
+        catch { }
+        return found;
+    }
+
+    private static string Sha256Of(string path)
+    {
+        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        return Convert.ToHexString(SHA256.HashData(fs)).ToLowerInvariant();
+    }
+
+    private static int RunPnputil(string arguments)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "pnputil.exe",
+            Arguments = arguments,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            CreateNoWindow = true,
+        };
+        using var p = Process.Start(psi);
+        if (p == null) return -1;
+        p.StandardOutput.ReadToEnd();
+        if (!p.WaitForExit(TimeoutScale.Apply(60_000)))
+        {
+            try { p.Kill(entireProcessTree: true); } catch { }
+            return -2;
+        }
+        return p.ExitCode;
     }
 
     /// <summary>True when usbip-win2's driver package is already in the

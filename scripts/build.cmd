@@ -111,7 +111,7 @@ if exist "%DRIVER_DIR%\hmswd\hmswd.c" (
         "/LIBPATH:%UM_LIB%" ^
         "%OUT_DIR%\hmswd.obj" ^
         "%OUT_DIR%\res_hmswd.res" ^
-        swdevice.lib cfgmgr32.lib ole32.lib
+        swdevice.lib cfgmgr32.lib ole32.lib newdev.lib
     if errorlevel 1 (
         echo HMSWD LINK FAILED
         exit /b 1

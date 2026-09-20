@@ -333,7 +333,7 @@ internal static class SwdDeviceFactory
     /// stable per-user location and return its path. Idempotent. Throws on
     /// failure.</summary>
 #pragma warning disable CS8600 // assembly.Location can legitimately be null for single-file
-    private static string? EnsureHelperExtracted()
+    internal static string? EnsureHelperExtracted()
     {
         lock (s_extractLock)
         {

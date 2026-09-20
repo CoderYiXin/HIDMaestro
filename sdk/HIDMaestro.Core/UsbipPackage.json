@@ -1,0 +1,24 @@
+{
+  "version": "0.9.7.5",
+  "tag": "v.0.9.7.5",
+  "architectures": {
+    "x64": {
+      "installer": "USBip-0.9.7.5-x64-release.exe",
+      "sha256": "6f429dd47cfe371dbd275ced5fc512494918683b07853cbdf2d8c25e4274fd74",
+      "files": {
+        "usbip2_ude.inf": "0c7d2aa9bda1fd88e69a8c15fcb38fcdf423cd8731bc7c2a999eb34aecca4fef",
+        "usbip2_ude.sys": "db9d6a97a043deab8e34122dcf429eaabb4af0d10279c8fea1248976a368c1d4",
+        "usbip2_ude.cat": "a25fd0c09d15cc0170f250958f4f8b222025729597ec7d376c3c639374856214"
+      }
+    },
+    "arm64": {
+      "installer": "USBip-0.9.7.5-arm64-release.exe",
+      "sha256": "0dc47a895ab6dddcfa5ef4cd12014f9f3515770bec706773c9e9f5f876ebccb5",
+      "files": {
+        "usbip2_ude.inf": "4ebaa77c54dba2fa27ea4aae5d4a3f288720623ace52742c99d0a0020494c604",
+        "usbip2_ude.sys": "2a969ba59b3ffe33227ca1de17759a189d085d51c4f4e0f34df0b244ee558ab8",
+        "usbip2_ude.cat": "49c6570d479379b7db5c19fe0c9ae31804f1b4964321c5b14f8bcad1c044614c"
+      }
+    }
+  }
+}

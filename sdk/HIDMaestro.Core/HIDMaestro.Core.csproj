@@ -150,6 +150,13 @@
     <Error Condition="'$(_HMUsbipArmActualHash.ToLowerInvariant())' != '$(HMUsbipArmSha256)'"
            Text="usbip-win2 ARM64 installer hash mismatch. Expected $(HMUsbipArmSha256), got $(_HMUsbipArmActualHash). Delete $(HMUsbipArmFile) and rebuild to re-fetch." />
 
+    <!-- The host controller's own INF/SYS/CAT, unpacked from the verified
+         installers above and checked file by file against
+         UsbipPackage.json. The SDK uses them to move a machine off the
+         0.9.7.7 transport through PnP, which the installer cannot do
+         without launching the old version's uninstaller. -->
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(HMRepoRoot)scripts\prepare_usbip.ps1&quot; -InstallerDirectory &quot;$(MSBuildThisFileDirectory)Resources&quot; -DestinationDirectory &quot;$(MSBuildThisFileDirectory)Resources\usbip&quot;" />
+
     <Copy SourceFiles="$(MSBuildThisFileDirectory)THIRD-PARTY-NOTICES.txt"
           DestinationFolder="$(MSBuildThisFileDirectory)Resources\" SkipUnchangedFiles="true" />
   </Target>
@@ -185,6 +192,14 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\arm64\*">
       <LogicalName>HIDMaestro.Native.arm64.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+
+    <!-- usbip-win2 host controller driver files, per architecture. -->
+    <EmbeddedResource Include="Resources\usbip\x64\*">
+      <LogicalName>HIDMaestro.Usbip.x64.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\usbip\arm64\*">
+      <LogicalName>HIDMaestro.Usbip.arm64.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
 
     <!-- OpenVR driver package (issue #32). Nested logical names preserve

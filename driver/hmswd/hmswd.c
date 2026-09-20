@@ -52,6 +52,8 @@
 #include <swdevice.h>
 #include <cfgmgr32.h>
 #pragma comment(lib, "cfgmgr32.lib")
+#include <newdev.h>
+#pragma comment(lib, "newdev.lib")
 
 static HANDLE  g_done;
 static HRESULT g_cb_hr = E_FAIL;
@@ -128,8 +130,28 @@ int wmain(int argc, wchar_t **argv)
 usage:
         fwprintf(stderr,
             L"Usage: hmswd.exe {create|remove} <enumerator> <suffix> <{container-guid}> "
-            L"<hw-ids-pipe-sep> <compat-ids-pipe-sep> <description>\n");
+            L"<hw-ids-pipe-sep> <compat-ids-pipe-sep> <description>\n"
+            L"       hmswd.exe force-driver <inf-path> <hardware-id>\n");
         return 1;
+    }
+
+    /* force-driver <inf> <hardware-id>: put one INF on every device that
+       carries the hardware id, even when a package with a higher DriverVer
+       is in the store. The SDK uses it to move the usbip-win2 host
+       controller from 0.9.7.7 to the pinned release, and runs it here
+       rather than in its own process so that a driver that will not let
+       go can be abandoned on a timeout instead of freezing the consumer.
+       Exit 0 done, 3010 done and Windows wants a restart, otherwise the
+       Win32 error. */
+    if (_wcsicmp(argv[1], L"force-driver") == 0) {
+        if (argc < 4) goto usage;
+        BOOL reboot = FALSE;
+        if (!UpdateDriverForPlugAndPlayDevicesW(NULL, argv[3], argv[2], INSTALLFLAG_FORCE, &reboot)) {
+            DWORD err = GetLastError();
+            fwprintf(stderr, L"force-driver failed: 0x%08lX\n", err);
+            return err ? (int)err : 1;
+        }
+        return reboot ? 3010 : 0;
     }
 
     int isCreate = _wcsicmp(argv[1], L"create") == 0;
