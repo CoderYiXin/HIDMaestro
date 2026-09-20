@@ -146,7 +146,8 @@ User-Mode Test App
   │ Manages device lifecycle (create, configure, remove)
   │
   ├──► Shared Memory (per-controller, pagefile-backed)
-  │     SeqNo(4) + DataSize(4) + Data[256] + GipData[14] = 278 bytes
+  │     SeqNo(4) + DataSize(4) + Data[256] + GipData[14] +
+  │       ExtendedReportSize(4) + ExtendedReportData[80] = 362 bytes
   │     Data[256] carries HID input reports up to 256 bytes (DualSense BT
   │       report 0x31 = 78 bytes, Switch Pro motion-IMU reports, etc.).
   │     Event-driven: SDK signals InputDataEvent on each write.
@@ -170,9 +171,9 @@ User-Mode Test App
   │     │   same on every life. See Techniques: Stable Device Identity.
   │     ├─ USB interface (XUSB-companion profiles also get the xinputhid
   │     │   UpperFilter written per-instance by the SDK: see Techniques)
-  │     ├─ Legacy WinExInput interface registration retained for historical
-  │     │   compatibility; Ghidra decomp of Windows.Gaming.Input.dll showed
-  │     │   zero references to its GUID, so it is not WGI's actual hook
+  │     ├─ No WinExInput interface: registering it produced duplicate
+  │     │   browser gamepad entries (issue #6), and Ghidra decomp of
+  │     │   Windows.Gaming.Input.dll found zero references to its GUID
   │     └─ BTHLEDEVICE CompatibleIDs (Bluetooth profiles)
   │
   └──► XUSB Companion (HMXInput.dll, System class)
@@ -253,7 +254,7 @@ Disposal speed depends on which kernel-side drivers are in the device stack. Eac
 
 #### 1. Plain HID: generic gamepads, wheels, HOTAS, flight sticks (~200ms)
 
-Profiles where `driverMode` is not `"xinputhid"` and the VID is not Microsoft (`0x045E`). Includes DualSense, DualShock 4, all Logitech wheels, Thrustmaster HOTAS, flight sticks, pedals, arcade sticks, and most of the 225-profile catalog.
+Profiles where `driverMode` is not `"xinputhid"` and the VID is not Microsoft (`0x045E`). Includes DualSense, DualShock 4, all Logitech wheels, Thrustmaster HOTAS, flight sticks, pedals, arcade sticks, and most of the 231-profile catalog.
 
 ```
 ROOT\HIDClass\HM_0000               ← our UMDF2 driver (mshidumdf host)
@@ -443,7 +444,7 @@ To reproduce: run `HIDMaestroTest.exe emulate <profile-id>`, then run `python sc
 | Term | Meaning |
 |------|---------|
 | **XUSB** | Xbox USB protocol. The device interface GUID (`{EC87F1E3-...}`) that `xinput1_4.dll` discovers to find Xbox controllers, and the one WGI walks for XUSB-backed Gamepads. |
-| **WinExInput** | Windows Extended Input. A device interface GUID (`{6C53D5FD-...}`) registered on HID parents by HIDMaestro for historical reasons. Ghidra decomp of `Windows.Gaming.Input.dll` (Win11 26200) found zero references to this GUID; it is not actually WGI's `GamepadAdded` source. WGI admission comes from the HIDClass pass-list (plain HID profiles) or the xinputhid UpperFilter tripwire (Xbox XUSB-companion profiles). |
+| **WinExInput** | Windows Extended Input. A device interface GUID (`{6C53D5FD-...}`) HIDMaestro no longer registers anywhere. Older builds put it on HID parents and the SDK still sweeps those entries away. Ghidra decomp of `Windows.Gaming.Input.dll` (Win11 26200) found zero references to this GUID; it is not actually WGI's `GamepadAdded` source. WGI admission comes from the HIDClass pass-list (plain HID profiles) or the xinputhid UpperFilter tripwire (Xbox XUSB-companion profiles). |
 | **xinputhid UpperFilter tripwire** | Registry string `"xinputhid"` written to a device's `DEVPKEY_Device_UpperFilters` (via INF HKR AddReg or SetupAPI) to satisfy WGI's `IsDeviceOrAncestorFilteredBy` wstring compare. Does not load `xinputhid.sys`: the filter only attaches to HID-class devices. Admits a System-class device (the XUSB companion at `SWD\HIDMAESTRO`) to WGI's XUSB dispatch path. See Techniques. |
 | **XUSB Companion** | A separate UMDF2 device (`HMXInput.dll`) that handles XUSB IOCTLs for XInput. Lives at `SWD\HIDMAESTRO\<token>`. Needed because `mshidumdf` suppresses XUSB on HID devices. |
 | **SWD enumerator** | "Software-device" PnP enumerator. Devices created via `SwDeviceCreate` (cfgmgr32) appear under `HKLM\SYSTEM\CurrentControlSet\Enum\SWD\<enumerator>\<instance>`. The SwDevice API lets us specify an explicit non-sentinel `pContainerId`, which is the linchpin of the slot-1-skip fix. |

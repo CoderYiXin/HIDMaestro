@@ -6,8 +6,8 @@
 
 ## What this branch adds over master
 
-- **`driver/xusbshim.c`** (new, 744 lines): UMDF2 HID upper filter that registers `GUID_DEVINTERFACE_XUSB`, `GUID_DEVINTERFACE_WINEXINPUT`, and additional WGI enumeration GUIDs on the virtual's HID child. Implements XUSB IOCTL handlers (SET_STATE / GET_STATE / GET_CAPABILITIES / GET_INFORMATION / WAIT_GUIDE) that mirror `xusb22.sys` + `xinputhid.sys` behavior.
-- **`driver/hidmaestro_xusbshim.inf` + `hidmaestro_xusbshim_class.inf`**: INFs that bind xusbshim as an extension INF on HID children matching VID 045E & select PIDs.
+- **`driver/xusbshim.c`** (new, 744 lines at tag `archive/wgi-silent-sink-closeout-2026-04`; the branch head has since diverged): UMDF2 HID upper filter that registers `GUID_DEVINTERFACE_XUSB`, `GUID_DEVINTERFACE_WINEXINPUT`, and additional WGI enumeration GUIDs on the virtual's HID child. Implements XUSB IOCTL handlers (SET_STATE / GET_STATE / GET_CAPABILITIES / GET_INFORMATION / WAIT_GUIDE) that mirror `xusb22.sys` + `xinputhid.sys` behavior.
+- **`driver/hidmaestro_xusbshim.inf` + `hidmaestro_xusbshim_class.inf`** (both present at the tag; only the class INF remains on the branch head): INFs that bind xusbshim as an extension INF on HID children matching VID 045E & select PIDs.
 - **`driver/companion.c` changes**: HMCOMPANION also registers additional WGI enumeration GUIDs; diagnostic logging to `xusbshim_log.txt` for cross-path visibility with the filter side.
 - **`driver/driver.c` changes**: `LogHidOutputReport` helper for HID output IOCTL instrumentation; claims `XINPUT_CAPS_FFB_SUPPORTED` flag in GET_CAPABILITIES (experiment-specific).
 - **`profiles/microsoft/xbox-360-wired-ffb.json`**: experimental Xbox 360 Wired profile variant with a 22-byte PID force-feedback collection appended to the HID descriptor. **Unexplored**, and the starting point for Y-alt-A in the finding.
@@ -16,7 +16,7 @@
 
 ## What works (post-fix, on this branch)
 
-- Direct `xinput1_4.XInputSetState` dispatches reach our virtual via xinputhid kernel filter → xusbshim upper filter. Motor bytes decode correctly at `in[2]`/`in[3]` (xusb22-style; see `driver/xusbshim.c:550-558`).
+- Direct `xinput1_4.XInputSetState` dispatches reach our virtual via xinputhid kernel filter → xusbshim upper filter. Motor bytes decode correctly at `in[2]`/`in[3]` (xusb22-style; see `driver/xusbshim.c:550-558` at tag `archive/wgi-silent-sink-closeout-2026-04`).
 - Capability probes from WGI arrive at both instrumentation layers.
 
 ## What does NOT work (per the finding)
@@ -28,7 +28,7 @@
 
 - **Y-alt-A starting point:** `profiles/microsoft/xbox-360-wired-ffb.json` + the xusbshim infrastructure could be adapted to explore "reclassify virtual as HID with PID TLC so WGI's `hidforcefeedback.cpp` backend populates motors." The finding discusses this as a blocked fix vector (loses XUSB slot visibility for XInput consumers), but if someone wants to explore it anyway, start here.
 - **Interface-registration testbed:** xusbshim registers 4 WGI enumeration interface GUIDs on the HID child. Useful as a diagnostic harness for future "does WGI behave differently when interface X is registered" questions.
-- **Branch-local canonicalization is fixed:** `driver/xusbshim.c:550-558` uses the empirically verified wire layout (`lo = in[2]; hi = in[3];`). Post-parser-fix state, not the original heuristic.
+- **Branch-local canonicalization is fixed:** `driver/xusbshim.c:550-558` at tag `archive/wgi-silent-sink-closeout-2026-04` uses the empirically verified wire layout (`lo = in[2]; hi = in[3];`). Post-parser-fix state, not the original heuristic.
 
 ## Status
 

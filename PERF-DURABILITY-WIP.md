@@ -1,5 +1,10 @@
 ﻿# HIDMaestro v1.3.0: Performance + Durability Work
 
+> Closed record of the v1.3.0 effort. Its counts, line numbers and wall-clock
+> figures are that era's: the battery was 26 scenarios and is 60 as of v1.8.1,
+> and the file/line citations in Tables 2 and 3 no longer resolve against
+> current source. Cite `File.Method` from the tree, not these line numbers.
+
 **Scope:** address audit-pass timing fragility (Tier 1) and add multi-layer caching for fresh-launch + create/teardown speed (Tiers 2–5). Use the swap_regression battery as the gate.
 
 **Version target:** v1.3.0. Major-minor bump because the new `HIDMAESTRO_TIMEOUT_SCALE` env var is a public-surface addition and the cache behavior changes are user-observable.
@@ -121,7 +126,7 @@ User feedback (2026-04-30): consumers reporting ~30 s for 3-controller add/remov
 |---|---|---|---|
 | Bus driver class | Yes. It IS the bus, and publishes PDOs directly | No. UMDF2 cannot be a bus driver (memory: project-umdf2-cannot-be-bus-driver.md). Each virtual is a ROOT or SWD root devnode with a separate UMDF2 host attached | +inherent kernel-PnP cost |
 | Per-virtual create call | KMDF child-PDO publish (~10–50 ms kernel) | SetupDi[CreateDeviceInfo + SetRegistryProperty + CallClassInstaller(DIF_REGISTERDEVICE) + UpdateDriverForPlugAndPlayDevices] OR SwDeviceCreate via hmswd.exe helper, blocking on driver-bind callback | +200–400 ms per virtual |
-| XInput compatibility | Native XUSB-class sub-device, no companion needed | XUSB companion (HMXInput.dll) at `SWD\HIDMAESTRO\<sid>` per Xbox-VID virtual | +50 ms create + +14 ms slot-claim wait |
+| XInput compatibility | Native XUSB-class sub-device, no companion needed | XUSB companion (HMXInput.dll) at `SWD\HIDMAESTRO\<identity token>` per Xbox-VID virtual | +50 ms create + +14 ms slot-claim wait |
 | Driver install pipeline | One-time kmdf bus driver install (`devcon install` style) | DriverStore + signtool + inf2cat + pnputil: fortunately one-time, gated by SHA-256 manifest hash | +0 once cached, full pipeline on cold install |
 | Teardown: Xbox 360 wired | Bus driver removes child PDO (~10 ms) | DIF_REMOVE on ROOT\VID_*&IG_00 + cascade to HID child + SwDeviceClose on XUSB companion + 5–7 s WUDFHost release | +5–7 s |
 | Teardown: Xbox Series BT | n/a (different code path) | xinputhid filter unbind + SwDeviceClose + 5–11 s kernel cascade | +5–11 s |
@@ -236,7 +241,7 @@ Every wall-clock budget that could trip on slow hardware. Categories from the au
 | T6-01 | 6 (deferred) | Background-task xinputhid teardown | 5–11 s saved per Xbox-family Dispose | high | deferred | defers to v1.4.x, separate experimental branch |
 | T7-01 | 7 | `DeviceOrchestrator.WaitForHidChild` (line 1479): replace 100 ms registry poll with `CM_Register_Notification` | up to 99 ms saved per controller | medium | done | DeviceManager already has CM-driven version; route this through it |
 | T7-02 | 7 | `DeviceOrchestrator.WaitForDeviceStarted` (line 1496): same 100 ms poll → CM | up to 99 ms saved per controller | medium | done |  |
-| T7-03 | 7 | `HMContext.LoadDefaultProfiles`: `Parallel.ForEach` JSON parse over 224 profiles | 50–150 ms saved on cold launch | low | done | no shared state during parse |
+| T7-03 | 7 | `HMContext.LoadDefaultProfiles`: `Parallel.ForEach` JSON parse over 231 profiles | 50–150 ms saved on cold launch | low | done | no shared state during parse |
 | T7-04 | 7 | `CreateController` Step 4: coalesce FriendlyName + BusReportedDesc into single registry transaction per devnode | ~50 ms per controller | low | done | shares the same Device Parameters key |
 | T7-05 | 7 | hmswd.exe: keep one persistent helper process, dispatch commands via stdin, eliminate per-call spawn cost | 50–100 ms per SwDeviceCreate | medium | pending | requires hmswd protocol change; defer if scope grows |
 | T7-06 | 7 | `EnsureExtracted`: extract resources in parallel (signtool deps + driver bins) | 200–500 ms saved on cold first run | low | pending |  |
@@ -292,7 +297,7 @@ Every wall-clock budget that could trip on slow hardware. Categories from the au
 
 ## Notes
 
-- Battery is the gate: any checkpoint that doesn't pass 26/26 blocks tier completion.
+- Battery is the gate: any checkpoint that doesn't pass every scenario blocks tier completion. The 26/26 figures in this doc are the v1.3.0-era battery. It is 60 scenarios as of v1.8.1.
 - All Tier 1 changes are additive at scale=1.0: battery numbers should be statistically identical to v1.2.2 baseline.
 - Tier 2's manifest hash needs a build-time MSBuild target to compute SHA256 of the embedded resources and bake the constant into the assembly. Implementation note: PowerShell + MSBuild Task element generates `Manifest.cs` with `internal const string EmbeddedManifestSha256 = "..."`.
 - Atom validation happens on the Atom box once SSH is up; iteration on the dev box up to that point.

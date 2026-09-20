@@ -83,7 +83,7 @@ If you want to use HIDMaestro through a UI instead of code, install [PadForge](h
 
 ## Who ships it.
 
-Twenty-plus independent open-source projects have adopted HIDMaestro, across six languages, for a combined installed base of about 574,000 downloads. Roughly 27,700 of those builds ship or fetch the runtime directly.
+Twenty-plus independent open-source projects have adopted HIDMaestro, across six languages, for a combined installed base of about 574,000 downloads as of September 2026. Roughly 27,700 of those builds ship or fetch the runtime directly.
 
 ### PadForge
 
