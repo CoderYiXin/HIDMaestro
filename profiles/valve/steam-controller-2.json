@@ -19,8 +19,9 @@
       {
         "id": "0x83",
         "size": 64,
-        "comment": "ID_GET_ATTRIBUTES_VALUES. The 25-byte attribute blob verbatim from a real 28DE:1302 (OpenPuck ReversePuckFirmware/identity.cpp, read with 'scmd 1302 --up 1 83'). As (tag, u32-LE) records: 01 product 0x1302, 02 capabilities, 0A bootloader build 0x68D2F92E, 04 firmware build 0x6A18D057, 09 board revision 0x48. Steam validates these byte for byte - two wrong bytes and it re-asks forever - so none of them is invented, and all of them are firmware and model values shared across units rather than per-device ones.",
-        "data": "018319010213000002000000000a2ef9d2680457d0186a0948000000"
+        "comment": "ID_GET_ATTRIBUTES_VALUES. The 25-byte attribute blob verbatim from a real 28DE:1302 (OpenPuck ReversePuckFirmware/identity.cpp, read with 'scmd 1302 --up 1 83'). As (tag, u32-LE) records: 01 product 0x1302, 02 capabilities, 0A bootloader build 0x68D2F92E, 04 firmware build 0x6A18D057, 09 board revision 0x48. The firmware build at offset 19 follows TRITON_FW_TS in Steam's hardwareupdater.cfg (issue #62). Steam's updater lists a controller whose build differs from that value in either direction, and a real unit that has taken the update reports exactly that value. Without Steam the captured build stands. Every other byte is the capture's, and all of them are firmware and model values shared across units rather than per-device ones.",
+        "data": "018319010213000002000000000a2ef9d2680457d0186a0948000000",
+        "steamFirmwareStamp": { "offset": 19, "key": "TRITON_FW_TS" }
       },
       {
         "id": "0xAE",

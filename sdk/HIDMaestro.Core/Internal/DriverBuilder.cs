@@ -80,8 +80,12 @@ public static class DriverBuilder
     /// build time. Every lookup of a driver, INF, helper or signing tool
     /// goes through here, including SwdDeviceFactory's and
     /// EmbeddedManifest's.</summary>
-    internal static string NativePrefix =>
-        RuntimeInformation.OSArchitecture == Architecture.Arm64
+    internal static string NativePrefix => NativePrefixFor(RuntimeInformation.OSArchitecture);
+
+    /// <summary>The payload prefix for a given architecture, so a check on
+    /// one machine can extract the other's payload.</summary>
+    internal static string NativePrefixFor(Architecture arch) =>
+        arch == Architecture.Arm64
             ? "HIDMaestro.Native.arm64."
             : "HIDMaestro.Native.x64.";
 
@@ -96,7 +100,7 @@ public static class DriverBuilder
         "hidmaestro.inf",
         "hidmaestro_xusb.inf",
 
-        // signtool.exe + its SXS dep tree (x64)
+        // signtool.exe + its SXS dep tree, built for this architecture
         "signtool.exe",
         "signtool.exe.manifest",
         "mssign32.dll",
@@ -113,12 +117,13 @@ public static class DriverBuilder
 
     };
 
-    /// <summary>Architecture-neutral payload. inf2cat and its dependencies
-    /// are x86 and run under emulation on ARM64 Windows, so one copy
-    /// serves both targets.</summary>
+    /// <summary>Architecture-neutral payload. Inf2Cat.exe and its
+    /// UniversalStore libraries are AMD64 .NET assemblies, so on ARM64 they
+    /// run under Windows 11's x64 emulation, which Windows 10 on ARM does
+    /// not have. One copy serves both targets.</summary>
     static readonly string[] NeutralFiles = new[]
     {
-        // inf2cat.exe + minimum deps (x86)
+        // Inf2Cat.exe + minimum deps
         "Inf2Cat.exe",
         "inf2cat.exe.manifest",
         "WindowsProtectedFiles.xml",
@@ -131,9 +136,15 @@ public static class DriverBuilder
 
     /// <summary>Every file the staging directory must hold, paired with
     /// the manifest resource name it comes from.</summary>
-    private static IEnumerable<(string File, string Logical)> AllPayload()
+    private static IEnumerable<(string File, string Logical)> AllPayload() =>
+        PayloadFor(RuntimeInformation.OSArchitecture);
+
+    /// <summary>The staging set for a given architecture: its own payload
+    /// plus the neutral tool tree.</summary>
+    internal static IEnumerable<(string File, string Logical)> PayloadFor(Architecture arch)
     {
-        foreach (string f in EmbeddedFiles) yield return (f, NativePrefix + f);
+        string prefix = NativePrefixFor(arch);
+        foreach (string f in EmbeddedFiles) yield return (f, prefix + f);
         foreach (string f in NeutralFiles) yield return (f, "HIDMaestro.Resources." + f);
     }
 
@@ -310,6 +321,18 @@ public static class DriverBuilder
         return true;
     }
 
+    /// <summary>The Inf2Cat <c>/os:</c> value for an architecture's INFs.
+    /// The catalog names the architecture the INF is decorated for.
+    ///
+    /// <para>Issue #63. Inf2Cat has no bare <c>10_ARM64</c>: its ARM64 values
+    /// name a release, starting at <c>10_RS3_ARM64</c> because 1709 is the
+    /// first Windows 10 release on ARM64. <c>10_X64</c> exists and covers
+    /// every Windows 10 release. Both produce the same catalog OS attribute,
+    /// <c>2:10.0</c>, so the ARM64 catalog reads to Windows exactly as the x64
+    /// one does.</para></summary>
+    internal static string CatalogOsFor(Architecture arch) =>
+        arch == Architecture.Arm64 ? "10_RS3_ARM64" : "10_X64";
+
     /// <summary>Generates the catalogs for the extracted INFs and signs each
     /// resulting .cat file with the test certificate.</summary>
     public static bool GenerateCatalogs()
@@ -324,10 +347,7 @@ public static class DriverBuilder
             try { File.Delete(cat); } catch { }
         }
 
-        // The catalog names the architecture the INF is decorated for.
-        string catalogOs = RuntimeInformation.OSArchitecture == Architecture.Arm64
-            ? "10_ARM64"
-            : "10_X64";
+        string catalogOs = CatalogOsFor(RuntimeInformation.OSArchitecture);
         var (rc, output) = Run(inf2cat, $"/driver:\"{dir}\" /os:{catalogOs}", workingDir: dir);
         if (rc != 0)
             throw new InvalidOperationException($"inf2cat failed: {output}");

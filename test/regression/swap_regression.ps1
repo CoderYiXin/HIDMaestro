@@ -172,6 +172,8 @@ if ($verMatch.Success) {
         Join-Path $scriptDir '..\probes\identity_derivation_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
         Join-Path $scriptDir '..\probes\identity_battery_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
         Join-Path $scriptDir '..\probes\xusb_battery_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
+        Join-Path $scriptDir '..\probes\driver_catalog_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
+        Join-Path $scriptDir '..\probes\valve_firmware_check\bin\Release\net10.0-windows10.0.26100.0\HIDMaestro.Core.dll'
     )
     # Canonical SDK output for the content-hash check. Source tree only:
     # a release bundle carries no sdk/ build output, and the version
@@ -1656,6 +1658,29 @@ function Scenario-Xusb-Battery {
                  -Message 'a virtual pad no longer reports a wired, full battery to XInput (see probe stdout)' -SkipCodes 2
 }
 
+# S61: the driver catalog per architecture (issue #63). No device. Stages
+# the x64 and the ARM64 payload with the Inf2Cat tree exactly as
+# EnsureExtracted does and runs the embedded Inf2Cat with the /os value
+# GenerateCatalogs picks for each, requiring one catalog per INF. v1.9.0
+# asked for 10_ARM64, which Inf2Cat rejects, so no ARM64 deploy reached
+# the install. Controls: that value is rejected, and each architecture's
+# INFs are refused under the other's value.
+function Scenario-Driver-Catalog {
+    Invoke-Probe -Dir 'driver_catalog_check' -Exe 'DriverCatalogCheck.exe' `
+                 -Message 'an architecture''s driver INFs no longer catalog with the value GenerateCatalogs passes Inf2Cat (see probe stdout)'
+}
+
+# S62: the 2026 Steam Controller persona against Steam's own firmware
+# updater (issue #62). The updater lists a controller whose build stamp
+# differs from the one its config names, and Steam notifies for each one
+# listed. The persona is enumerated with Steam's build and not listed. The
+# same persona answering with the v1.9.0 capture is listed, in the same
+# run. Only the updater's read-only queries run.
+function Scenario-Valve-Firmware {
+    Invoke-Probe -Dir 'valve_firmware_check' -Exe 'ValveFirmwareCheck.exe' `
+                 -Message 'Steam''s firmware updater offers the 2026 Steam Controller persona an update (see probe stdout)' -SkipCodes 2
+}
+
 # ====================================================================
 #  Runner
 # ====================================================================
@@ -1720,7 +1745,9 @@ $scenarios = @(
     @{ Name = 'S57_Xusb_Wgi_Single';              Body = ${function:Scenario-Xusb-Wgi-Single} },
     @{ Name = 'S58_Identity_Derivation';         Body = ${function:Scenario-Identity-Derivation} },
     @{ Name = 'S59_Identity_Battery';            Body = ${function:Scenario-Identity-Battery} },
-    @{ Name = 'S60_Xusb_Battery';                Body = ${function:Scenario-Xusb-Battery} }
+    @{ Name = 'S60_Xusb_Battery';                Body = ${function:Scenario-Xusb-Battery} },
+    @{ Name = 'S61_Driver_Catalog';              Body = ${function:Scenario-Driver-Catalog} },
+    @{ Name = 'S62_Valve_Firmware';              Body = ${function:Scenario-Valve-Firmware} }
 )
 
 $totalSw = [System.Diagnostics.Stopwatch]::StartNew()

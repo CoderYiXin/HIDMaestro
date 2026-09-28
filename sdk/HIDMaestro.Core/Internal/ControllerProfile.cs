@@ -507,9 +507,33 @@ public sealed class FeatureStubReport
     [JsonPropertyName("echo")]
     public bool Echo { get; set; }
 
+    /// <summary>Issue #62. A firmware build stamp inside <see cref="Data"/>
+    /// that has to match the firmware Steam currently ships rather than the
+    /// captured one. Absent for every answer whose bytes are fixed.</summary>
+    [JsonPropertyName("steamFirmwareStamp")]
+    public SteamFirmwareStampSpec? SteamFirmwareStamp { get; set; }
+
     /// <summary>Why this answer is what it is. Documentation only.</summary>
     [JsonPropertyName("comment")]
     public string? Comment { get; set; }
+}
+
+/// <summary>Issue #62. Where a little-endian u32 firmware build stamp sits in
+/// a feature answer, and which key of Steam's <c>hardwareupdater.cfg</c>
+/// names the build Steam ships for that device family. With Steam installed
+/// the answer carries that build, which is what a real unit reports once it
+/// has taken the update Steam offers. Without Steam the captured bytes
+/// stand.</summary>
+public sealed class SteamFirmwareStampSpec
+{
+    /// <summary>Byte offset of the stamp in the answer, report id
+    /// included.</summary>
+    [JsonPropertyName("offset")]
+    public int Offset { get; set; }
+
+    /// <summary>The config key, such as <c>TRITON_FW_TS</c>.</summary>
+    [JsonPropertyName("key")]
+    public string Key { get; set; } = "";
 }
 
 /// <summary>v1.3.5: fixed-byte overlay applied to the legacy input report

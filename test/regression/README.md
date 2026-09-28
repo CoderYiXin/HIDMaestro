@@ -33,7 +33,7 @@ custom profile (BEEF:F000) authored via the SDK's `HMProfileBuilder`
 
 Exit code: `0` if every scenario passed, `1` if any failed.
 
-Total wall time: about 16 minutes for the full 60-scenario battery on a
+Total wall time: about 16 minutes for the full 62-scenario battery on a
 16-core desktop. Most of it is deliberate cascade-settle waits (Series BT teardown takes about 10s
 of xinputhid filter unbinding regardless of code path). Slow machines
 with profile-extraction or PnP-quiesce overhead may push this longer.
@@ -111,6 +111,8 @@ not run elevated.
 | `S58_Identity_Derivation`         | Identity key derivation, no device (issue #60) | The default key reproduces the index-shaped ids, a consumer key derives deterministic collision-free ids, and persona serials derive as documented. |
 | `S59_Identity_Battery`            | One controller per family across nine lives (issue #60) | Parent id, ParentIdPrefix, ContainerId, HID children, interface paths, DirectInput GUID, SDL3 path and USB serial stay identical across every life. Also empty shells, two pads of one VID/PID overlapping, and a profile change at one key. |
 | `S60_Xusb_Battery`                | The XUSB battery reply on xbox-360-wired (issue #61) | The four bytes position by position, the LED reply's own version word, what `XInputGetBatteryInformation` hands a caller, and SDL's power-state mapping over those values. |
+| `S61_Driver_Catalog`              | Driver catalogs for both architectures, no device (issue #63) | The embedded Inf2Cat catalogs the x64 and the ARM64 INFs with the `/os:` value `GenerateCatalogs` picks for each, one catalog per INF. The v1.9.0 value `10_ARM64` is rejected, and each architecture's INFs are refused under the other's value. |
+| `S62_Valve_Firmware`              | steam-controller-2 against Steam's firmware updater (issue #62) | Steam's own `hardwareupdater.exe` enumerates the persona with the build its config names and does not offer it an update. The same persona answering with the v1.9.0 capture is offered one, in the same run. Skips without a Steam install. |
 
 ## What "PASS" means
 

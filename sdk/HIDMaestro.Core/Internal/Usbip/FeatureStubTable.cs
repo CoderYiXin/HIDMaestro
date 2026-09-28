@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 
 namespace HIDMaestro.Internal.Usbip;
@@ -35,24 +36,37 @@ internal sealed class FeatureStubTable
 
     // Keyed by (message id, parameter). A parameter of -1 is the entry that
     // answers the message whatever parameter it carried.
-    private readonly Dictionary<(byte Key, int Param), (byte[] Data, int Size, bool Echo)> _reports = new();
+    private readonly Dictionary<(byte Key, int Param), Entry> _reports = new();
 
-    private FeatureStubTable(bool matchesLastMessage, int messageByte)
+    /// <summary>The build Steam ships for a config key, or null. The product
+    /// reads Steam's own config, and a check supplies a fixed answer.</summary>
+    private readonly Func<string, uint?> _steamStamp;
+
+    private readonly record struct Entry(byte[] Data, int Size, bool Echo, int StampOffset, string? StampKey);
+
+    private FeatureStubTable(bool matchesLastMessage, int messageByte, Func<string, uint?> steamStamp)
     {
         MatchesLastMessage = matchesLastMessage;
         MessageByte = messageByte;
+        _steamStamp = steamStamp;
     }
 
     /// <summary>Build the table for a profile, or null when it declares
     /// none (every profile shipping before #56).</summary>
-    public static FeatureStubTable? From(ControllerProfile profile)
+    public static FeatureStubTable? From(ControllerProfile profile) =>
+        From(profile, SteamHardwareUpdater.CurrentStamp);
+
+    /// <summary>Build the table with a given source for Steam's firmware
+    /// builds, so a check can exercise an answer with Steam present and
+    /// absent on any machine.</summary>
+    internal static FeatureStubTable? From(ControllerProfile profile, Func<string, uint?> steamStamp)
     {
         var spec = profile.FeatureStubs;
         if (spec?.Reports == null || spec.Reports.Count == 0) return null;
 
         var table = new FeatureStubTable(
             string.Equals(spec.Match, "lastMessage", StringComparison.OrdinalIgnoreCase),
-            spec.MessageByte);
+            spec.MessageByte, steamStamp);
         foreach (var r in spec.Reports)
         {
             if (string.IsNullOrEmpty(r.Data) && !r.Echo) continue;
@@ -66,7 +80,18 @@ internal sealed class FeatureStubTable
                 throw new InvalidOperationException(
                     $"Profile '{profile.Id}' featureStub {r.Id}: {bytes.Length} bytes of data " +
                     $"exceed the declared {size}-byte report size.");
-            table._reports[(r.IdByte, r.Param ?? -1)] = (bytes, size, r.Echo);
+
+            // A tracked stamp replaces four captured bytes, so it has to lie
+            // inside them, and an echoed answer has none to replace.
+            var stamp = r.SteamFirmwareStamp;
+            if (stamp != null && (r.Echo || string.IsNullOrWhiteSpace(stamp.Key)
+                                  || stamp.Offset < 0 || stamp.Offset + 4 > bytes.Length))
+                throw new InvalidOperationException(
+                    $"Profile '{profile.Id}' featureStub {r.Id}: steamFirmwareStamp needs a key and " +
+                    $"four bytes of data at offset {stamp.Offset}, in an answer that is not echoed.");
+
+            table._reports[(r.IdByte, r.Param ?? -1)] =
+                new Entry(bytes, size, r.Echo, stamp?.Offset ?? -1, stamp?.Key);
         }
         return table._reports.Count > 0 ? table : null;
     }
@@ -92,6 +117,10 @@ internal sealed class FeatureStubTable
         var full = new byte[entry.Size];
         var body = entry.Echo && written != null && written.Length > 0 ? written : entry.Data;
         Array.Copy(body, full, Math.Min(body.Length, full.Length));
+        // Issue #62. Answer with the build Steam currently ships, so its
+        // updater sees a unit that has already taken the update it offers.
+        if (entry.StampKey != null && _steamStamp(entry.StampKey) is uint current)
+            BinaryPrimitives.WriteUInt32LittleEndian(full.AsSpan(entry.StampOffset, 4), current);
         if (wLength >= full.Length) return full;
         var cut = new byte[wLength];
         Array.Copy(full, cut, wLength);
