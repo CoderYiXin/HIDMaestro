@@ -7,11 +7,20 @@ using System.Text;
 namespace HIDMaestro.Internal.Usbip;
 
 /// <summary>Talks to usbip-win2's vhci host controller through its public
-/// device-interface ioctl API (issue #39). Grounded in the pinned
-/// 0.9.7.5 sources: the interface GUID and every struct layout are
-/// <c>include/usbip/vhci.h</c>, which the driver documents as a public
-/// API whose input/output data stay stable for the lifetime of each
-/// IOCTL code.
+/// device-interface ioctl API (issue #39). The interface GUID and every
+/// struct layout are <c>include/usbip/vhci.h</c>.
+///
+/// <para>The layouts are not stable across releases, so the client speaks
+/// three of them and asks the driver which one it has. 0.9.8.0 appended a
+/// serial and a flag to the attach request and to each imported-device
+/// row. 0.9.8.1 put a <c>location_hash</c> after <c>port</c> in the
+/// location that attach, stop and every row carry, which moves busid,
+/// service and host 4 bytes on. Each size and offset in
+/// <see cref="Layouts"/> was checked by compiling that tag's own header
+/// with MSVC for x64 and ARM64. The driver compares every request's size
+/// field with its own <c>sizeof</c> and refuses a mismatch before acting
+/// on it (vhci_ioctl.cpp in all three tags), so a probe with the wrong
+/// size is harmless.</para>
 ///
 /// <para>Attach uses PLUGIN_HARDWARE_ONCE (function 0x806): one attempt,
 /// no background retry loop, because this SDK owns the server lifecycle
@@ -26,11 +35,14 @@ namespace HIDMaestro.Internal.Usbip;
 /// availability detection: no usbip-win2, no interface, no backend.</para></summary>
 internal static class VhciClient
 {
-    // include/usbip/vhci.h GUID_DEVINTERFACE_USB_HOST_CONTROLLER
+    // include/usbip/vhci.h GUID_DEVINTERFACE_USB_HOST_CONTROLLER, renamed
+    // GUID_DEVINTERFACE_USBIP_VHCI in 0.9.8.1 with the same value.
     private static readonly Guid VhciInterfaceGuid = new(0xB4030C06, 0xDC5F, 0x4FCC,
         0x87, 0xEB, 0xE5, 0x51, 0x5A, 0x09, 0x35, 0xC0);
 
-    // CTL_CODE(FILE_DEVICE_UNKNOWN, fn, METHOD_BUFFERED, FILE_READ_DATA | FILE_WRITE_DATA)
+    // CTL_CODE(FILE_DEVICE_UNKNOWN, fn, METHOD_BUFFERED, FILE_READ_DATA | FILE_WRITE_DATA),
+    // the same in every tag. 0x806 is plugin_hardware_internal in 0.9.7.x
+    // and plugin_hardware_once from 0.9.8.0: one attempt, no retry loop.
     private const uint PLUGIN_HARDWARE = 0x0022E000;         // fn 0x800
     private const uint PLUGOUT_HARDWARE = 0x0022E004;        // fn 0x801
     private const uint GET_IMPORTED_DEVICES = 0x0022E008;    // fn 0x802
@@ -41,15 +53,31 @@ internal static class VhciClient
     private const int ServiceSize = 32;  // NI_MAXSERV
     private const int HostSize = 1025;   // NI_MAXHOST
 
-    // vhci::ioctl::plugin_hardware: ULONG size; int port; busid[32];
-    // service[32]; host[1025]; natural alignment pads the 1097 payload
-    // bytes to 1100.
-    private const int LocationOffset = 8;
-    private const int PluginStructSize = 1100;
-    // vhci::ioctl::stop_attach_attempts adds int count after host; 1101
-    // payload bytes pad to 1104.
-    private const int StopStructSize = 1104;
+    // Every request starts with ULONG size, and the location that follows
+    // starts with int port, so the port an attach returns is at offset 4
+    // in all three layouts, and so is the first imported-device row.
+    private const int HeaderSize = 4;
     private const int PlugoutStructSize = 8;
+
+    // vhci.cpp set_usb_ports_cnt: MAX_TOTAL_PORTS is 255. The driver fails
+    // GET_IMPORTED_DEVICES with STATUS_BUFFER_TOO_SMALL when more devices
+    // are attached than the buffer holds, so a buffer this size cannot
+    // make the layout probe fail for that reason.
+    private const int MaxPorts = 255;
+
+    /// <summary>One release family's layout. <c>PluginSize</c>,
+    /// <c>StopSize</c> and <c>RowSize</c> are sizeof
+    /// plugin_hardware, stop_attach_attempts and imported_device.
+    /// <c>BusIdOffset</c> is where busid starts inside the location.</summary>
+    internal sealed record Layout(string Name, int PluginSize, int StopSize, int RowSize, int BusIdOffset);
+
+    /// <summary>Newest first, which is the order the probe tries them.</summary>
+    internal static readonly Layout[] Layouts =
+    {
+        new("0.9.8.1", PluginSize: 1124, StopSize: 1108, RowSize: 1132, BusIdOffset: 8),
+        new("0.9.8.0", PluginSize: 1120, StopSize: 1104, RowSize: 1128, BusIdOffset: 4),
+        new("0.9.7.x", PluginSize: 1100, StopSize: 1104, RowSize: 1108, BusIdOffset: 4),
+    };
 
     /// <summary>True when usbip-win2's vhci controller is present and
     /// running. Requires no elevation.</summary>
@@ -93,22 +121,64 @@ internal static class VhciClient
             .CopyTo(buf.AsSpan(offset + BusIdSize + ServiceSize));
     }
 
+    /// <summary>Find the layout the installed driver speaks. Every tag
+    /// answers GET_IMPORTED_DEVICES only when the size field equals its own
+    /// sizeof(get_imported_devices), the header plus one row, and the call
+    /// changes nothing, so the first candidate that succeeds is the one.
+    /// The rows it returned are handed back for <see cref="GetImportedDevices"/>.</summary>
+    internal static Layout Probe(IntPtr handle, out byte[] rows, out uint written)
+    {
+        int lastError = 0;
+        foreach (var layout in Layouts)
+        {
+            var buf = new byte[HeaderSize + layout.RowSize * MaxPorts];
+            BitConverter.GetBytes((uint)(HeaderSize + layout.RowSize)).CopyTo(buf, 0);
+            if (DeviceIoControl(handle, GET_IMPORTED_DEVICES, buf, (uint)buf.Length,
+                    buf, (uint)buf.Length, out written, IntPtr.Zero))
+            {
+                rows = buf;
+                return layout;
+            }
+            lastError = Marshal.GetLastWin32Error();
+        }
+        throw new InvalidOperationException(
+            "The usbip-win2 host controller accepted none of the request layouts this SDK knows " +
+            $"(0.9.8.1, 0.9.8.0, 0.9.7.x). Last error 0x{lastError:X8}.");
+    }
+
+    /// <summary>The layout the installed driver speaks, for diagnostics
+    /// and tests. Null when no host controller answers.</summary>
+    public static string? InstalledLayout()
+    {
+        try
+        {
+            using var h = Open();
+            return Probe(h.Handle, out _, out _).Name;
+        }
+        catch { return null; }
+    }
+
     /// <summary>Attach one exported device. Blocks until the driver has
     /// connected to the server, completed the import handshake, and
     /// plugged the UDE device in. Returns the vhci port for detach.</summary>
     public static int Attach(string host, int port, string busid)
     {
         using var h = Open();
-        var buf = new byte[PluginStructSize];
-        BitConverter.GetBytes((uint)PluginStructSize).CopyTo(buf, 0);
-        WriteLocation(buf, LocationOffset, busid, port.ToString(), host);
+        var layout = Probe(h.Handle, out _, out _);
+        var buf = new byte[layout.PluginSize];
+        BitConverter.GetBytes((uint)layout.PluginSize).CopyTo(buf, 0);
+        WriteLocation(buf, HeaderSize + layout.BusIdOffset, busid, port.ToString(), host);
+        // 0.9.8.x serial and wsk_events stay zero. An empty serial leaves
+        // the device's own serial string in place (wsk_receive.cpp only
+        // substitutes a non-empty one), and wsk_events false keeps the IRP
+        // receive path rather than WSK event callbacks (vhci_ioctl.cpp).
 
         if (!DeviceIoControl(h.Handle, PLUGIN_HARDWARE_ONCE, buf, (uint)buf.Length,
                 buf, (uint)buf.Length, out _, IntPtr.Zero))
             throw new Win32Exception(Marshal.GetLastWin32Error(),
-                $"usbip-win2 attach of {busid} at {host}:{port} failed.");
+                $"usbip-win2 {layout.Name} attach of {busid} at {host}:{port} failed.");
 
-        int vhciPort = BitConverter.ToInt32(buf, 4);
+        int vhciPort = BitConverter.ToInt32(buf, HeaderSize);
         if (vhciPort < 1)
             throw new InvalidOperationException($"usbip-win2 attach of {busid} returned port {vhciPort}.");
         return vhciPort;
@@ -133,9 +203,10 @@ internal static class VhciClient
         try
         {
             using var h = Open();
-            var buf = new byte[StopStructSize];
-            BitConverter.GetBytes((uint)StopStructSize).CopyTo(buf, 0);
-            WriteLocation(buf, LocationOffset, busid, port.ToString(), host);
+            var layout = Probe(h.Handle, out _, out _);
+            var buf = new byte[layout.StopSize];
+            BitConverter.GetBytes((uint)layout.StopSize).CopyTo(buf, 0);
+            WriteLocation(buf, HeaderSize + layout.BusIdOffset, busid, port.ToString(), host);
             DeviceIoControl(h.Handle, STOP_ATTACH_ATTEMPTS, buf, (uint)buf.Length,
                 buf, (uint)buf.Length, out _, IntPtr.Zero);
         }
@@ -151,29 +222,18 @@ internal static class VhciClient
         try
         {
             using var h = Open();
-            // imported_device = location (4 + 32 + 32 + 1025 = 1093) +
-            // properties (4 devid + 4 speed + 2 + 2 = 12) = 1105, padded
-            // to 1108. get_imported_devices = 4 size + pad? The struct is
-            // { ULONG size; imported_device devices[]; } with the array at
-            // natural alignment 4 → offset 4.
-            const int RowSize = 1108;
-            const int HeaderSize = 4;
-            var buf = new byte[HeaderSize + RowSize * 16];
-            // The driver validates r->size against sizeof(get_imported_devices),
-            // which is the header plus ONE ANYSIZE_ARRAY row (1112), not the
-            // caller's buffer length (vhci_ioctl.cpp get_imported_devices).
-            BitConverter.GetBytes((uint)(HeaderSize + RowSize)).CopyTo(buf, 0);
-            if (!DeviceIoControl(h.Handle, GET_IMPORTED_DEVICES, buf, (uint)buf.Length,
-                    buf, (uint)buf.Length, out uint written, IntPtr.Zero))
-                return result;
-            int rows = written >= HeaderSize ? (int)((written - HeaderSize) / RowSize) : 0;
+            // The probe's successful call is the listing: a header of ULONG
+            // size, then one imported_device row per attached device.
+            var layout = Probe(h.Handle, out byte[] buf, out uint written);
+            int rows = written >= HeaderSize ? (int)((written - HeaderSize) / layout.RowSize) : 0;
             for (int i = 0; i < rows; i++)
             {
-                int off = HeaderSize + i * RowSize;
+                int off = HeaderSize + i * layout.RowSize;
                 int port = BitConverter.ToInt32(buf, off);
-                string busid = ReadUtf8(buf, off + 4, BusIdSize);
-                string service = ReadUtf8(buf, off + 4 + BusIdSize, ServiceSize);
-                string host = ReadUtf8(buf, off + 4 + BusIdSize + ServiceSize, HostSize);
+                int busidAt = off + layout.BusIdOffset;
+                string busid = ReadUtf8(buf, busidAt, BusIdSize);
+                string service = ReadUtf8(buf, busidAt + BusIdSize, ServiceSize);
+                string host = ReadUtf8(buf, busidAt + BusIdSize + ServiceSize, HostSize);
                 if (port >= 1) result.Add((port, busid, service, host));
             }
         }

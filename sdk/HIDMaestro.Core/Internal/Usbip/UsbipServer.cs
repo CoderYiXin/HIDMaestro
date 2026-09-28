@@ -13,7 +13,7 @@ namespace HIDMaestro.Internal.Usbip;
 /// busid. usbip-win2's vhci driver connects here (kernel WSK, one TCP
 /// connection per attached device), performs the OP_REQ_IMPORT handshake,
 /// and then streams CMD_SUBMIT / CMD_UNLINK, which this server answers
-/// per the 0.9.7.5 wire contract read at source (see
+/// per the wire contract read at source in 0.9.7.5, which 0.9.8.1 keeps (see
 /// <see cref="UsbipProtocol"/>).
 ///
 /// <para>The listen port is fixed-range rather than ephemeral

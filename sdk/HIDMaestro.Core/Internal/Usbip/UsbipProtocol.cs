@@ -5,8 +5,9 @@ namespace HIDMaestro.Internal.Usbip;
 
 /// <summary>USB/IP wire protocol constants and codecs (issue #39).
 ///
-/// <para>Grounded byte-for-byte in the peer we speak to, usbip-win2
-/// v.0.9.7.5 (the version this backend pins): the 48-byte packed
+/// <para>Grounded byte-for-byte in the peer we speak to, usbip-win2,
+/// read at v.0.9.7.5 and unchanged on the wire through v.0.9.8.1, the
+/// version this backend pins: the 48-byte packed
 /// command header and 16-byte isochronous packet descriptor are
 /// <c>include/usbip/proto.h</c>, the OP_* handshake structs are
 /// <c>include/usbip/proto_op.h</c>, and USBIP_VERSION 0x0111 with the

@@ -5,8 +5,8 @@
 // deploys itself. This probe exercises that deploy path's own code
 // rather than the upstream installer's:
 //
-//   1. The installer binary is embedded and byte-exact against the
-//      upstream release's published SHA256.
+//   1. The installer binary is embedded and byte-exact against its
+//      pinned SHA-256.
 //   2. Extraction writes it to disk intact, alongside the BSD-2-Clause
 //      notice redistribution requires.
 //   3. A tampered extracted copy is REFUSED and deleted, never executed.
@@ -14,6 +14,8 @@
 //      already has the transport, without reinstalling.
 //   5. The public API surface makes composites unconditional: there is a
 //      pre-install entry point, and availability is informational.
+//   6. The host controller answers exactly one of the request layouts the
+//      client knows, and it is the one its installed driver speaks.
 //
 // Running the upstream installer itself from an absent state is covered
 // by the live E2E probe and by the from-scratch installs performed on
@@ -70,7 +72,7 @@ internal static class Program
                 embeddedHash = Convert.ToHexString(SHA256.HashData(s)).ToLowerInvariant();
             }
         }
-        Check("embedded installer is the upstream release byte-for-byte",
+        Check("embedded installer matches its pinned SHA-256 byte for byte",
               embeddedHash == ExpectedSha, embeddedHash);
         // The digest above already pins the bytes exactly. This asserts
         // the resource is a whole installer rather than a stub.
@@ -94,7 +96,7 @@ internal static class Program
 
         string extracted = (string)extract.Invoke(null, null)!;
         Check("extraction produced the installer on disk", File.Exists(extracted), extracted);
-        Check("extracted bytes hash to the upstream digest",
+        Check("extracted bytes hash to the pinned digest",
               File.Exists(extracted) &&
               Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(extracted)))
                   .Equals(ExpectedSha, StringComparison.OrdinalIgnoreCase));
@@ -228,6 +230,38 @@ internal static class Program
             Check("stamping twice does not duplicate the id",
                   again.Count(i => i.IndexOf("HIDMAESTRO", StringComparison.OrdinalIgnoreCase) >= 0) == 1,
                   $"{again.Length} id(s)");
+        }
+
+        // The request layout changed in 0.9.8.0 and again in 0.9.8.1, and
+        // the client asks the driver which one it speaks. The answer has
+        // to name the installed driver's own layout, judged by its bytes.
+        Console.WriteLine("\n-- Host controller request layout --");
+        if (!VhciClient.IsAvailable())
+        {
+            Console.WriteLine("  [note] transport not present; layout checks skipped.");
+        }
+        else
+        {
+            string? layout = VhciClient.InstalledLayout();
+            Check("the host controller answers one known request layout", layout != null, layout ?? "none");
+
+            string? sys = UsbipDriverInstaller.InstalledUdeImagePath();
+            string hash = sys != null && File.Exists(sys)
+                ? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(sys))).ToLowerInvariant()
+                : "";
+            string? expected =
+                hash == UsbipDriverInstaller.PinnedUdeHash("usbip2_ude.sys") ? UsbipDriverInstaller.Version
+                : UsbipDriverInstaller.LegacyUdes.Any(l => l.SysSha256 == hash) ? "0.9.7.x"
+                : null;
+            if (expected == null)
+                Console.WriteLine($"  [note] installed driver {(hash.Length > 0 ? hash[..16] : "unreadable")} is not one HIDMaestro installed; layout not tied to a version.");
+            else
+                Check("and it is the layout of the installed driver", layout == expected,
+                      $"{layout} for {hash[..16]}, expected {expected}");
+
+            var imports = VhciClient.GetImportedDevices();
+            Check("the device list parses in that layout", imports.All(i => i.Port >= 1),
+                  $"{imports.Count} attached");
         }
 
         Check("HMContext exposes an optional pre-install entry point",

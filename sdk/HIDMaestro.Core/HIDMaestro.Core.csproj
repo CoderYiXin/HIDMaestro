@@ -99,7 +99,7 @@
     <Copy SourceFiles="@(_HMVrFiles)" DestinationFiles="@(_HMVrFiles->'$(MSBuildThisFileDirectory)Resources\vr\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(_HMVrFiles)' != ''" />
     <Copy SourceFiles="@(_HMInf2cat)"    DestinationFolder="$(MSBuildThisFileDirectory)Resources\" SkipUnchangedFiles="true" />
 
-    <!-- usbip-win2 0.9.7.5 installer, bundled (issue #39). Composite USB
+    <!-- usbip-win2 0.9.8.1 installer, bundled (issue #39). Composite USB
          personas need a driver-backed USB device for their audio
          endpoints, so the SDK ships the transport rather than asking a
          user to go install one: HIDMaestro deploys it on demand, the
@@ -107,21 +107,20 @@
          binary redistribution; the required notice ships beside it as
          THIRD-PARTY-NOTICES.txt and is written to disk at install time.
 
-         The 33 MB binary is NOT committed. It is fetched once from the
-         upstream release and cached in Resources/ (gitignored), then
-         verified against the SHA256 the GitHub release API publishes for
-         that asset. A hash mismatch FAILS the build rather than
-         embedding an unverified binary. -->
+         The binaries are NOT committed. Each is fetched once and cached
+         in Resources/ (gitignored), then checked against its pinned
+         SHA-256. A hash mismatch FAILS the build rather than embedding an
+         unverified binary. -->
     <PropertyGroup>
-      <HMUsbipVersion>0.9.7.5</HMUsbipVersion>
-      <HMUsbipAsset>USBip-$(HMUsbipVersion)-x64-release.exe</HMUsbipAsset>
-      <HMUsbipSha256>6f429dd47cfe371dbd275ced5fc512494918683b07853cbdf2d8c25e4274fd74</HMUsbipSha256>
+      <HMUsbipVersion>0.9.8.1</HMUsbipVersion>
+      <HMUsbipAsset>USBip-$(HMUsbipVersion)-x64.exe</HMUsbipAsset>
+      <HMUsbipSha256>38cad6d4432b52d5bb9409d9ad03b72fdffc4ada4cd3a48fbeca1a2752a8518a</HMUsbipSha256>
       <HMUsbipFile>$(MSBuildThisFileDirectory)Resources\$(HMUsbipAsset)</HMUsbipFile>
       <HMUsbipUrl>https://github.com/vadimgrn/usbip-win2/releases/download/v.$(HMUsbipVersion)/$(HMUsbipAsset)</HMUsbipUrl>
-      <HMUsbipArmAsset>USBip-$(HMUsbipVersion)-arm64-release.exe</HMUsbipArmAsset>
-      <HMUsbipArmSha256>0dc47a895ab6dddcfa5ef4cd12014f9f3515770bec706773c9e9f5f876ebccb5</HMUsbipArmSha256>
+      <HMUsbipArmAsset>USBip-$(HMUsbipVersion)-arm64-release-attestation.exe</HMUsbipArmAsset>
+      <HMUsbipArmSha256>cab7ff97f79275eeb5c5b8bb2eb3111ff6b6c4eead07d9bec9be5bd1e3a35800</HMUsbipArmSha256>
       <HMUsbipArmFile>$(MSBuildThisFileDirectory)Resources\$(HMUsbipArmAsset)</HMUsbipArmFile>
-      <HMUsbipArmUrl>https://github.com/vadimgrn/usbip-win2/releases/download/v.$(HMUsbipVersion)/$(HMUsbipArmAsset)</HMUsbipArmUrl>
+      <HMUsbipArmUrl>https://static.ossign.org/signed/usbip-win2/$(HMUsbipArmAsset)</HMUsbipArmUrl>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="$(HMUsbipUrl)"
@@ -136,8 +135,10 @@
     <Error Condition="'$(_HMUsbipActualHash.ToLowerInvariant())' != '$(HMUsbipSha256)'"
            Text="usbip-win2 installer hash mismatch. Expected $(HMUsbipSha256), got $(_HMUsbipActualHash). Delete $(HMUsbipFile) and rebuild to re-fetch." />
 
-    <!-- ARM64 transport. 0.9.7.5 is the last release to publish one, which
-         is why the pin sits here rather than on a later version. -->
+    <!-- ARM64 transport. The 0.9.8.1 release page carries the x64
+         installer only. This is the ARM64 build of the same tag that the
+         project's signer posted in usbip-win2 issue #13, with drivers
+         attestation-signed by Microsoft. -->
     <DownloadFile SourceUrl="$(HMUsbipArmUrl)"
                   DestinationFolder="$(MSBuildThisFileDirectory)Resources"
                   DestinationFileName="$(HMUsbipArmAsset)"
@@ -153,8 +154,9 @@
     <!-- The host controller's own INF/SYS/CAT, unpacked from the verified
          installers above and checked file by file against
          UsbipPackage.json. The SDK uses them to move a machine off the
-         0.9.7.7 transport through PnP, which the installer cannot do
-         without launching the old version's uninstaller. -->
+         transport an earlier release installed through PnP, which the
+         installer cannot do without launching the old version's
+         uninstaller. -->
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(HMRepoRoot)scripts\prepare_usbip.ps1&quot; -InstallerDirectory &quot;$(MSBuildThisFileDirectory)Resources&quot; -DestinationDirectory &quot;$(MSBuildThisFileDirectory)Resources\usbip&quot;" />
 
     <Copy SourceFiles="$(MSBuildThisFileDirectory)THIRD-PARTY-NOTICES.txt"

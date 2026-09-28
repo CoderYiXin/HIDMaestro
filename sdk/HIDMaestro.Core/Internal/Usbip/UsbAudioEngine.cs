@@ -23,8 +23,9 @@ namespace HIDMaestro.Internal.Usbip;
 /// the thread parks on an event and costs nothing, which is what keeps
 /// the idle-cost story clean.</para>
 ///
-/// <para>Wire rules for the completions come from usbip-win2 0.9.7.5
-/// wsk_receive.cpp: OUT isochronous replies carry descriptors only; IN
+/// <para>Wire rules for the completions come from usbip-win2's
+/// wsk_receive.cpp, read at 0.9.7.5, and 0.9.8.1's receive path applies
+/// the same checks: OUT isochronous replies carry descriptors only; IN
 /// replies carry compacted data (no inter-packet padding) followed by
 /// descriptors whose offsets must echo the submit's offsets, with
 /// actual_length equal to the sum of per-packet actual lengths.</para></summary>

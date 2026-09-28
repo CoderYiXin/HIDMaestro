@@ -17,11 +17,12 @@ namespace HIDMaestro.Internal.Usbip;
 /// composite profile and it works. There is no separate download, no
 /// second package, and nothing for a user to go find.</para>
 ///
-/// <para>The embedded binary is the upstream release asset, unmodified,
-/// and its SHA256 is verified after extraction against the digest the
-/// upstream release publishes. A mismatch throws rather than running an
-/// unverified installer. The BSD-2-Clause notice ships beside it and is
-/// written next to the binary at deploy time.</para>
+/// <para>The embedded installer is usbip-win2's own signed build,
+/// unmodified: the x64 one from the 0.9.8.1 release, the ARM64 one of the
+/// same tag from the project's signer. Its SHA-256 is checked after
+/// extraction against the pinned value, and a mismatch throws rather than
+/// running an unverified installer. The BSD-2-Clause notice ships beside
+/// it and is written next to the binary at deploy time.</para>
 ///
 /// <para>Install is silent, needs the same elevation
 /// <see cref="HIDMaestro.HMContext.InstallDriver"/> already needs, and
@@ -32,25 +33,24 @@ namespace HIDMaestro.Internal.Usbip;
 /// machine, on the first composite controller ever created.</para></summary>
 internal static class UsbipDriverInstaller
 {
-    public const string Version = "0.9.7.5";
-    /// <summary>The installer matching this OS. 0.9.7.5 publishes both
-    /// architectures, so one AnyCPU assembly carries both and picks here.</summary>
+    public const string Version = "0.9.8.1";
+    /// <summary>The installer matching this OS. One AnyCPU assembly carries
+    /// both architectures and picks here.</summary>
     internal static string InstallerFile =>
         RuntimeInformation.OSArchitecture == Architecture.Arm64
-            ? "USBip-" + Version + "-arm64-release.exe"
-            : "USBip-" + Version + "-x64-release.exe";
+            ? "USBip-" + Version + "-arm64-release-attestation.exe"
+            : "USBip-" + Version + "-x64.exe";
 
     private const string NoticeFile = "THIRD-PARTY-NOTICES.txt";
 
-    /// <summary>SHA256 of the upstream release asset, as published by the
-    /// GitHub release API for v.0.9.7.5. The MSBuild PackResources target
-    /// verifies the same digest at build time, so a corrupted or
-    /// substituted binary fails the build; this is the runtime half of
-    /// that check, covering the extracted copy.</summary>
+    /// <summary>Pinned SHA-256 of the bundled installer. The MSBuild
+    /// PackResources target checks the same value at build time, so a
+    /// corrupted or substituted binary fails the build. This is the
+    /// runtime half of that check, covering the extracted copy.</summary>
     internal static string InstallerSha256 =>
         RuntimeInformation.OSArchitecture == Architecture.Arm64
-            ? "0dc47a895ab6dddcfa5ef4cd12014f9f3515770bec706773c9e9f5f876ebccb5"
-            : "6f429dd47cfe371dbd275ced5fc512494918683b07853cbdf2d8c25e4274fd74";
+            ? "cab7ff97f79275eeb5c5b8bb2eb3111ff6b6c4eead07d9bec9be5bd1e3a35800"
+            : "38cad6d4432b52d5bb9409d9ad03b72fdffc4ada4cd3a48fbeca1a2752a8518a";
 
     private static readonly object s_lock = new();
     private static bool s_verifiedThisProcess;
@@ -135,10 +135,11 @@ internal static class UsbipDriverInstaller
 
     // ── Moving a machine off the transport earlier releases installed ────
     //
-    // HIDMaestro through v1.8.1 installed usbip-win2 0.9.7.7. The pin is
-    // now 0.9.7.5, the version the battery runs on and the only one of
-    // the two with an ARM64 build, and a machine still carrying the old
-    // host controller is moved to it here with nothing for the user to do.
+    // HIDMaestro through v1.8.1 installed usbip-win2 0.9.7.7 (x64 only),
+    // and v1.9.0 and v1.9.1 installed 0.9.7.5. The pin is now 0.9.8.1,
+    // which carries the fix for the attach work item that blocked driver
+    // unload, and a machine still carrying one of the older host
+    // controllers is moved to it here with nothing for the user to do.
     //
     // This never runs the vendor installer. Run over an existing install
     // it launches the previous version's uninstaller, which shows a
@@ -150,24 +151,29 @@ internal static class UsbipDriverInstaller
     // pinned INF onto the existing host controller devnode.
     //
     // Only the host controller driver (usbip2_ude) changes. The root-hub
-    // filter is left exactly as it is, and 0.9.7.5's host controller
-    // runs against 0.9.7.7's filter: that pairing passed the full battery
-    // twice before this shipped.
+    // filter is left exactly as it is. The filter hands the host
+    // controller its select-configuration, select-interface and pipe-reset
+    // requests as a tagged control transfer, and that encoding is the same
+    // in 0.9.7.5 and 0.9.8.1 (ude_filter/request.h, ude/filter_request.cpp).
     //
-    // It acts on one exact driver and nothing else. A host controller
-    // whose bytes are not 0.9.7.7's was put there by something other than
-    // HIDMaestro (VIIPER, DS4Windows, Handheld Companion) and may be what
-    // that program needs, so it is left alone.
+    // It acts on the exact drivers HIDMaestro installed and nothing else. A
+    // host controller whose bytes are none of them was put there by
+    // something other than HIDMaestro (VIIPER, DS4Windows, Handheld
+    // Companion) and may be what that program needs, so it is left alone.
 
-    /// <summary>SHA-256 of usbip2_ude.sys from the usbip-win2 0.9.7.7 x64
-    /// release, the transport HIDMaestro installed through v1.8.1.</summary>
-    private const string LegacyUdeSha256 =
-        "51db440065393e588a6b2585508c50eb3e1510b7b06d9afa6c5bde583751ea7d";
+    /// <summary>A host controller an earlier HIDMaestro release installed:
+    /// its usbip2_ude.sys hash, and the build stamp in its INF DriverVer,
+    /// which tells its package apart in %windir%\INF.</summary>
+    internal readonly record struct LegacyUde(string Version, bool Arm64, string SysSha256, string DriverVer);
 
-    /// <summary>The build stamp in that release's usbip2_ude.inf DriverVer
-    /// (04/19/2026,21.14.27.907), which tells its package apart in
-    /// %windir%\INF.</summary>
-    private const string LegacyUdeDriverVer = "21.14.27.907";
+    internal static readonly LegacyUde[] LegacyUdes =
+    {
+        // 04/19/2026,21.14.27.907. Installed through v1.8.1.
+        new("0.9.7.7", false, "51db440065393e588a6b2585508c50eb3e1510b7b06d9afa6c5bde583751ea7d", "21.14.27.907"),
+        // 01/27/2026,8.49.53.229 and 01/30/2026,8.37.35.720. v1.9.0 and v1.9.1.
+        new("0.9.7.5", false, "db9d6a97a043deab8e34122dcf429eaabb4af0d10279c8fea1248976a368c1d4", "8.49.53.229"),
+        new("0.9.7.5", true, "2a969ba59b3ffe33227ca1de17759a189d085d51c4f4e0f34df0b244ee558ab8", "8.37.35.720"),
+    };
 
     private const string UdeHardwareId = "ROOT\\USBIP_WIN2\\UDE";
     private static readonly string[] UdeFiles = { "usbip2_ude.inf", "usbip2_ude.sys", "usbip2_ude.cat" };
@@ -175,15 +181,15 @@ internal static class UsbipDriverInstaller
     /// <summary>SHA-256 of each pinned host controller file for this
     /// machine's architecture. The build checks the same values against
     /// UsbipPackage.json before embedding the files.</summary>
-    private static string PinnedUdeHash(string file) =>
+    internal static string PinnedUdeHash(string file) =>
         (RuntimeInformation.OSArchitecture == Architecture.Arm64, file) switch
         {
-            (false, "usbip2_ude.inf") => "0c7d2aa9bda1fd88e69a8c15fcb38fcdf423cd8731bc7c2a999eb34aecca4fef",
-            (false, "usbip2_ude.sys") => "db9d6a97a043deab8e34122dcf429eaabb4af0d10279c8fea1248976a368c1d4",
-            (false, "usbip2_ude.cat") => "a25fd0c09d15cc0170f250958f4f8b222025729597ec7d376c3c639374856214",
-            (true, "usbip2_ude.inf") => "4ebaa77c54dba2fa27ea4aae5d4a3f288720623ace52742c99d0a0020494c604",
-            (true, "usbip2_ude.sys") => "2a969ba59b3ffe33227ca1de17759a189d085d51c4f4e0f34df0b244ee558ab8",
-            (true, "usbip2_ude.cat") => "49c6570d479379b7db5c19fe0c9ae31804f1b4964321c5b14f8bcad1c044614c",
+            (false, "usbip2_ude.inf") => "1ae9e8dc497929de1a6be1291ae1dca6a19e7fd6c0351e8c266f65dd91f15073",
+            (false, "usbip2_ude.sys") => "abd4fc43dce40e027e4acc884cbfe92433e026206f6565c5ee5284a39441169a",
+            (false, "usbip2_ude.cat") => "84dd6cc5985857adf1514a9ee202210ff3ee1384c9be40fd49d6810e23e25f3a",
+            (true, "usbip2_ude.inf") => "04b6ac34874198fc73b6bb11c003fc89f87df9d504f78109eb2b500d05ef09c1",
+            (true, "usbip2_ude.sys") => "38c64546938ea99b6c3ec69f3e5169ad79afc47a59faceb51cfb35d038e249a2",
+            (true, "usbip2_ude.cat") => "14c2aa313740e362256d4da721e18751f0ecf0dc19b5c5f3887f084145a6af78",
             _ => throw new ArgumentOutOfRangeException(nameof(file)),
         };
 
@@ -209,11 +215,9 @@ internal static class UsbipDriverInstaller
 
     private static void ReplaceLegacyTransport(Action<string>? progress)
     {
-        // 0.9.7.7 published no ARM64 build, so there is nothing to find there.
-        if (RuntimeInformation.OSArchitecture != Architecture.X64) return;
-
         // A machine whose owner wants the transport left as it is, and the
-        // battery, which has to be able to run a composite on 0.9.7.7 first.
+        // battery, which has to be able to run a composite on an older
+        // transport first.
         if (Environment.GetEnvironmentVariable("HIDMAESTRO_KEEP_TRANSPORT") == "1")
         {
             DeviceOrchestrator.LogDiag("UsbipDriverInstaller: HIDMAESTRO_KEEP_TRANSPORT=1; not replacing the host controller.");
@@ -223,12 +227,17 @@ internal static class UsbipDriverInstaller
         string? sys = InstalledUdeImagePath();
         if (sys == null || !File.Exists(sys)) return;
         string installed = Sha256Of(sys);
-        if (!installed.Equals(LegacyUdeSha256, StringComparison.OrdinalIgnoreCase))
+        bool arm64 = RuntimeInformation.OSArchitecture == Architecture.Arm64;
+        LegacyUde? found = null;
+        foreach (var legacy in LegacyUdes)
+            if (legacy.Arm64 == arm64 && installed.Equals(legacy.SysSha256, StringComparison.OrdinalIgnoreCase))
+                found = legacy;
+        if (found is not LegacyUde old)
         {
             DeviceOrchestrator.LogDiag(
                 installed.Equals(PinnedUdeHash("usbip2_ude.sys"), StringComparison.OrdinalIgnoreCase)
                     ? $"UsbipDriverInstaller: host controller is the pinned {Version}."
-                    : $"UsbipDriverInstaller: host controller {installed[..16]} is neither {Version} nor 0.9.7.7; leaving it alone.");
+                    : $"UsbipDriverInstaller: host controller {installed[..16]} is not one HIDMaestro installed; leaving it alone.");
             return;
         }
 
@@ -237,7 +246,7 @@ internal static class UsbipDriverInstaller
         int imports = VhciClient.GetImportedDevices().Count;
         if (imports > 0)
         {
-            DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: 0.9.7.7 host controller has {imports} attached device(s); not replacing it now.");
+            DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: {old.Version} host controller has {imports} attached device(s); not replacing it now.");
             return;
         }
 
@@ -252,18 +261,18 @@ internal static class UsbipDriverInstaller
         // whoever attached it, so that is what decides. Any doubt means no.
         if (HostControllerUsedSinceBoot(out string why))
         {
-            DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: 0.9.7.7 host controller left alone for this session: {why}.");
+            DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: {old.Version} host controller left alone for this session: {why}.");
             return;
         }
 
         progress?.Invoke($"Updating the USB audio transport to usbip-win2 {Version}...");
-        DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: replacing the usbip-win2 0.9.7.7 host controller with {Version}.");
+        DeviceOrchestrator.LogDiag($"UsbipDriverInstaller: replacing the usbip-win2 {old.Version} host controller with {Version}.");
 
         string inf = StageUdePackage();
 
         // hmswd force-driver calls UpdateDriverForPlugAndPlayDevices with
         // INSTALLFLAG_FORCE, which puts this INF on every device carrying
-        // the hardware id even though 0.9.7.7's DriverVer ranks above it.
+        // the hardware id whatever the installed package's DriverVer.
         // It is the call usbip-win2's own devnode.exe makes. It runs in the
         // helper and not here because that call has no timeout: a host
         // controller that will not let go of its driver would hold the
@@ -307,7 +316,7 @@ internal static class UsbipDriverInstaller
                 // works and nothing has to be forced. Best effort: a
                 // package left behind is inert, it just ranks first again
                 // if the devnode is ever recreated.
-                foreach (string oem in LegacyUdePackages())
+                foreach (string oem in LegacyUdePackages(old.DriverVer))
                 {
                     int rc = RunPnputil($"/delete-driver {oem}");
                     DeviceOrchestrator.LogDiag($"UsbipDriverInstaller:   pnputil /delete-driver {oem} -> {rc}");
@@ -447,7 +456,7 @@ internal static class UsbipDriverInstaller
 
     /// <summary>Full path of the usbip2_ude.sys the service is set to load,
     /// or null when the service does not exist.</summary>
-    private static string? InstalledUdeImagePath()
+    internal static string? InstalledUdeImagePath()
     {
         try
         {
@@ -467,9 +476,9 @@ internal static class UsbipDriverInstaller
     }
 
     /// <summary>Published names (oemNN.inf) of every driver-store package
-    /// that is 0.9.7.7's usbip2_ude. Read from the INF files themselves, so
+    /// that is the given release's usbip2_ude. Read from the INF files themselves, so
     /// it does not depend on the language pnputil prints in.</summary>
-    private static System.Collections.Generic.List<string> LegacyUdePackages()
+    private static System.Collections.Generic.List<string> LegacyUdePackages(string driverVer)
     {
         var found = new System.Collections.Generic.List<string>();
         try
@@ -487,7 +496,7 @@ internal static class UsbipDriverInstaller
                 }
                 catch { continue; }
                 if (text.IndexOf("usbip2_ude", StringComparison.OrdinalIgnoreCase) < 0) continue;
-                if (text.IndexOf(LegacyUdeDriverVer, StringComparison.Ordinal) < 0) continue;
+                if (text.IndexOf(driverVer, StringComparison.Ordinal) < 0) continue;
                 found.Add(Path.GetFileName(path));
             }
         }
